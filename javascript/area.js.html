@@ -1,0 +1,66 @@
+<html>
+
+<head>
+
+<script>
+if (window.XMLHttpRequest) {
+    xmlhttp = new XMLHttpRequest();
+ } else {
+    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+}
+
+function sendRequest(){
+	var ob = JSON.parse(document.getElementById("json").innerHTML);
+	var url="https://cloudrf.com/API/api.php?"
+	for(var val in ob){
+		url=url+"&"+val+"="+ob[val];
+	}
+	xmlhttp.onreadystatechange = function() {
+	    if (this.readyState == 4 && this.status == 200) {
+	       document.getElementById("out").innerHTML = this.responseText;
+	    }
+	};
+	document.getElementById("out").innerHTML = "Loading...";
+	xmlhttp.open("POST", url, true);
+	xmlhttp.send();
+}
+</script>
+
+</head>
+<body>
+<h1>Javascript area coverage example</h1>
+<h3><a href="https://cloudrf.com/docs/api/">https://cloudrf.com/docs/api/</a></h3>
+<textarea cols="60" rows="25" id="json">
+{
+	"uid": ?,
+	"key": "????????????????????????????????????????",
+	"aeg": 2.14,
+	"azi": 0,
+	"ant": 38,
+	"clh": 1,
+	"cli": 5,
+	"cll": 1,
+	"col": 10,
+	"dbm": -90,
+	"dis": "m",
+	"fmt": 4,
+	"frq": 868,
+	"lat": 51.5,
+	"lon": -1.12,
+	"nam": "Tx",
+	"out": 2,
+	"rad": 10,
+	"rxh": 2,
+	"res": 1200,
+	"ter": 15,
+	"tlt": 0,
+	"txh": 2,
+	"txw": 1
+}
+</textarea>
+<br>
+<a href="#" onclick="sendRequest()">Calculate</a>
+
+<div id="out"></div>
+</body>
+</html>
