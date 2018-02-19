@@ -18,19 +18,24 @@ for row in csvfile:
 	#print row
 	r = requests.post(server+"/API/area", data=row)
 	print r.text
-	try:
-		j = json.loads(r.text)
-		# Your ouptut is in this object eg. j['PNG_WGS84'], j['area'], j['bounds']
-		if j['kmz']:
-			#print j['kmz']
-			r = requests.get(j['kmz'])
-			fn="kmz"+os.sep+str(j['id'])+".kmz"
-			file = open(fn,"w")
-			file.write(r.content)
-			file.close()
-			print "Saved to %s" % fn
-	except:
-		pass
+	#try:
+	j = json.loads(r.text)
+	if 'kmz' in j:
+		#print j['kmz']
+		r = requests.get(j['kmz'])
+		fn="calculations"+os.sep+str(row['nam'])+".kmz"
+		file = open(fn,"w")
+		file.write(r.content)
+		file.close()
+		print "Saved to %s" % fn
+	if 'shp' in j:
+		#print j['kmz']
+		r = requests.get(j['shp'])
+		fn="calculations"+os.sep+str(row['nam'])+".shp.zip"
+		file = open(fn,"w")
+		file.write(r.content)
+		file.close()
+		print "Saved to %s" % fn
 
 
 	elapsed = round(time.time() - start_time,1) # Stopwatch
