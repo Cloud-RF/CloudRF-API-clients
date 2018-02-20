@@ -24,7 +24,7 @@ for row in csvfile:
 		#print j['kmz']
 		r = requests.get(j['kmz'])
 		fn="calculations"+os.sep+str(row['nam'])+".kmz"
-		file = open(fn,"w")
+		file = open(fn,"wb")
 		file.write(r.content)
 		file.close()
 		print "Saved to %s" % fn
@@ -32,7 +32,7 @@ for row in csvfile:
 		#print j['kmz']
 		r = requests.get(j['shp'])
 		fn="calculations"+os.sep+str(row['nam'])+".shp.zip"
-		file = open(fn,"w")
+		file = open(fn,"wb")
 		file.write(r.content)
 		file.close()
 		print "Saved to %s" % fn
