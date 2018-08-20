@@ -1,0 +1,82 @@
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252"><title>CloudRF Rocks</title>
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+
+</head><body><h1>Path Profile Report</h1>
+
+<form action="javascript:alert('test');">
+
+<!-- AUTHENTICATION -->
+<input name="key" value="??????????????????????" type="hidden">
+<input name="uid" value="?????" type="hidden">
+
+<!-- DEFAULT VALUES -->
+<input name="cll" value="0" type="hidden">
+<input name="dis" value="m" type="hidden">
+<input name="pe" value="1" type="hidden">
+<input name="pm" value="1" type="hidden">
+<input name="res" value="30" type="hidden">
+<input name="out" value="3" type="hidden">
+<!-- USER DEFINED VALUES -->
+
+
+<h3>Tx</h3>
+<table>
+<tbody><tr><td>Lat</td><td><input value="51.543" name="lat" type="text">Decimal
+</td></tr><tr><td>Lon</td><td><input value="-1.2345" name="lon" type="text">Decimal
+</td></tr><tr><td>Height</td><td><input value="10" name="txh" type="text">Meters
+</td></tr><tr><td>Freq</td><td><input value="2450" name="frq" type="text">MHz
+</td></tr><tr><td>Power</td><td><input value="1" name="txw" type="text">Watts
+</td></tr><tr><td>Gain</td><td><input value="2.15" name="txg" type="text">dBi
+</td></tr></tbody></table>
+
+
+<h3>Rx</h3>
+<table>
+<tbody><tr><td>Lat</td><td><input value="51.543" name="rlat" type="text">Decimal
+</td></tr><tr><td>Lon</td><td><input value="-1.10" name="rlon" type="text">Decimal
+</td></tr><tr><td>Height</td><td><input value="10" name="rxh" type="text">Meters
+</td></tr><tr><td>Gain</td><td><input value="2.15" name="rxg" type="text">dBi
+</td></tr></tbody></table>
+
+<input value="Calculate" type="submit">
+</form>
+
+<div id="response">
+
+</div>
+<script>
+
+$("form").submit(function(e) {
+
+//prevent Default functionality
+e.preventDefault();
+
+var a=$("form").serialize();
+$.ajax({
+    type:'post',
+    url:'https://cloudrf.com/API/path',
+    data:a,
+    beforeSend:function(){
+	$("#response").html("Calculating...");
+    },
+    complete:function(){
+	//stopPreloader();
+    },
+    success:function(json){
+	// json contains .report .chart .distanceKM .azimuthRx .downtiltTx .azimuthTx .downtiltTx .freespaceLoss .terrainAttenuation .pathloss_dB .received_dBm
+	 console.log(json);
+	var result="<img src='"+json.chart+"'/><br><a target='_cloudrf' href='"+json.report+"'>Report</a>";
+	$("#response").html(result);
+    }
+});
+
+
+});
+
+
+</script>
+
+
+</body></html>
