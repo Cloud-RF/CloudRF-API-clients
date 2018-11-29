@@ -18,7 +18,7 @@ def archiveDL(uid,key,fname,format):
 	print "Wrote %d bytes to %s.%s" % (len(r.text),fname,format)
 
 if len(sys.argv) < 3:
-	print "ERROR: Need a UID, key and network\neg. python mesh.py 1 8d7f8df78d7f8d7f8d7f87df MY_NET"
+	print "ERROR: Need a UID, API key and network\neg. python mesh.py 1 8d7f8df78d7f8d7f8d7f87df MY_NET"
 	quit()
 
 uid = sys.argv[1]
