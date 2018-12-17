@@ -16,13 +16,13 @@ def mesh(uid,net):
 	fname = result[len(result)-1].split(".")[0]
 	return fname
 
-def archiveDL(uid,key,fname,format):
-	dlargs={'uid': uid, 'key': key, 'file': fname, 'fmt': format}
+def archiveDL(uid,key,fname,fileformat):
+	dlargs={'uid': uid, 'key': key, 'file': fname, 'fmt': fileformat}
 	r = requests.get(server+"/API/archive/data.php", params=dlargs)
-	filename = open("calculations"+os.sep+fname+"."+format,"wb")
+	filename = open("calculations"+os.sep+fname+"."+fileformat,"wb")
 	filename.write(r.content)
 	filename.close()
-	print("Wrote %d bytes to %s.%s" % (len(r.text),fname,format))
+	print("Wrote %d bytes to %s.%s" % (len(r.text),fname,fileformat))
 
 if len(sys.argv) == 1:
 	print("ERROR: Need a .csv file\neg. python coverage.py mydata.csv")
@@ -47,7 +47,7 @@ for row in csvfile:
 	uid=row['uid'] # 1234
 	key=row['key'] # abcdefabcdefabcdef...
 	net=row['net'] # DEMO_NETWORK
-	format=row['file'] # kmz,shp,tiff,url,html
+	fileformat=row['file'] # kmz,shp,tiff,url,html
 
 	r = requests.post(server+"/API/area", data=row)
 	print(r.text)
@@ -76,4 +76,4 @@ for row in csvfile:
 	n=n+1
 
 fname = mesh(uid,net)
-archiveDL(uid,key,fname,format)
+archiveDL(uid,key,fname,fileformat)
