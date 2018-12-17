@@ -14,4 +14,4 @@ session.auth = (user,password)
 auth = session.post(server + "/API/archive")
 payload = {'uid': uid, 'delete': site}
 r = session.get(server + "/API/archive/index.php", params=payload)
-print r.text
+print(r.text)
