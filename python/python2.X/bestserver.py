@@ -13,14 +13,16 @@ import time
 # For help email: support@cloudrf.com
 
 server="https://cloudrf.com" # Public server
+strictSSL=True
 
 # Send job to server. Refer to cloudrf.com/pages/api for API parameters.
 def bestserver(args):
 	global server
-	print "Finding best server(s) for %s, %s %sfm, %sdBi" % (args.get('lat'),args.get('lon'),args.get('rxh'),args.get('rxg'))
-	req = requests.post(server+"/API/network/index.php", args)
+	print("Finding best server(s) for %s, %s %sfm, %sdBi" % (args.get('lat'),args.get('lon'),args.get('rxh'),args.get('rxg')))
+	print(args)
+	req = requests.post(server+"/API/network/index.php", data=args,verify=strictSSL)
 	result = req.text
-	print result
+	print(result)
 
 
 def downloadPPA(file,nam):
@@ -31,7 +33,7 @@ def downloadPPA(file,nam):
 		local_file.write(data)
 
 if len(sys.argv) == 1:
-	print "ERROR: Need a .csv file\neg. python bestserver.py customers.csv"
+	print("ERROR: Need a .csv file\neg. python bestserver.py customers.csv")
 	quit()
 
 # Open CSV file

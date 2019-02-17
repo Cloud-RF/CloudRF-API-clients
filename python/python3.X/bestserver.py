@@ -13,12 +13,14 @@ import time
 # For help email: support@cloudrf.com
 
 server="https://cloudrf.com" # Public server
+strictSSL=True
 
 # Send job to server. Refer to cloudrf.com/pages/api for API parameters.
 def bestserver(args):
 	global server
 	print("Finding best server(s) for %s, %s %sfm, %sdBi" % (args.get('lat'),args.get('lon'),args.get('rxh'),args.get('rxg')))
-	req = requests.post(server+"/API/network/index.php", args)
+	print(args)
+	req = requests.post(server+"/API/network/index.php", data=args,verify=strictSSL)
 	result = req.text
 	print(result)
 

@@ -1,4 +1,6 @@
-txg,ant,azi,bw,ber,clh,cli,col,dbm,dis,file,frq,ked,key,lat,lon,rlat,rlon,nam,net,out,pm,pol,rad,res,rxg,rxh,ter,tlt,txh,txw,uid
-2.14,38,0,0,0,1,5,10,-95,m,kmz,868,0,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,50.39,-4.1,OMNI KMZ,APITEST,2,1,v,6,30,0,2,15,0,8,1,21531
-12,48,45,0,0,1,5,10,-70,m,url,900,0,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,50.39,-4.1,YAGI URL,APITEST,2,1,v,6,30,0,2,15,0,8,1,21531
-2.14,38,0,0,0,1,5,10,-100,m,html,2400,1,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,50.39,-4.1,HTML SUI model,APITEST,2,5,v,6,30,0,2,15,0,10,0.1,21531
+txg,ant,azi,bw,ber,clh,cli,col,dbm,dis,file,frq,ked,key,lat,lon,rlat,rlon,nam,net,out,pm,pol,rad,res,rxg,rxh,ter,tlt,txh,txw,uid,engine,file
+2.14,38,0,0,0,1,5,10,-95,m,kmz,868,0,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,50.39,-4.1,OMNI KMZ,APITEST,2,1,v,6,30,0,2,15,0,8,1,21531,1,json
+12,48,45,0,0,1,5,10,-70,m,url,900,0,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,50.39,-4.1,YAGI URL,APITEST,2,1,v,6,30,0,2,15,0,8,1,21531,1,json
+2.14,38,0,0,0,1,5,10,-100,m,html,2400,1,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,50.39,-4.1,HTML SUI model,APITEST,2,5,v,6,30,0,2,15,0,10,0.1,21531,1,json
+2.15,38,0,0,0,1,5,10,-100,m,html,2400,1,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,50.39,-4.1,SLEIPNIR,APITEST,2,1,v,6,30,2.15,2,15,0,10,0.1,21531,2,json
+2.15,38,0,0,0,1,5,10,-100,m,html,2400,1,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,50.39,-4.1,SLEIPNIR HTML,APITEST,2,1,v,6,30,2.15,2,15,0,10,0.1,21531,2,html
