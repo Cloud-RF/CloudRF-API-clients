@@ -19,7 +19,7 @@ csvfile = csv.DictReader(open(sys.argv[1]))
 n=0
 for row in csvfile:
 	# Pause script. Important otherwise server will ban you.
-	time.sleep(1)
+	time.sleep(2)
 	start_time = time.time() # Stopwatch start
 	#print row
 	r = requests.post(server+"/API/area", data=row)

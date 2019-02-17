@@ -1,17 +1,25 @@
 #!/usr/bin/python
+import requests
 
-# Programmatically delete a calculation by name.
-# Requires session authentication with archive
+# Programmatically delete a calculation by name OR network
 
-server="https://cloudrf.com"
-user= "my@email.com"
-password= "SECRET!"
-uid="1234"
-site= "CALCULATION_NAME"
+server="https://192.168.1.107"
+strictSSL=False
 
-session = requests.Session()
-session.auth = (user,password)
-auth = session.post(server + "/API/archive")
-payload = {'uid': uid, 'delete': site}
-r = session.get(server + "/API/archive/index.php", params=payload)
-print(r.text)
+uid=str(21531)
+key="a8ec44b5ad85e0ab626e55f20e3cb5da111999a2"
+network="APITEST"
+
+# Delete by name..
+req = requests.get(server+"/API/archive/data.php?uid="+uid+"&key="+key+"&delete=12345_NETWORK_SITE",verify=strictSSL)
+result = req.text
+print(result)
+
+# Delete by network..
+req = requests.get(server+"/API/archive/data.php?uid="+uid+"&key="+key+"&nid="+network+"&del=1",verify=strictSSL)
+result = req.text
+print(result)
+
+
+
+

@@ -11,13 +11,15 @@ if (window.XMLHttpRequest) {
 
 function sendRequest(){
 	var ob = JSON.parse(document.getElementById("json").innerHTML);
-	var url="https://cloudrf.com/API/api.php?"
+	var url="https://cloudrf.com/API/area?"
 	for(var val in ob){
 		url=url+"&"+val+"="+ob[val];
 	}
 	xmlhttp.onreadystatechange = function() {
 	    if (this.readyState == 4 && this.status == 200) {
-	       document.getElementById("out").innerHTML = this.responseText;
+		ob=JSON.parse(this.responseText);
+	       document.getElementById("out").innerHTML = "<pre>"+this.responseText+"</pre>";
+		document.getElementById("image").innerHTML = "<img width=\"400\" src=\""+ob.PNG_Mercator+"\"/>";
 	    }
 	};
 	document.getElementById("out").innerHTML = "Loading...";
@@ -28,13 +30,13 @@ function sendRequest(){
 
 </head>
 <body>
-<h1>Javascript area coverage example</h1>
-<h3><a href="https://cloudrf.com/docs/api/">https://cloudrf.com/docs/api/</a></h3>
-<textarea cols="60" rows="25" id="json">
+<h1>Javascript area coverage / PtMp</h1>
+<h3><a href="https://api.cloudrf.com">https://api.cloudrf.com</a></h3>
+<textarea cols="60" rows="10" id="json">
 {
-	"uid": ?,
-	"key": "????????????????????????????????????????",
-	"txg": 2.14,
+	"uid": 21531,
+	"key": "a8ec44b5ad85e0ab626e55f20e3cb5da111999a2",
+	"txg": 2.15,
 	"azi": 0,
 	"ant": 38,
 	"clh": 1,
@@ -45,22 +47,28 @@ function sendRequest(){
 	"dis": "m",
 	"fmt": 4,
 	"frq": 868,
-	"lat": 51.5,
-	"lon": -1.12,
+	"lat": 50.355,
+	"lon": -4.152,
 	"nam": "Tx",
 	"out": 2,
 	"rad": 10,
 	"rxh": 2,
-	"res": 1200,
+	"rxg": 2.15,
+	"res": 60,
 	"ter": 15,
 	"tlt": 0,
 	"txh": 2,
-	"txw": 1
+	"txw": 1,
+	"engine":2
 }
 </textarea>
 <br>
-<a href="#" onclick="sendRequest()">Calculate</a>
-
-<div id="out"></div>
+<a href="#" onclick="sendRequest()">CALCULATE COVERAGE</a>
+<table>
+<td id="out"><td id="image">
+</table>
+<hr>
+<center>
+CloudRF.com
 </body>
 </html>

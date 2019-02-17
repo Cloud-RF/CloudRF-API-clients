@@ -14,15 +14,17 @@ n=0
 for row in csvfile:
 
 	start_time = time.time() # Stopwatch start
-	#print row
+	print(row)
 	r = requests.post(server+"/API/path", data=row)
-	print r.text
+	print(r.text)
 	try:
 		j = json.loads(r.text)
 		# Your ouptut is in this object eg. jj['received_dBm']
-		print("Distance: "+str(j['distanceKM'])+"km Received power: "+str(j['received_dBm'])+"dBm")
+		if j['distanceKM']:
+			print("Distance: "+str(j['distanceKM'])+"km Received power: "+str(j['received_dBm'])+"dBm")
+		
 	except Exception as err:
-        print(str(err))
+		print(str(err))
 		continue
 	# Pause script. Important otherwise server will ban you.
 	time.sleep(3)
