@@ -1,5 +1,9 @@
-import requests, sys, os, time
-server="https://cloudrf.com" 
+import requests
+import sys
+import os
+import time
+
+server="https://cloudrf.com"
 format = "kmz" # kmz, shp, tiff, url, html
 
 def mesh(uid,net):
@@ -12,9 +16,9 @@ def mesh(uid,net):
 def archiveDL(uid,key,fname,format):
 	dlargs={'uid': uid, 'key': key, 'file': fname, 'fmt': format}
 	r = requests.get(server+"/API/archive/data.php", params=dlargs)
-	file = open("networks"+os.sep+fname+"."+format,"w")
-	file.write(r.content)
-	file.close()
+	filename = open("networks"+os.sep+fname+"."+format,"w")
+	filename.write(r.content)
+	filename.close()
 	print "Wrote %d bytes to %s.%s" % (len(r.text),fname,format)
 
 if len(sys.argv) < 3:
@@ -22,7 +26,7 @@ if len(sys.argv) < 3:
 	quit()
 
 uid = sys.argv[1]
-key = sys.argv[2]	
+key = sys.argv[2]
 net = sys.argv[3]
 
 if not os.path.exists("networks"):

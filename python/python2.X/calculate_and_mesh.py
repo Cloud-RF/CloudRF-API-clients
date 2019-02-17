@@ -1,4 +1,10 @@
-import requests, csv, sys, os, time, json
+import requests
+import csv
+import sys
+import os
+import time
+import json
+
 from datetime import datetime
 
 server="https://cloudrf.com"
@@ -13,9 +19,9 @@ def mesh(uid,net):
 def archiveDL(uid,key,fname,format):
 	dlargs={'uid': uid, 'key': key, 'file': fname, 'fmt': format}
 	r = requests.get(server+"/API/archive/data.php", params=dlargs)
-	file = open("calculations"+os.sep+fname+"."+format,"w")
-	file.write(r.content)
-	file.close()
+	filename = open("calculations"+os.sep+fname+"."+format,"w")
+	filename.write(r.content)
+	filename.close()
 	print "Wrote %d bytes to %s.%s" % (len(r.text),fname,format)
 
 if len(sys.argv) == 1:
@@ -29,7 +35,7 @@ if not os.path.exists("calculations"):
 csvfile = csv.DictReader(open(sys.argv[1]))
 n=0
 
-# Ensure we only mesh these sites and not older ones with same network 
+# Ensure we only mesh these sites and not older ones with same network
 nonce=datetime.now().strftime('%H%M')
 
 for row in csvfile:
@@ -51,17 +57,17 @@ for row in csvfile:
 		#print j['kmz']
 		r = requests.get(j['kmz'])
 		fn="calculations"+os.sep+str(row['nam'])+".kmz"
-		file = open(fn,"wb")
-		file.write(r.content)
-		file.close()
+		filename = open(fn,"wb")
+		filename.write(r.content)
+		filename.close()
 		print "Saved to %s" % fn
 	if 'shp' in j:
 		#print j['kmz']
 		r = requests.get(j['shp'])
 		fn="calculations"+os.sep+str(row['nam'])+".shp.zip"
-		file = open(fn,"wb")
-		file.write(r.content)
-		file.close()
+		filename = open(fn,"wb")
+		filename.write(r.content)
+		filename.close()
 		print "Saved to %s" % fn
 
 

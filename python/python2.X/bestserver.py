@@ -1,5 +1,9 @@
 #!/usr/bin/python
-import csv, os, requests, sys, time
+import csv
+import os
+import requests
+import sys
+import time
 # CloudRF API client script Copyright 2016 Farrant Consulting Ltd
 #
 # Reads in radio transmitter data from a CSV files and creates a propagation KMZ for each row
@@ -8,7 +12,7 @@ import csv, os, requests, sys, time
 # Before using you must create a CloudRF account and enter your API credentials in the data fields 'uid' and 'key'
 # For help email: support@cloudrf.com
 
-server="https://cloudrf.com" # Public server 
+server="https://cloudrf.com" # Public server
 
 # Send job to server. Refer to cloudrf.com/pages/api for API parameters.
 def bestserver(args):
@@ -29,11 +33,10 @@ def downloadPPA(file,nam):
 if len(sys.argv) == 1:
 	print "ERROR: Need a .csv file\neg. python bestserver.py customers.csv"
 	quit()
-	
+
 # Open CSV file
 csvfile = csv.DictReader(open(sys.argv[1]))
 n=1
 for row in csvfile:
 	bestserver(row)
 	n=n+1
-	

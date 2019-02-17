@@ -1,10 +1,16 @@
-import requests, csv, sys, os, time, json
-server="https://cloudrf.com" 
+import requests
+import csv
+import sys
+import os
+import time
+import json
+
+server="https://cloudrf.com"
 
 if len(sys.argv) == 1:
 	print "ERROR: Need a .csv file\neg. python coverage.py mydata.csv"
 	quit()
-	
+
 if not os.path.exists("calculations"):
 		os.makedirs("calculations")
 
@@ -24,17 +30,17 @@ for row in csvfile:
 		#print j['kmz']
 		r = requests.get(j['kmz'])
 		fn="calculations"+os.sep+str(row['nam'])+".kmz"
-		file = open(fn,"wb")
-		file.write(r.content)
-		file.close()
+		filename = open(fn,"wb")
+		filename.write(r.content)
+		filename.close()
 		print "Saved to %s" % fn
 	if 'shp' in j:
 		#print j['kmz']
 		r = requests.get(j['shp'])
 		fn="calculations"+os.sep+str(row['nam'])+".shp.zip"
-		file = open(fn,"wb")
-		file.write(r.content)
-		file.close()
+		filename = open(fn,"wb")
+		filename.write(r.content)
+		filename.close()
 		print "Saved to %s" % fn
 
 
