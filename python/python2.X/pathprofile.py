@@ -1,10 +1,16 @@
-import requests, csv, sys, os, time, json
-server="https://cloudrf.com" 
+import requests
+import csv
+import sys
+import os
+import time
+import json
+
+server="https://cloudrf.com"
 
 if len(sys.argv) == 1:
 	print "ERROR: Need a .csv file\neg. python pathprofile.py pathprofile.csv"
 	quit()
-	
+
 if not os.path.exists("calculations"):
 		os.makedirs("calculations")
 
