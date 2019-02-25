@@ -5,7 +5,7 @@ import os
 import time
 import json
 
-server="https://cloudrf.com"
+server="https://uk.cloudrf.com"
 
 if len(sys.argv) == 1:
 	print("ERROR: Need a .csv file\neg. python coverage.py mydata.csv")
@@ -19,9 +19,9 @@ csvfile = csv.DictReader(open(sys.argv[1]))
 n=0
 for row in csvfile:
 	# Pause script. Important otherwise server will ban you.
-	time.sleep(2)
+	#time.sleep(0.5)
 	start_time = time.time() # Stopwatch start
-	#print row
+	#print(row)
 	r = requests.post(server+"/API/area", data=row)
 	print(r.text)
 	#try:
