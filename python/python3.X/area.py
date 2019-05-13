@@ -5,7 +5,7 @@ import os
 import time
 import json
 
-server="https://uk.cloudrf.com"
+server="https://cloudrf.com"
 
 if len(sys.argv) == 1:
 	print("ERROR: Need a .csv file\neg. python coverage.py mydata.csv")
