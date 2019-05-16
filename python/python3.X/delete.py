@@ -3,7 +3,7 @@ import requests
 
 # Programmatically delete a calculation by name OR network
 
-server="https://192.168.1.107"
+server="https://cloudrf.com"
 strictSSL=False
 
 uid=str(21531)

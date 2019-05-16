@@ -7,7 +7,7 @@ import json
 
 from datetime import datetime
 
-server="https://192.168.1.107"
+server="https://cloudrf.com"
 strictSSL=False
 
 def mesh(uid,net):
