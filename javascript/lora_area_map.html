@@ -1,0 +1,224 @@
+<html>
+<head>
+<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyDXqk_OGhEd9eq23c6Ktw7zggLqOAclMrg'></script>
+<script>
+// Define radio/antenna configurations here:
+// See https://api.cloudrf.com for parameters
+// REPLACE UID with your own
+var uid=21531;
+var key="a8ec44b5ad85e0ab626e55f20e3cb5da111999a2";
+
+var profile1 = {
+"uid": uid,
+"key": key,
+"txg": 2.15,
+"azi": 0,
+"ant": 38,
+"ber": 7,
+"clh": 0,
+"cli": 6,
+"cll": 0,
+"col": 65280, // 0x00ff00 (Green) is decimal 65280
+"rxs": -90, // BER/SNR calc will likely lower this
+"dis": "m",
+"fmt": 4,
+"frq": 868,
+"lat": 0,
+"lon": 0,
+"mod": 11, // 11=LoRa
+"nam": "Tx",
+"nf": -114,
+"out": 4, // BER
+"pm": 1,
+"pol": "v",
+"rad": 8,
+"rxh": 1,
+"rxg": 1,
+"res": 30,
+"ter": 15,
+"tlt": 0,
+"txh": 1,
+"txw": 0.1,
+"engine":2
+};
+var profile2 = {
+"uid": uid,
+"key": key,
+"txg": 2.15,
+"azi": 0,
+"ant": 38,
+"ber": 7,
+"clh": 0,
+"cli": 6,
+"cll": 0,
+"col": 255, // 0x0000ff (Blue) is decimal 255
+"rxs": -90, // BER/SNR calc will likely lower this
+"dis": "m",
+"fmt": 4,
+"frq": 868,
+"lat": 0,
+"lon": 0,
+"mod": 11, // 11=LoRa
+"nam": "Tx",
+"nf": -114,
+"out": 4, // BER
+"pm": 1,
+"pol": "v",
+"rad": 8,
+"rxh": 1,
+"rxg": 1,
+"res": 30,
+"ter": 15,
+"tlt": 0,
+"txh": 4,
+"txw": 0.1,
+"engine":2
+};
+// ..ensure they are listed here in the brackets
+var hardware=[profile1,profile2];
+
+// Edit below here at your own risk
+var o=null;
+var map;
+var marker;
+var gOpts = {opacity: 0.6};
+function mapLayer(lat,lon,north,east,south,west,png) {
+if(o){
+o.setMap(null);
+}
+var Bounds = new google.maps.LatLngBounds(new google.maps.LatLng(south,west),
+new google.maps.LatLng(north,east));
+o = new google.maps.GroundOverlay(png,Bounds,gOpts);
+o.setMap(map);
+google.maps.event.addListener(o, 'click', function(event) {
+	placeMarker(event.latLng);
+});
+}
+if (window.XMLHttpRequest) {
+    xmlhttp = new XMLHttpRequest();
+ } else {
+    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+}
+function calculate(){
+	var url="https://cloudrf.com/API/area?"
+	var ob=hardware[document.getElementById("profile").selectedIndex];
+	console.log(ob);
+	ob.lat = document.getElementById("lat").value;
+	ob.lon = document.getElementById("lon").value;
+	//ob.txh = document.getElementById("txh").value;
+	ob.ber = document.getElementById("ber").value;
+	for(var val in ob){
+		url=url+"&"+val+"="+ob[val];
+	}
+	xmlhttp.onreadystatechange = function() {
+	if (this.readyState == 4 && this.status == 200) {
+		document.getElementById("calculate").style.display = "block";
+		document.getElementById("out").innerHTML = this.responseText;
+		ob=JSON.parse(this.responseText);
+		console.log(ob);
+
+		// Ground overlay PNG
+		var north=ob.bounds[0];
+		var east=ob.bounds[1];
+		var south=ob.bounds[2];
+		var west=ob.bounds[3];
+		mapLayer((north+south)/2,(east+west)/2,north,east,south,west,ob.PNG_Mercator);
+		// KMZ link
+		document.getElementById("result").innerHTML="<a target='_kmz' href='"+ob.kmz+"'>KMZ</a>";
+	   }
+	};
+	document.getElementById("calculate").style.display = "none";
+	document.getElementById("out").innerHTML = "Loading...";
+	xmlhttp.open("POST", url, true);
+	xmlhttp.send();
+}
+
+function mapinit(){
+	var i = new google.maps.LatLng(50.346,-4.171);
+	var Options = {zoom: 11, center: i,mapTypeId: google.maps.MapTypeId.TERRAIN};
+	map = new google.maps.Map(document.getElementById('map'),Options);
+	placeMarker(i);
+	google.maps.event.addListener(map, 'click', function(event) {
+		placeMarker(event.latLng);
+	});
+}
+
+function placeMarker(location) {
+	if (marker == null)
+	{
+		marker = new google.maps.Marker({
+		position: location,
+		map: map
+	});
+	} else {
+	marker.setPosition(location);
+}
+
+document.getElementById("lat").value=(Math.round(location.lat()*1e5))/1e5;
+document.getElementById("lon").value=(Math.round(location.lng()*1e5))/1e5;
+}
+</script>
+<style>
+body{
+	font-family: Arial;
+	font-size: 10px;
+}
+#mapBox{
+	width: 800px;
+	height: 600px;
+	background: white;
+}
+#form{
+	position: absolute;
+	top: 80;
+	left: 20;
+	background: white;
+	z-index: 999;
+	opacity: 0.8;
+}
+#map{
+	z-index: 0;
+}
+#calculate{
+	width: 20px;
+	height: 20px;
+	background: #dd0000;
+	border-radius: 10px;
+	border: 1px solid #000;
+}
+#calculate:hover{
+	background: #ff0000;
+}
+</style>
+</head>
+<body onload="mapinit()">
+	<div id="mapBox">
+	<div id="form">
+	<table>
+	<input size="8" type="hidden" id="lat" value="50.346">
+	<input size="8" type="hidden" id="lon" value="-4.171">
+	<!--<tr><td>Height<td><input size="5" type="text" id="txh" value="2">m-->
+	<tr><td>Eqpt<td><select id="profile">
+	<option value=0>LoRa 1m GREEN</option>
+	<option value=1>LoRa 4m BLUE</option>
+	</select>
+	<tr><td>Spread<td><select id="ber">
+	<option value=7>SF7</option>
+	<option value=8>SF8</option>
+	<option value=9>SF9</option>
+	<option value=10>SF10</option>
+	<option value=11>SF11</option>
+	<option value=12>SF12</option>
+	</select>
+	</table>
+	<center>
+	<p onclick="calculate()" id="calculate"></p>
+	<p id="result"></p>
+	<textarea id="out"></textarea>
+	<br>
+	Powered by <a target="_cloudrf" href="https://cloudrf.com">CloudRF.com</a>
+	</div>
+	<div id='map' style='height: 100%; width: 100%;'></div>
+	</div>
+</body>
+</html>
