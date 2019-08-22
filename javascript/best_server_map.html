@@ -1,0 +1,186 @@
+<html>
+<head>
+<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyDXqk_OGhEd9eq23c6Ktw7zggLqOAclMrg'></script>
+<script>
+// Define radio/antenna configurations here:
+// See https://api.cloudrf.com for parameters
+// REPLACE UID with your own
+var uid=21531;
+var key="a8ec44b5ad85e0ab626e55f20e3cb5da111999a2";
+
+// SERVICE LEVELS
+var gold=-60; // dBm for GOLD service
+var silver=-70; // dBm for SILVER service
+var bronze=-80; // dBm for BRONZE service
+
+// Edit below here at your own risk
+var o=null;
+var map;
+var marker;
+var gOpts = {opacity: 0.6};
+function mapLayer(lat,lon,north,east,south,west,png) {
+if(o){
+o.setMap(null);
+}
+var Bounds = new google.maps.LatLngBounds(new google.maps.LatLng(south,west),
+new google.maps.LatLng(north,east));
+o = new google.maps.GroundOverlay(png,Bounds,gOpts);
+o.setMap(map);
+google.maps.event.addListener(o, 'click', function(event) {
+	placeMarker(event.latLng);
+});
+}
+if (window.XMLHttpRequest) {
+    xmlhttp = new XMLHttpRequest();
+ } else {
+    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+}
+
+// Extract relevant fields from response
+function serverDetails(r){
+	var output="";
+	for (var i = 0; i < r.length; i++){
+	    var obj = r[i];
+	    for (var key in obj){
+		var attrName = key;
+		var attrValue = obj[key];
+		if(attrName == "Transmitters"){
+			console.log(attrName,attrValue);
+			var tx = attrValue;
+			console.log(tx[0].Latitude,tx[0].Longitude);
+			var dbm=tx[0]["Signal power at receiver dBm"]
+			console.log(dbm);
+
+			// GOLD SILVER BRONZE?
+			output="No service available";
+
+			if(dbm >= bronze){
+				output="BRONZE service available";
+			}
+			if(dbm >= silver){
+				output="SILVER service available";
+			}
+			if(dbm >= gold){
+				output="GOLD service available";
+			}			
+			document.getElementById("result").innerHTML="<h2>"+output+"</h2>"+dbm+"dBm";
+			return;
+			// USE THE RESPONSE TO PUT PINS ON THE MAP ETC
+			/*
+			new google.maps.Marker({
+					position: google.maps.LatLng(tx[0].Latitude,tx[0].Longitude),
+					label: String(tx[0]["Signal power at receiver dBm"])+"dBm",
+					map: map
+				});
+			*/
+		}
+	    }
+	}
+}
+
+function calculate(){
+	var url="https://cloudrf.com/API/network/index.php?"
+	var lat = document.getElementById("lat").value;
+	var lon = document.getElementById("lon").value;
+	var net = document.getElementById("net").value;
+	url=url+"uid="+uid+"&key="+key+"&lat="+lat+"&lon="+lon+"&net="+net;
+	console.log(url);
+
+	xmlhttp.onreadystatechange = function() {
+	if (this.readyState == 4 && this.status == 200) {
+		document.getElementById("calculate").style.display = "block";
+		document.getElementById("out").innerHTML = this.responseText;
+		ob=JSON.parse(this.responseText);
+		//console.log(ob);
+		// Parse JSON to extract Server details
+		serverDetails(ob);
+	   }
+	};
+	document.getElementById("calculate").style.display = "none";
+	document.getElementById("out").innerHTML = "Loading...";
+	xmlhttp.open("POST", url, true);
+	xmlhttp.send();
+}
+
+function mapinit(){
+	var i = new google.maps.LatLng(50.346,-4.171);
+	var Options = {zoom: 11, center: i,mapTypeId: google.maps.MapTypeId.TERRAIN};
+	map = new google.maps.Map(document.getElementById('map'),Options);
+	placeMarker(i);
+	google.maps.event.addListener(map, 'click', function(event) {
+		placeMarker(event.latLng);
+	});
+}
+
+function placeMarker(location) {
+	if (marker == null)
+	{
+		marker = new google.maps.Marker({
+		position: location,
+		map: map
+	});
+	} else {
+	marker.setPosition(location);
+}
+
+document.getElementById("lat").value=(Math.round(location.lat()*1e5))/1e5;
+document.getElementById("lon").value=(Math.round(location.lng()*1e5))/1e5;
+}
+</script>
+<style>
+body{
+	font-family: Arial;
+	font-size: 12px;
+}
+#mapBox{
+	width: 800px;
+	height: 600px;
+	background: white;
+}
+#form{
+	position: absolute;
+	top: 80;
+	left: 20;
+	background: white;
+	z-index: 999;
+	opacity: 0.8;
+}
+#map{
+	z-index: 0;
+}
+#calculate{
+	width: 150px;
+	height: 20px;
+	background: #88ff88;
+	border-radius: 10px;
+	border: 1px solid #000;
+	padding-top: 5px;
+}
+#calculate:hover{
+	background: #00ff00;
+}
+</style>
+</head>
+<body onload="mapinit()">
+	<div id="mapBox">
+	<div id="form">
+	<center>
+	<table>
+	<input size="8" type="hidden" id="lat" value="50.346">
+	<input size="8" type="hidden" id="lon" value="-4.171">
+	<tr><td>Net<td><select id="net">
+	<option value="PLYMOUTH">PLYMOUTH</option>
+	<option value="TEST">TEST</option>
+	</select>
+	</table>
+	<center>
+	<p onclick="calculate()" id="calculate">CHECK COVERAGE</p>
+	<p id="result"></p>
+	<textarea id="out"></textarea>
+	<br>
+	Powered by <a target="_cloudrf" href="https://cloudrf.com">CloudRF.com</a>
+	</div>
+	<div id='map' style='height: 100%; width: 100%;'></div>
+	</div>
+</body>
+</html>
