@@ -16,8 +16,8 @@ def archiveDL(uid,key,fname,fileformat):
 	dlargs={'uid': uid, 'key': key, 'file': fname, 'fmt': fileformat}
 	r = requests.get(server+"/API/archive/data.php", params=dlargs)
 	file = open("networks"+os.sep+fname+"."+fileformat,"wb")
-	filename.write(r.content)
-	filename.close()
+	file.write(r.content)
+	file.close()
 	print("Wrote %d bytes to %s.%s" % (len(r.text),fname,fileformat))
 
 if len(sys.argv) < 3:
