@@ -5,8 +5,8 @@
 // Define radio/antenna configurations here:
 // See https://api.cloudrf.com for parameters
 // REPLACE UID with your own
-var uid=21531;
-var key="a8ec44b5ad85e0ab626e55f20e3cb5da111999a2";
+var uid=101;
+var key="IBIZA.DEMO.KEY";
 
 // SERVICE LEVELS
 var gold=-60; // dBm for GOLD service
@@ -62,7 +62,7 @@ function serverDetails(r){
 			}
 			if(dbm >= gold){
 				output="GOLD service available";
-			}			
+			}
 			document.getElementById("result").innerHTML="<h2>"+output+"</h2>"+dbm+"dBm";
 			return;
 			// USE THE RESPONSE TO PUT PINS ON THE MAP ETC
@@ -79,7 +79,7 @@ function serverDetails(r){
 }
 
 function calculate(){
-	var url="https://cloudrf.com/API/network/index.php?"
+	var url="https://cloudrf.com/API/network/?"
 	var lat = document.getElementById("lat").value;
 	var lon = document.getElementById("lon").value;
 	var net = document.getElementById("net").value;

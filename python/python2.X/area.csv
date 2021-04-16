@@ -1,4 +1,0 @@
-txg,ant,azi,bw,ber,clh,cli,col,rxs,dis,file,frq,ked,key,lat,lon,nam,net,out,pm,pol,rad,res,rxg,rxh,ter,tlt,txh,txw,uid,engine
-2.14,38,0,0,0,1,5,10,-95,m,kmz,868,0,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,OMNI KMZ,APITEST,2,1,v,6,30,0,2,15,0,8,1,21531,2
-12,48,45,0,0,1,5,10,-70,m,url,900,0,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,YAGI URL,APITEST,2,1,v,6,30,0,2,15,0,8,1,21531,2
-2.14,38,0,0,0,1,5,10,-100,m,shp,2400,1,a8ec44b5ad85e0ab626e55f20e3cb5da111999a2,50.355108,-4.152938,HTML SUI model,APITEST,2,5,v,6,30,0,2,15,0,10,0.1,21531,2
