@@ -1,5 +1,7 @@
 ## Cloud-RF API clients
-These code examples will help you integrate your app(s) with the powerful Cloud-RF API for path, area and whole network calculations. Designed for any operating system with examples for Linux, MacOS and Windows they can be operated as standalone apps with a CSV spreadsheet of data.
+These code examples will automate the laborious process of RF modelling and integrate your app(s) with the powerful Cloud-RF API for path, area and whole network calculations. 
+Designed for any operating system with examples for Linux, MacOS and Windows they can be operated as standalone apps or with a spreadsheet of data in CSV format.
+An internet connection and account at https://cloudrf.com is required.
 
 ![Ibiza VHF coverage with 3D buildings ](https://cloudrf.com/files/ibiza.vhf.jpg)
 ### Commercial use is ok, reselling is not
