@@ -1,0 +1,4 @@
+lat,lon,alt,rlat,rlon,ralt,nam,net
+38.914,1.45,50,0,0,10,10m,APITEST
+38.913,1.46,50,0,0,20,20m,APITEST
+38.911,1.47,50,0,0,30,30m,APITEST
