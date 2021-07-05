@@ -21,7 +21,7 @@ If you don't want to sign up for an account you can exercise the API using the f
 *Ibiza is a Mediterranean island east of Spain which we have re-branded the "RF-party island". Ibiza's rugged terrain and coastlines are ideal for demonstrating RF propagation modelling.*
 
 ### Documentation
-API reference https://api.cloudrf.com
+API reference https://docs.cloudrf.com
 User documentation: https://cloudrf.com/docs
 Video tutorials: https://youtube.com/cloudrfdotcom
 
@@ -33,7 +33,7 @@ These examples use a configuration file called **cloudrf.ini** which contains yo
 	key = IBIZA.DEMO.KEY
 	
 	[api]
-	base_url = https://cloudrf.com
+	base_url = https://api.cloudrf.com
 	strict_ssl = True
 	
 	[data]
@@ -43,20 +43,20 @@ These examples use a configuration file called **cloudrf.ini** which contains yo
 The HTTP API accepts key-value parameters where frq=868 is "Frequency 868MHz" 
 These examples use a comma separated values (CSV) format for processing rows of data but you can use any structured data in your clients and any programming language. 
 
-If data is missing required fields (frequency, height, location...) it will reject the row with an error. If a field is included but out of bounds like a height of -100m it will reject the row with an error. For a list of fields and acceptable parameters see https://api.cloudrf.com
+If data is missing required fields (frequency, height, location...) it will reject the row with an error. If a field is included but out of bounds like a height of -100m it will reject the row with an error. For a list of fields and acceptable parameters see https://docs.cloudrf.com
 
 # Cloud-RF API "Hello world!" 
 Impress your Boss and paste this URL into your browser to make a 868MHz heatmap:
 
-    https://cloudrf.com/API/area?res=30&col=RAINBOW.dBm&rxs=-120&rad=10&frq=868&pm=1&cll=0&azi=0&txw=0.1&fmt=4&out=2&net=IBIZA&nam=hello_world&txg=2.15&tlt=0&ant=39&dis=m&rxg=2.15&uid=101&key=IBIZA.DEMO.KEY&txh=8&rxh=1&lat=38.916&lon=1.448
+    https://api.cloudrf.com/API/area?res=30&col=RAINBOW.dBm&rxs=-120&rad=10&frq=868&pm=1&cll=0&azi=0&txw=0.1&fmt=4&out=2&net=IBIZA&nam=hello_world&txg=2.15&tlt=0&ant=39&dis=m&rxg=2.15&uid=101&key=IBIZA.DEMO.KEY&txh=8&rxh=1&lat=38.916&lon=1.448
 
-![Ibiza UHF coverage](https://cloudrf.com/files/helloworld.kmz.jpg)
+![Ibiza UHF coverage](https://api.cloudrf.com/files/helloworld.kmz.jpg)
 The response will be a JSON object which contains links to different formats and image metadata such as the coverage area in squared km. There are two different images for different map types: PNG_Mercator for a 2D web/leaflet map or PNG_WGS84 for a 3D Google Earth/Cesium map.
 
 	{
-	"kmz": "https://cloudrf.com/API/archive/data?file=0415165022_IBIZA_hello_world&uid=101&fmt=kmz&key=IBIZA.DEMO.KEY",
-	"PNG_WGS84": "https://cloudrf.com/users/101/0415165022_IBIZA_hello_world.4326.png",
-	"PNG_Mercator": "https://cloudrf.com/users/101/0415165022_IBIZA_hello_world.3857.png",
+	"kmz": "https://api.cloudrf.com/API/archive/data?file=0415165022_IBIZA_hello_world&uid=101&fmt=kmz&key=IBIZA.DEMO.KEY",
+	"PNG_WGS84": "https://api.cloudrf.com/users/101/0415165022_IBIZA_hello_world.4326.png",
+	"PNG_Mercator": "https://api.cloudrf.com/users/101/0415165022_IBIZA_hello_world.3857.png",
 	"bounds": [39.03145,1.563455,38.80055,1.332545],
 	"id": "13896",
 	"sid": "NVVoMHpSWUhUVk5aNFN3VHg3dkJ2dz09",
@@ -99,7 +99,7 @@ All parameters are described with --help:
 	The API arguments are sourced from csv file(s).
 	please use -s all to generate ALL outputs available.
 
-	Please refer to API Reference https://api.cloudrf.com/
+	Please refer to API Reference https://docs.cloudrf.com/
 
 	optional arguments:
 	  -h, --help            show this help message and exit
@@ -158,7 +158,7 @@ This example calculates paths from a spreadsheet / CSV file. For each path it re
 The bash example parses the JSON to return just the received power in dBm.
 
     ./path.bash -i path.csv
-	  api_end_point=https://cloudrf.com/API/area
+	  api_end_point=https://api.cloudrf.com/API/area
 	  "Signal power at receiver dBm": -125.4 
 	  "Signal power at receiver dBm": -84.8 
 	  "Signal power at receiver dBm": -131.6 
@@ -177,9 +177,9 @@ The python demo script parses the JSON then downloads the linked PNG image from 
 	All files generated to out
 	Network "best server" API demo
 	Querying location for best server(s):
-	url https://cloudrf.com/API/archive/data?ppa=0853ee63&uid=101
+	url https://api.cloudrf.com/API/archive/data?ppa=0853ee63&uid=101
 	saving 0853ee63.png
-	url https://cloudrf.com/API/archive/data?ppa=365cdfe1&uid=101
+	url https://api.cloudrf.com/API/archive/data?ppa=365cdfe1&uid=101
 	...
 	
 

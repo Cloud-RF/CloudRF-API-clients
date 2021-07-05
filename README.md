@@ -13,10 +13,13 @@ Full terms and conditions are here: https://cloudrf.com/terms-and-conditions
 ### API versions
 Both API versions connect to the same service at https://api.cloudrf.com and will generate calculations in your account which you can find through any interface. Both have the same terrain, antennas and clutter.
 
-#### API v1
-The *original* Cloud-RF API since 2012. Uses request parameters and authentication is in the request as a 'uid' and a 'key'.
 #### API v2
 The **new API** since June 2021. Uses a JSON body and authentication is in the header as a 'key'. Supports radio templates and configurations as .json files.
+
+#### API v1
+DEPRECATED. TO BE RETIRED 1st Oct 2021.
+The *original* Cloud-RF API since 2012. Uses request parameters and authentication is in the request as a 'uid' and a 'key'.
+
 
 ### Authentication
 Authentication is required. API keys vary by version. V1 consists of a user identifier (uid) and a private API key (key). V2 is just a key.
@@ -33,15 +36,22 @@ If you don't want to sign up for an account you can exercise the API using the f
 
 ### Documentation
 Introduction https://cloudrf.com/documentation/introduction.html
+
 3D interface https://cloudrf.com/documentation/interface.html
+
 API 1 reference https://documenter.getpostman.com/view/3523402/7TFGb35
+
 API 2 reference https://docs.cloudrf.com
+
 User documentation: https://cloudrf.com/docs
+
 Video tutorials: https://youtube.com/cloudrfdotcom
 
 ## Code and examples
 
-[API v1 code and examples](API%20v1)
-
 [API v2 code and examples](API%20v2)
+
+[API v1 code and examples](API%20v1) DEPRECATED. TO BE RETIRED 1st Oct 2021.
+
+
 
