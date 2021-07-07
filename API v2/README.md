@@ -80,6 +80,13 @@ The receiver lat/lon is ZERO as this is an omni-directional plot.
 
 	python3 area.py -i 3sites.csv -t templates/drone.json
 
+###  Drone broadcast via AREA api and super layer with MESH api
+This will calculate 3 **point-to-multipoint** sites defined in the CSV file. Each site will be saved as a KMZ in the output folder.
+The sites will then be merged using the mesh API into a super layer which is also downloaded as a KMZ.
+WARNING: Use your own account OR an original network name in the CSV for this one as the '101' test account will likely contain random data.
+
+	python3 area.py -i 3sites.csv -t templates/drone.json -m APITEST1
+
 ### Drone link via PATH api
 This will calculate a single **point-to-point**, then display the JSON in the console and fetch the PNG chart to the output folder. 
 The receiver lat/lon is defined as this is a link.
