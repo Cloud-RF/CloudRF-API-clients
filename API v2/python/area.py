@@ -139,6 +139,7 @@ class App:
         parser.add_argument('-r', dest='save_response', action="store_true", help='save response content (json/html)')
         parser.add_argument('-v', dest='verbose', action="store_true", help='Output more information on screen')
         parser.add_argument('-t', dest='template', help='JSON template to use')
+        parser.add_argument('-m', dest='mesh', help='Merge layers into a super layer')
 
         # for unit testing it is useful to be able to pass arguments.
         if args is None:
@@ -225,7 +226,6 @@ class App:
         print('fetching calculations')
 
         self.row_count = 0
-
         for f in self.args.data_files:
             with open(f, 'r') as fp:
                 self.csv_data = csv.DictReader(fp)
@@ -244,9 +244,12 @@ class App:
                     responses.append(self.api.response)
 
             print('done.', flush=True)
+        if self.args.mesh:
+            self.api.mesh(self.args.mesh,"Merged")
         return responses
 
 
 if __name__ == '__main__':
     app = App()
     app.run_area()
+      

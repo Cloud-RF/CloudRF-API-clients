@@ -203,6 +203,15 @@ class CloudRFAPI:
 
 
 class CloudRFAPITemplated(CloudRFAPI):
+
+    def mesh(self, nid, mesh):
+        self.req = requests.get(f'{self.base_url}/mesh?network={nid}&name={mesh}', headers={'key': self.key}, verify=self.strict_ssl)
+        self.response = json.loads(self.req.content)
+        print(self.response)
+        self.download_from_archive("kmz")
+        
+
+
     def request(self, args, template=None):
         """Main request method
 
