@@ -118,10 +118,13 @@ class CloudRFAPI:
             raise Exception(f'API Error:{self.response["error"]}')
 
     def download_from_archive(self, fmt):
-        file = self.response['kmz'].split('file=')[1].split('&')[0]
         print(self.response['kmz'])
-        args = {'file': file, 'fmt': fmt}
-
+        if "sid=" in self.response['kmz']:
+          sid = self.response['kmz'].split('sid=')[1].split('&')[0]
+          args = {'sid': sid, 'fmt': fmt}
+        else:
+          file = self.response['kmz'].split('file=')[1].split('&')[0]
+          args = {'file': file, 'fmt': fmt}
         req = requests.get(f'{self.base_url}{self.archive_endpoint}', headers={'key': self.key, 'content-type': 'text'},
                            params=args, verify=self.strict_ssl)
         print(f'downloading from {req.url}')
@@ -193,7 +196,7 @@ class CloudRFAPI:
         sid = self.response["sid"]
         filepath = Path(self.download_dir) / f'{self.response["id"]}_{sid}.html'
 
-        req = requests.get(f'{self.base_url}/API/archive/embed.php?id={sid}', verify=self.strict_ssl)
+        req = requests.get(f'{self.base_url}/API/archive/embed.php?sid={sid}', verify=self.strict_ssl)
 
         print(f'saving {str(filepath)}')
         with open(filepath, 'wb') as fp:
@@ -209,7 +212,7 @@ class CloudRFAPITemplated(CloudRFAPI):
         self.response = json.loads(self.req.content)
         print(self.response)
         self.download_from_archive("kmz")
-        
+
 
 
     def request(self, args, template=None):
