@@ -18,7 +18,7 @@ class CloudRFAPI:
     Only the endpoint and response processing differenciates separate APIs.
     """
 
-    archive_endpoint = '/archive/export'
+    archive_endpoint = '/archive'
     # archive_endpoint = '/API/archive/data'  # v1
 
     def __init__(self, key, base_url=None, strict_ssl=True, save_response=False):
@@ -123,12 +123,11 @@ class CloudRFAPI:
           sid = self.response['kmz'].split('sid=')[1].split('&')[0]
           args = {'sid': sid, 'fmt': fmt}
         else:
-          file = self.response['kmz'].split('file=')[1].split('&')[0]
-          args = {'file': file, 'fmt': fmt}
-        req = requests.get(f'{self.base_url}{self.archive_endpoint}', headers={'key': self.key, 'content-type': 'text'},
-                           params=args, verify=self.strict_ssl)
+          file = self.response['kmz'].split('/')[-2]
+        req = requests.get(f'{self.base_url}{self.archive_endpoint}/{file}/{fmt}', headers={'key': self.key, 'content-type': 'text'},
+                         verify=self.strict_ssl)
         print(f'downloading from {req.url}')
-        print(f'response from {req.headers}')
+        #print(f'response from {req.headers}')
 
         filename = None
         if 'content-disposition' in req.headers:
