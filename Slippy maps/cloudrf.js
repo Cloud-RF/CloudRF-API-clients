@@ -63,8 +63,8 @@ var some_radio = {
       "ber": 0,
       "mod": 0,
       "nf": -114,
-      "res": 30,
-      "rad": 3
+      "res": 16,
+      "rad": 2
   }
 };
 
@@ -103,6 +103,34 @@ function AreaCallback(text,slippyMap){
     var boundsNESW = json.bounds; // CloudRF uses NORTH,EAST,SOUTH,WEST
     var  imageBounds = [[boundsNESW[2], boundsNESW[3]], [boundsNESW[0], boundsNESW[1]]];
     L.imageOverlay(json.PNG_Mercator, imageBounds).setOpacity(0.5).addTo(map);
+  }
+  if(slippyMap === "mapbox"){ // Leaflet bounds are SOUTH,WEST, NORTH, EAST
+    var boundsNESW = json.bounds; // CloudRF uses NORTH,EAST,SOUTH,WEST
+    var  imageBounds = [[boundsNESW[2], boundsNESW[3]], [boundsNESW[0], boundsNESW[1]]];
+    //L.imageOverlay(json.PNG_Mercator, imageBounds).setOpacity(0.5).addTo(map);
+    if(map.isSourceLoaded('cloudrf')){
+      map.removeLayer('cloudrf-layer');
+      map.removeSource('cloudrf');
+    }
+    map.addSource('cloudrf', {
+    'type': 'image',
+    'url': json.PNG_Mercator,
+    'coordinates': [
+    [boundsNESW[3], boundsNESW[0]],
+    [boundsNESW[1], boundsNESW[0]],
+    [boundsNESW[1], boundsNESW[2]],
+    [boundsNESW[3], boundsNESW[2]]
+    ]
+    });
+    map.addLayer({
+    id: 'cloudrf-layer',
+    'type': 'raster',
+    'source': 'cloudrf',
+    'paint': {
+    'raster-fade-duration': 0,
+    'raster-opacity': 0.5
+    }
+    });
   }
   if(slippyMap === "openlayers"){
     var boundsNESW = json.bounds; // CloudRF uses NORTH,EAST,SOUTH,WEST
