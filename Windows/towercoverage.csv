@@ -1,0 +1,2 @@
+covename,towersiteID,antennaheight,ClientAverageAntennaHeight,ClientAntennaGain,RxLineLoss,AntennaType,AntennaAzimuth,BeamwidthFilter,AntennaTilt,AntennaGain,Frequency,ExactCenterFrequency,TxPower,TxLineLoss,RxThreshold,RequiredReliability,StrongSignalMargin,StrongSignalColor,WeakSignalColor,Opacity,MaxRange,RenderingQuality,UseLandCover,UseTwoRays,CreateViewShed,lat,lon,frq,txw,ant,net
+site1,1234,10,2,2,0,93,75,90,0,13,2,,30,0,-80,75,5,00FF00,ffa200,50,15,4,True,False,False,38.937,1.4357,900,1,38,freedom

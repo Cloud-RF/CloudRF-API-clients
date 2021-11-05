@@ -192,12 +192,12 @@ class App:
             # if user section does not exist we create it with default value
             if 'user' not in config.sections():
                 config.add_section('user')
-                config['user']['key'] = 'CHANGEME'
+                config['user']['key'] = '101-IBIZA.DEMO.KEY'
                 config.add_section('api')
-                config['api']['strict_ssl'] = 'CHANGEME'
-                config['api']['base_url'] = 'CHANGEME'
+                config['api']['strict_ssl'] = 'True'
+                config['api']['base_url'] = 'https://api.cloudrf.com'
                 config.add_section('data')
-                config['data']['dir'] = ''
+                config['data']['dir'] = 'data'
                 with open('cloudrf.ini', 'w') as fp:
                     config.write(fp)
 
