@@ -41,8 +41,51 @@ User documentation: https://cloudrf.com/documentation
 
 Video tutorials: https://youtube.com/cloudrfdotcom
 
+## Examples
+
+### Point-to-multipoint "heatmap"  x3
+The CSV file contains the sites and the JSON file contains the template for the transmitter/receiver/environment etc. Unique values (Latitude,Longitude) belong in the CSV and common criteria (Frequency, Power) belong in the JSON.
+
+    python3 area.py -i 3sites.csv -t drone.json
+
+### Point-to-point link
+As before but this time a receiver location is defined.
+
+    python3 path.py -i link.csv -t drone.json
+    
+### Route analysis 
+A route of "points" is tested in a single call. The points object is an array of tuples (lat,lon,alt) in quotes as follows:
+"[(38.916, 1.411, 1), (38.919, 1.411, 1), (38.922, 1.411), (38.93, 1.427), (38.921, 1.448), (38.976, 1.44)]"
+
+    python3 points.py -i route.csv -t drone.json
+    
+### Network analysis
+A previously created network is tested against a customer location for service.
+This requires a network to exist in your account.
+
+    python3 network.py -i network.csv
+    
+## Advanced
+All programs come with a help menu which you can show with either -h or /?
+
+### Outputs
+Options vary by application but you can download outputs in different formats including KML, KMZ, GeoTIFF, SHP and ZIP.
+
+### Handling data where every row has unique values
+If there are no common criteria you can put every setting into a spreadsheet with unique column names and then use a 'custom' template with matching override tags on each option. You pick the column names - so long as they align to the right place in the JSON.
+
+## Ingesting data from Tower Coverage
+
+An example for using formatted data from Tower Coverage:
+
+    python3 area.py -i towercoverage.csv -t custom.json
+
+Note that the tower coverage API has Tx power in dBm and in CloudRF Tx the unit is Watts. Antenna codes are unique to the system so will also need re-mapping.
+A calculator is here: https://www.rapidtables.com/convert/power/dBm_to_Watt.html
+
 ## Code and examples
 
 We have example clients for Bash, Python, OpenLayers and LeafletJS.
 If you'd like one adding email support@cloudrf.com
+
 
