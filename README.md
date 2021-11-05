@@ -14,6 +14,64 @@ You will be responsible for your account and how it is used.
 A standard HTTP request with a JSON body with authentication in the HTTP header as a 'key'. The JSON body is a nested object with human readable sections eg. Transmitter->Antenna, Receiver->Antenna.
 
 
+# Hello world!
+This simple cURL command creates a 5km radius point-to-multipoint at 25m resolution.  
+
+    curl --location --request POST 'https://api.cloudrf.com/area' \
+    --header 'key: 101-IBIZA.DEMO.KEY' \
+    --data-raw '{
+        "site": "VHF160",
+        "network": "APITEST",
+        "transmitter": {
+            "lat": 38.916,
+            "lon": 1.448,
+            "alt": 12,
+            "frq": 160,
+            "txw": 5,
+            "bwi": 0.1
+        },
+        "receiver": {
+            "lat": 0,
+            "lon": 0,
+            "alt": 0.1,
+            "rxg": 2.15,
+            "rxs": -100
+        },
+        "antenna": {
+            "txg": 2.15,
+            "txl": 0,
+            "ant": 1,
+            "azi": 0,
+            "tlt": 0,
+            "hbw": 0,
+            "vbw": 0,
+            "pol": "v"
+        },
+        "model": {
+            "pm": 1,
+            "pe": 2,
+            "cli": 6,
+            "ked": 0,
+            "rel": 95,
+            "ter": 4
+        },
+        "environment": {
+            "clm": 1,
+            "cll": 2,
+            "mat": 0.25
+        },
+        "output": {
+            "units": "metric",
+            "col": "RAINBOW.dBm",
+            "out": 2,
+            "ber": 0,
+            "mod": 0,
+            "nf": -114,
+            "res": 25,
+            "rad": 5
+        }
+    }'
+
 ### Authentication
 Authentication is required and looks like a long string which starts with a number, then a hyphen, then a long random string eg. 123-deadbeef
 You should protect your API key as it can be used to create, view and delete calculations associated with your account.
