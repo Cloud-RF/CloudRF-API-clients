@@ -1,0 +1,51 @@
+{
+    "site": "{{covename}}",
+    "network": "{{net}}",
+    "transmitter": {
+        "lat": {{lat}},
+        "lon": {{lon}},
+        "alt": {{antennaheight}},
+        "frq": {{frq}},
+        "txw": {{txw}},
+        "bwi": 0.1
+    },
+    "points": [],
+    "receiver": {
+        "alt": {{ClientAverageAntennaHeight}},
+        "rxg": {{ClientAntennaGain}},
+        "rxs": {{RxThreshold}}
+    },
+    "antenna": {
+        "txg": {{AntennaGain}},
+        "txl": {{TxLineLoss}},
+        "ant": {{ant}},
+        "azi": {{AntennaAzimuth}},
+        "tlt": {{AntennaTilt}},
+        "hbw": 0,
+        "vbw": 0,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 1,
+        "pe": 2,
+        "cli": 6,
+        "ked": 0,
+        "rel": 99,
+        "ter": 4
+    },
+    "environment": {
+        "clm": 1,
+        "cll": 2,
+        "mat": 0.1
+    },
+    "output": {
+        "units": "metric",
+        "col": "RAINBOW.dBm",
+        "out": 2,
+        "ber": 0,
+        "mod": 0,
+        "nf": -115,
+        "res": 25,
+        "rad": {{MaxRange}}
+    }
+}
