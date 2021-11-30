@@ -15,8 +15,8 @@ var key = "101-IBIZA.DEMO.KEY"; // Look after your API key. You can hide it by p
 // You can edit this JSON template using any parameter from https://docs.cloudrf.com
 // For extra points, create multiple templates to have many radios in your tool
 
-var some_radio = {
-  "site": "PMR",
+var template = {
+  "site": "DEMO",
   "network": "DEMO",
   "transmitter": {
       "lat": 38.916,
@@ -68,6 +68,7 @@ var some_radio = {
   }
 };
 
+// Simplest use. Point-to-multimpoint around a location with fixed settings
 function createRFLayer(lat,lon,map){
   /*
   1. Fetch a template
@@ -75,11 +76,45 @@ function createRFLayer(lat,lon,map){
   3. Send to api
   4. Put on map
   */
-  some_radio.transmitter.lat = lat;
-  some_radio.transmitter.lon = lon;
+  template.transmitter.lat = lat;
+  template.transmitter.lon = lon;
 
-  var template = JSON.stringify(some_radio);
-  CloudRFAreaAPI(template,map);
+  var JSONtemplate = JSON.stringify(template);
+  CloudRFAreaAPI(JSONtemplate,map);
+}
+
+// Advanced use. Point-to-multipoint with antenna azimuth and customised parameters
+function createRFSector(lat,lon,azi,txh,col,map){
+  /*
+  1. Fetch a template
+  2. Apply any variables like latitude, longitude, altitude
+  3. Send to api
+  4. Put on map
+  */
+  template.transmitter.lat = lat;
+  template.transmitter.lon = lon;
+  template.transmitter.alt = txh;
+  template.transmitter.frq = 1800;
+
+  // Antenna settings for 120 deg panel
+  template.antenna.txg = 12;
+  template.antenna.azi = azi;
+  template.antenna.tlt = 0;
+  template.antenna.ant = 16322; // COMMSCOPE_HBX-6516DS-VTM_2110_00NELH04NQT804JQWB.ADF
+  template.antenna.hbw = 120;
+  template.antenna.vbw = 60;
+
+  // Colour key is GREEN #2
+  template.output.col = col;
+  template.output.rad = 3;
+  template.output.res = 10;
+
+  // Mobile UE
+  template.receiver.rxs = -105;
+  template.receiver.rxg = 1;
+
+  var JSONtemplate = JSON.stringify(template);
+  CloudRFAreaAPI(JSONtemplate,map);
 }
 
 function CloudRFAreaAPI(request,slippyMap){
