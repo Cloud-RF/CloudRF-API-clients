@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="cloudrf.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.7.0/build/ol.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.7.0/css/ol.css">
+<title>Openlayers CloudRF demo</title>
+  <style>
+    .map {
+      width: 100%;
+      height:400px;
+    }
+    body{
+      font-family: Arial;
+    }
+  </style>
+</head>
+<body>
+  <h2>Openlayers CloudRF demo</h2>
+  <div id="map" class="map"></div>
+  <script type="text/javascript">
+    var raster = new ol.layer.Tile({ source: new ol.source.OSM()});
+    var source = new ol.source.Vector({wrapX: false});
+    var vector = new ol.layer.Vector({source: source});
+    var map = new ol.Map({
+      target: 'map',
+      layers: [raster,vector],
+      view: new ol.View({
+        center: ol.proj.fromLonLat([1.448, 38.916]),
+        projection: 'EPSG:3857',
+        zoom: 12
+      })
+    });
+    draw = new ol.interaction.Draw({
+      source: source,
+      type: "Point",
+    });
+    map.addInteraction(draw);
+    // Capture clicks
+    map.on('click', function(evt){
+        var point = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
+        console.log(point);
+        createRFLayer(point[1],point[0],"openlayers");
+    });
+  </script>
+  Click the map to add RF coverage. To change settings, edit the template within cloudrf.js<br>
+  API reference: <a href="https://docs.cloudrf.com">docs.cloudrf.com</a>
+</body>
+</html>
