@@ -6,26 +6,20 @@ An internet connection and account at https://cloudrf.com is required.
 
 ![Ibiza VHF coverage with 3D buildings ](https://cloudrf.com/files/ibiza.vhf.jpg)
 ### Commercial use
-You are free to use this API in commercial apps, even ones where you charge customers. 
-Attribution is welcomed but not required.
+You are free to use this API in commercial apps, even ones where you charge customers, but you **must provide attribution to CloudRF**. If you want an exemption, you need to request written permission via support@cloudrf.com
 Full terms and conditions are here: https://cloudrf.com/terms-and-conditions
-You will be responsible for your account and how it is used. 
+You will be responsible for your account and how it is used.
 
 ####  API technical description
 A standard HTTP request with a JSON body with authentication in the HTTP header as a 'key'. The JSON body is a nested object with human readable sections eg. Transmitter->Antenna, Receiver->Antenna.
 
-API endpoints are versioned as /v1/ for the legacy API and /v2/ for the current API.
-
-## /v2 OpenAPI 3.0 specification (Swagger)
+## OpenAPI 3.0 specification (Swagger)
 https://cloudrf.com/documentation/developer/swagger-ui/
-
-### /v1 Legacy API
-The legacy API with the long URLs was deprecated in June 2021. Documentation is [here](https://documenter.getpostman.com/view/3523402/7TFGb35)
 
 # Hello world!
 This simple cURL command creates a 5km radius point-to-multipoint at 25m resolution.  
 
-    curl --location --request POST 'https://api.cloudrf.com/v2/area' \
+    curl --location --request POST 'https://api.cloudrf.com/area' \
     --header 'key: 101-IBIZA.DEMO.KEY' \
     --data-raw '{
         "site": "VHF160",
@@ -153,6 +147,5 @@ A calculator is here: https://www.rapidtables.com/convert/power/dBm_to_Watt.html
 
 We have example clients for Bash, Python, OpenLayers and LeafletJS.
 If you'd like one adding email support@cloudrf.com
-
 
 
