@@ -1,0 +1,53 @@
+{
+    "site": "{{nam}}",
+    "network": "{{net}}",
+    "transmitter": {
+        "lat": {{lat}},
+        "lon": {{lon}},
+        "alt": {{alt}},
+        "frq": 446.997,
+        "txw": 0.1,
+        "bwi": 0.1
+    },
+    "points": [],
+    "receiver": {
+        "lat": {{rlat}},
+        "lon": {{rlon}},
+        "alt": {{ralt}},
+        "rxg": 2.15,
+        "rxs": -100
+    },
+    "antenna": {
+        "txg": 2.15,
+        "txl": 0,
+        "ant": 1,
+        "azi": 0,
+        "tlt": 0,
+        "hbw": 0,
+        "vbw": 0,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 1,
+        "pe": 2,
+        "cli": 6,
+        "ked": 0,
+        "rel": 95,
+        "ter": 4
+    },
+    "environment": {
+        "clm": 1,
+        "cll": 2,
+        "mat": 0.25
+    },
+    "output": {
+        "units": "metric",
+        "col": "RAINBOW.dBm",
+        "out": 2,
+        "ber": 0,
+        "mod": 0,
+        "nf": -114,
+        "res": 30,
+        "rad": 5
+    }
+}

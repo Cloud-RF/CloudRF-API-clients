@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Leaflet CloudRF demo</title>
+  <script src="cloudrf.js"></script>
+	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+  <style>
+    .map {
+      width: 100%;
+      height:400px;
+    }
+    body{
+      font-family: Arial;
+    }
+  </style>
+</head>
+<body>
+	<center>
+  <h2>Leaflet cell-tower CloudRF demo</h2>
+<div id="mapid" style="width: 800px; height: 600px;"></div>
+<script>
+
+	var map = L.map('mapid').setView([38.92609, 1.4406], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+	function onMapClick(e) {
+		  var crfOptions = e.sourceTarget.options.cloudrf;
+			console.log(crfOptions);
+      createRFSector(crfOptions.lat,crfOptions.lon,crfOptions.azi,crfOptions.txh,crfOptions.col,"leaflet");
+	}
+
+	var latlngs = [[38.92609, 1.4406],[38.931382, 1.429067],[38.93055,1.4506]]; // N
+	L.polygon(latlngs, {color: 'red',
+	cloudrf: {'azi': 0, 'lat': 38.92609, 'lon': 1.4406, 'txh': 15, 'col': 2}
+	}).addTo(map).on("click",onMapClick);
+
+	var latlngs = [[38.92609, 1.4406],[38.93055,1.4506],[38.91695,1.4406]]; // SE
+	L.polygon(latlngs, {color: 'green',
+	cloudrf: {'azi': 120, 'lat': 38.92609, 'lon': 1.4406, 'txh': 15, 'col': 3}
+	}).addTo(map).on("click",onMapClick);
+
+	var latlngs = [[38.92609, 1.4406],[38.931382, 1.429067],[38.91695,1.4406]]; // SW
+	L.polygon(latlngs, {color: 'blue',
+	cloudrf: {'azi': 240, 'lat': 38.92609, 'lon': 1.4406, 'txh': 15, 'col': 4}
+	}).addTo(map).on("click",onMapClick);
+
+
+</script>
+<h3>Click the shapes</h3>
+In this demo, polygons on the map, representing cell tower panels, have been assigned custom attributes like azimuth.<br>These are used to customise a 'cellular template prior to sending on the CloudRF API.<br>
+<br>
+API reference: <a href="https://docs.cloudrf.com">docs.cloudrf.com</a>
+</body>
+</html>
