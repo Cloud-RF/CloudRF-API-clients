@@ -1,0 +1,49 @@
+<html>
+<h1>HTML area coverage APIv1 example</h1>
+This demo returns a JSON object. You will need to parse this to get the metadata or PNG image you need.
+<br>
+View the source to see the fields you need to define. You need to set UID and KEY before this will work.
+<h3><a href="https://documenter.getpostman.com/view/3523402/7TFGb35">https://documenter.getpostman.com/view/3523402/7TFGb35</a></h3>
+<form target="_result" method="post" action="https://api.cloudrf.com/v1/area">
+
+<!-- AUTHENTICATION -->
+<input type="hidden" name="key" value="IBIZA.DEMO.KEY"/>
+<input type="hidden" name="uid" value="101"/>
+
+<!-- DEFAULT VALUES -->
+<input type="hidden" name="txg" value="5"/>
+<input type="hidden" name="ant" value="38"/>
+<input type="hidden" name="azi" value="0"/>
+<input type="hidden" name="col" value="10"/>
+<input type="hidden" name="cll" value="0"/>
+<input type="hidden" name="cli" value="5"/>
+<input type="hidden" name="rxs" value="-120"/>
+<input type="hidden" name="dis" value="m"/>
+<input type="hidden" name="fmt" value="1"/>
+<input type="hidden" name="nam" value="Tx"/>
+<input type="hidden" name="net" value="Testing"/>
+<input type="hidden" name="out" value="2"/>
+<input type="hidden" name="rad" value="5"/>
+<input type="hidden" name="rxh" value="2"/>
+<input type="hidden" name="res" value="30"/>
+<input type="hidden" name="tlt" value="0"/>
+<input type="hidden" name="ter" value="15"/>
+<input type="hidden" name="file" value="kmz"/>
+<input type="hidden" name="pm" value="1"/>
+<input type="hidden" name="ked" value="1"/>
+<!-- USER DEFINED VALUES -->
+
+
+<h3>Tx</h3>
+<table>
+<tr><td>Lat<td><input value="38.91" type="text" name="lat"/>
+<tr><td>Lon<td><input value="1.433" type="text" name="lon"/>
+<tr><td>Height<td><input value="2" type="text" name="txh"/>m
+<tr><td>Freq<td><input value="868" type="text" name="frq"/>MHz
+<tr><td>Power<td><input value="0.1" type="text" name="txw"/>W
+</table>
+
+<input type="submit" value="Calculate"/>
+</form>
+
+</html>
