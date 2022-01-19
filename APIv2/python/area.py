@@ -227,7 +227,7 @@ class App:
 
         self.row_count = 0
         for f in self.args.data_files:
-            with open(f, 'r') as fp:
+            with open(f, 'rU') as fp:
                 self.csv_data = csv.DictReader(fp)
 
                 self.csv_rows = [row for row in self.csv_data]
