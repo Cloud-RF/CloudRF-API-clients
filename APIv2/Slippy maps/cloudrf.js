@@ -68,6 +68,63 @@ var template = {
   }
 };
 
+// Contains an array of points for the points API
+// https://cloudrf.com/documentation/developer/swagger-ui/#/Create/points
+var multipointTemplate = {
+  "site": "DEMO",
+  "network": "DEMO",
+  "transmitter": {
+      "lat": 38.916,
+      "lon": 1.448,
+      "alt": 15,
+      "frq": 3400,
+      "txw": 1,
+      "bwi": 0.1
+  },
+  "points":[
+  ]
+  ,
+  "receiver": {
+      "lat": 0,
+      "lon": 0,
+      "alt": 15,
+      "rxg": 12,
+      "rxs": -90
+  },
+  "antenna": {
+      "txg": 12,
+      "txl": 0,
+      "ant": 39,
+      "azi": 0,
+      "tlt": 0,
+      "hbw": 0,
+      "vbw": 0,
+      "pol": "v"
+  },
+  "model": {
+      "pm": 1,
+      "pe": 2,
+      "cli": 6,
+      "ked": 0,
+      "rel": 95,
+      "ter": 4
+  },
+  "environment": {
+      "clm": 0,
+      "cll": 2,
+      "clt": "Minimal.clt"
+  },
+  "output": {
+      "units": "metric",
+      "col": "RAINBOW.dBm",
+      "out": 2,
+      "ber": 0,
+      "mod": 0,
+      "nf": -114,
+      "res": 8,
+      "rad": 2
+  }
+};
 // Simplest use. Point-to-multimpoint around a location with fixed settings
 function createRFLayer(lat,lon,map){
   /*
@@ -82,6 +139,26 @@ function createRFLayer(lat,lon,map){
   var JSONtemplate = JSON.stringify(template);
   CloudRFAreaAPI(JSONtemplate,map);
 }
+
+// Points API. One AP to many CPE
+function createPoints(rxLat,rxLon,points,map){
+  /*
+  1. Fetch a template
+  2. Apply any variables like latitude, longitude, altitude
+  3. Send to api
+  4. Put on map
+  */
+  multipointTemplate.receiver.lat = rxLat;
+  multipointTemplate.receiver.lon = rxLon;
+
+  // Add the CPE array :)
+  multipointTemplate.points = points;
+
+  var JSONtemplate = JSON.stringify(multipointTemplate);
+  console.log(JSONtemplate);
+  CloudRFPointsAPI(JSONtemplate,map);
+}
+
 
 // Advanced use. Point-to-multipoint with antenna azimuth and customised parameters
 function createRFSector(lat,lon,azi,txh,col,map){
@@ -130,6 +207,56 @@ function CloudRFAreaAPI(request,slippyMap){
   xhr.send(request);
 }
 
+function CloudRFPointsAPI(request,slippyMap){
+  var xhr = new XMLHttpRequest();
+  xhr.withCredentials = false;
+  xhr.addEventListener("readystatechange", function() {
+    if(this.readyState === 4) {
+      PointsCallback(this.responseText,slippyMap);
+    }
+  });
+  xhr.open("POST", "https://api.cloudrf.com/points");
+  xhr.setRequestHeader("key", key);
+  xhr.send(request);
+}
+
+// Leaflet only :p
+function PointsCallback(text){
+
+  // Clear the map first
+  map.eachLayer((layer) => {
+    if(layer.options.title === "link"){
+        map.removeLayer(layer);
+    }
+  })
+
+  var json =  JSON.parse(text);
+  var rxlat = json.Receiver[0].Latitude;
+  var rxlon = json.Receiver[0].Longitude;
+
+  for(i=0;i<json.Transmitters.length;i++){
+    cpelat = json.Transmitters[i].Latitude;
+    cpelon = json.Transmitters[i].Longitude;
+
+    var latlngs = [
+    [rxlat, rxlon],
+    [cpelat, cpelon]
+    ];
+
+    // Signal strength test
+    style='red';
+    threshold1 = -90;
+    threshold2 = -70;
+    if(json.Transmitters[i]["Signal power at receiver dBm"] > threshold1){
+      style='orange';
+    }
+    if(json.Transmitters[i]["Signal power at receiver dBm"] > threshold2){
+      style='green';
+    }
+    // Draw a line
+    var polyline = L.polyline(latlngs, {color: style, title: "link"}).addTo(map);
+  }
+}
 // Leaflet and openlayers methods
 function AreaCallback(text,slippyMap){
   var json =  JSON.parse(text);
