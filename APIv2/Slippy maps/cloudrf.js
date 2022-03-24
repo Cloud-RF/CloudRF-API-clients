@@ -11,7 +11,29 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 */
 var key = "101-IBIZA.DEMO.KEY"; // Look after your API key. You can hide it by putting a proxy script
 
+// Converts from degrees to radians.
+function toRadians(degrees) {
+  return degrees * Math.PI / 180;
+};
+ 
+// Converts from radians to degrees.
+function toDegrees(radians) {
+  return radians * 180 / Math.PI;
+}
+// For directional antennas 
+function bearing(startLat, startLng, destLat, destLng){
+  startLat = toRadians(startLat);
+  startLng = toRadians(startLng);
+  destLat = toRadians(destLat);
+  destLng = toRadians(destLng);
 
+  y = Math.sin(destLng - startLng) * Math.cos(destLat);
+  x = Math.cos(startLat) * Math.sin(destLat) -
+        Math.sin(startLat) * Math.cos(destLat) * Math.cos(destLng - startLng);
+  brng = Math.atan2(y, x);
+  brng = toDegrees(brng);
+  return (brng + 360) % 360;
+}
 // You can edit this JSON template using any parameter from https://docs.cloudrf.com
 // For extra points, create multiple templates to have many radios in your tool
 
@@ -194,6 +216,19 @@ function createRFSector(lat,lon,azi,txh,col,map){
   CloudRFAreaAPI(JSONtemplate,map);
 }
 
+function CloudRFPathAPI(request,slippyMap){
+  var xhr = new XMLHttpRequest();
+  xhr.withCredentials = false;
+  xhr.addEventListener("readystatechange", function() {
+    if(this.readyState === 4) {
+      PathCallback(this.responseText,slippyMap);
+    }
+  });
+  xhr.open("POST", "https://api.cloudrf.com/path");
+  xhr.setRequestHeader("key", key);
+  xhr.send(request);
+}
+
 function CloudRFAreaAPI(request,slippyMap){
   var xhr = new XMLHttpRequest();
   xhr.withCredentials = false;
@@ -218,6 +253,47 @@ function CloudRFPointsAPI(request,slippyMap){
   xhr.open("POST", "https://api.cloudrf.com/points");
   xhr.setRequestHeader("key", key);
   xhr.send(request);
+}
+
+// Leaflet only :p
+function PathCallback(text){
+
+  // Clear the map first
+  map.eachLayer((layer) => {
+    if(layer.options.title === "link"){
+        map.removeLayer(layer);
+    }
+  })
+
+  var json =  JSON.parse(text);
+  var rxlat = json.Receiver[0].Latitude;
+  var rxlon = json.Receiver[0].Longitude;
+  var txlat = json.Transmitters[0].Latitude;
+  var txlon = json.Transmitters[0].Longitude;
+
+  var latlngs = [
+  [rxlat, rxlon],
+  [txlat, txlon]
+  ];
+  console.log(json);
+
+  // Signal strength test
+  style='red';
+  threshold1 = -90;
+  threshold2 = -70;
+  if(json.Transmitters[0]["Signal power at receiver dBm"] > threshold1){
+    style='orange';
+  }
+  if(json.Transmitters[0]["Signal power at receiver dBm"] > threshold2){
+    style='green';
+  }
+  // Draw a line
+  var polyline = L.polyline(latlngs, {color: style, title: "link"}).addTo(map);
+
+  // Pull the PNG image
+  document.getElementById("chart").innerHTML = "<img src='"+json["Chart image"]+"'/>";
+  document.getElementById("report").innerHTML = "<textarea rows='20' cols='100'>"+JSON.stringify(json, undefined, 4)+"</textarea>";
+
 }
 
 // Leaflet only :p
@@ -257,6 +333,7 @@ function PointsCallback(text){
     var polyline = L.polyline(latlngs, {color: style, title: "link"}).addTo(map);
   }
 }
+
 // Leaflet and openlayers methods
 function AreaCallback(text,slippyMap){
   var json =  JSON.parse(text);
