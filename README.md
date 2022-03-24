@@ -4,6 +4,10 @@ These code examples will automate the your RF modelling and integrate your app(s
 Designed for any operating system with examples for Linux, MacOS and Windows they can be operated as standalone apps or with a spreadsheet of data in CSV and JSON formats.
 An internet connection and account at https://cloudrf.com is required.
 
+## PATH DEMO
+A live demo of a lightweight "point to point" capability using radio templates to hide complexity and reduce error.
+https://cloud-rf.github.io/CloudRF-API-clients/APIv2/Slippy%20maps/leaflet_path.html
+
 ![Ibiza VHF coverage with 3D buildings ](https://cloudrf.com/files/ibiza.vhf.jpg)
 ### Commercial use
 You are free to use this API in commercial apps, even ones where you charge customers. 
