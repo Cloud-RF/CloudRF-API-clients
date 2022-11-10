@@ -1,0 +1,69 @@
+{
+    "version": "CloudRF-API-v3.4.0",
+    "reference": "https://cloudrf.com/documentation/developer/swagger-ui/",
+    "template": {
+        "name": "Trellisware-950-SBand",
+        "service": "SOOTHSAYER https://dev.cloudrf.com",
+        "created_at": "2022-11-09T11:50:28+00:00",
+        "owner": "1",
+        "bom_value": 0
+    },
+    "site": "TW950",
+    "network": "TSM",
+    "engine": 2,
+    "coordinates": 1,
+    "transmitter": {
+        "lat": 50.78859,
+        "lon": -1.130298,
+        "alt": 1,
+        "frq": 2500,
+        "txw": 1,
+        "bwi": 0.1,
+        "powerUnit": "W"
+    },
+    "receiver": {
+        "lat": 50.78611438537993,
+        "lon": -1.1432767173634943,
+        "alt": 1,
+        "rxg": 2,
+        "rxs": 10
+    },
+    "feeder": {
+        "flt": "1",
+        "fll": 0,
+        "fcc": 0
+    },
+    "antenna": {
+        "mode": "template",
+        "txg": 2,
+        "txl": 0,
+        "ant": 39,
+        "azi": 0,
+        "tlt": 0,
+        "hbw": 120,
+        "vbw": 120,
+        "fbr": 2,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 11,
+        "pe": 2,
+        "ked": 1,
+        "rel": 90
+    },
+    "environment": {
+        "clm": 0,
+        "cll": 2,
+        "clt": "Minimal.clt"
+    },
+    "output": {
+        "units": "m",
+        "col": "SNR.dB",
+        "out": 4,
+        "ber": 1,
+        "mod": 0,
+        "nf": -120,
+        "res": 5,
+        "rad": 2
+    }
+}
