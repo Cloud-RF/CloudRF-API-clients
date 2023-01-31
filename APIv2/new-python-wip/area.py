@@ -3,9 +3,36 @@ import argparse
 import json
 import os
 import pathlib
+import requests
 import stat
 import sys
 import textwrap
+import urllib3
+
+def areaCalculation(jsonData):
+    try:
+        response = requests.post(
+            url = str(arguments.base_url).rstrip('/') + '/area',
+            headers = {
+                'key': arguments.api_key
+            },
+            json = jsonData,
+            verify = arguments.strict_ssl
+        )
+        if response.status_code != 200:
+            print('An HTTP %d error occurred with your request. Full response from the CloudRF API is listed below.' % response.status_code)
+            print(response.text)
+
+            if response.status_code == 400:
+                sys.exit('You likely have bad values in your input JSON/CSV. For good examples please consult https://github.com/Cloud-RF/CloudRF-API-clients')
+            if response.status_code == 401:
+                sys.exit('Your API is likely incorrect.')
+            if response.status_code == 500:
+                sys.exit('A problem with the CloudRF API service appears to have occurred.')
+        else:
+            print(response.text)
+    except requests.exceptions.SSLError:
+        sys.exit('SSL error occurred. This is common with self-signed certificates. You can try disabling SSL verification with --no-strict-ssl.')
 
 def checkPermissions():
     if not os.path.exists(arguments.input_template):
@@ -98,6 +125,10 @@ if __name__ == '__main__':
         parser.print_help()
         print()
 
+    if not arguments.strict_ssl:
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
     checkPermissions()
     jsonTemplate = checkValidJsonTemplate()
 
+    areaCalculation(jsonTemplate)
