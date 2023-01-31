@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import json
 import os
 import pathlib
 import stat
@@ -32,8 +33,19 @@ def checkPermissions():
         testFilePath = str(arguments.output_directory).rstrip('/') + '/tmp'
         open(testFilePath, 'a')
         os.remove(testFilePath)
-    except(PermissionError):
+    except PermissionError:
         sys.exit('Unable to create files in output directory (%s)' % arguments.output_directory)
+
+def checkValidJsonTemplate():
+    try:
+        with open(arguments.input_template, 'r') as jsonTemplateFile:
+            return json.load(jsonTemplateFile)
+    except PermissionError:
+        sys.exit('Permission error when trying to read input template JSON file (%s)' % arguments.input_template)
+    except json.decoder.JSONDecodeError:
+        sys.exit('Input template JSON file (%s) is not a valid JSON file.' % arguments.input_template)
+    except:
+        sys.exit('An unknown error occurred when checking input template JSON file (%s)' % (arguments.input_template))
 
 class PythonValidator:
     def version():
@@ -87,4 +99,4 @@ if __name__ == '__main__':
         print()
 
     checkPermissions()
-
+    jsonTemplate = checkValidJsonTemplate()
