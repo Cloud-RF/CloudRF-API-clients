@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import requests
+import shutil
 import stat
 import sys
 import textwrap
@@ -13,6 +14,7 @@ import urllib3
 def areaCalculation(jsonData):
     now = datetime.datetime.now()
     requestName = now.strftime('%Y%m%d%H%M%S_' + now.strftime('%f')[:3])
+    fullSaveBasePath = str(arguments.output_directory).rstrip('/') + '/' + requestName
 
     try:
         response = requests.post(
@@ -34,17 +36,22 @@ def areaCalculation(jsonData):
             if response.status_code == 500:
                 sys.exit('A problem with the CloudRF API service appears to have occurred.')
         else:
-            print('WIP - Save the actual outputs')
+            # Save the output based on what was requested
+            if arguments.output_file_type == 'all':
+                for type in allowedTypes:
+                    getOutputFile(response.text, type, fullSaveBasePath)
+            else:
+                getOutputFile(response.text, arguments.output_file_type, fullSaveBasePath)
 
         if arguments.verbose:
             print(response.text)
         
         if arguments.save_raw_response:
-            fullSavePath = str(arguments.output_directory).rstrip('/') + '/' + requestName + '.json'
-            with open(fullSavePath, 'w') as rawResponseFile:
+            jsonFilePath = fullSaveBasePath + '.json'
+            with open(jsonFilePath, 'w') as rawResponseFile:
                 rawResponseFile.write(response.text)
 
-            print('Response saved at ' + fullSavePath)
+            print('Raw response saved at ' + jsonFilePath)
         
     except requests.exceptions.SSLError:
         sys.exit('SSL error occurred. This is common with self-signed certificates. You can try disabling SSL verification with --no-strict-ssl.')
@@ -114,6 +121,33 @@ class PythonValidator:
                 )
             )
 
+def getOutputFile(rawJson, outputType, saveBasePath):
+    print('Getting output file: ' + outputType)
+
+    responseJson = json.loads(rawJson)
+
+    if outputType == 'png':
+        # PNG links exist already in the response JSON so we can just grab them from there
+        streamToFile(responseJson['PNG_Mercator'], saveBasePath + '.3857.png')
+        print('3857 projected PNG saved to ' + saveBasePath + '.3857.png')
+        streamToFile(responseJson['PNG_WGS84'], saveBasePath + '.4326.png')
+        print('4326 projected PNG saved to ' + saveBasePath + '.4326.png')
+    else:
+        # Anything else we just pull out of the archive
+        savePath = saveBasePath + '.' + outputType
+        streamToFile(
+            url = str(arguments.base_url).rstrip('/') + '/archive/' + responseJson['sid'] + '/' + outputType,
+            savePath = savePath
+        )
+        print('%s file saved to %s' % (outputType, savePath))
+
+def streamToFile(url, savePath):
+    response = requests.get(url, stream = True, verify = arguments.strict_ssl)
+    with open(savePath, 'wb') as outputFile:
+        shutil.copyfileobj(response.raw, outputFile)
+    del response
+    return savePath
+
 def verboseLog(message):
     if arguments.verbose:
         print(message)
@@ -124,6 +158,8 @@ class ArgparseCustomFormatter(argparse.RawDescriptionHelpFormatter, argparse.Arg
 
 if __name__ == '__main__':
     PythonValidator.version()
+
+    allowedTypes = ['kmz', 'png', 'shp', 'tiff']
 
     # Argument parsing
     parser = argparse.ArgumentParser(
@@ -146,6 +182,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-strict-ssl', dest = 'strict_ssl', action="store_false", default = True, help = 'Do not verify the SSL certificate to the CloudRF API service.')
     parser.add_argument('-r', '--save-raw-response', dest = 'save_raw_response', default = False, action = 'store_true', help = 'Save the raw response from the CloudRF API service. This is saved to the --output-directory value.')
     parser.add_argument('-o', '--output-directory', dest = 'output_directory', default = currentScriptPath, help = 'Absolute directory path of where outputs are saved.')
+    parser.add_argument('-s', '--output-file-type', dest = 'output_file_type', choices = ['all'] + allowedTypes, help = 'Type of file to be downloaded.', default = 'kmz')
     parser.add_argument('-v', '--verbose', action="store_true", default = False, help = 'Output more information on screen. This is often useful when debugging.')
 
     arguments = parser.parse_args()
@@ -170,3 +207,5 @@ if __name__ == '__main__':
         jsonTemplate['receiver']['lon'] = 0
 
     areaCalculation(jsonTemplate)
+
+    print('Process completed. Please check your output folder (%s)' % arguments.output_directory)
