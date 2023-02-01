@@ -34,6 +34,19 @@ def areaCalculation(jsonData):
     except requests.exceptions.SSLError:
         sys.exit('SSL error occurred. This is common with self-signed certificates. You can try disabling SSL verification with --no-strict-ssl.')
 
+def checkApiKey():
+    parts = str(arguments.api_key).split('-')
+    externalPrompt = 'Please make sure that you are using the correct key from https://cloudrf.com/my-account'
+
+    if len(parts) != 2:
+        sys.exit('Your API key appears to be in the incorrect format. ' + externalPrompt)
+
+    if not parts[0].isnumeric():
+        sys.exit('Your API key UID component appears to be incorrect. ' + externalPrompt)
+
+    if len(parts[1]) < 30:
+        sys.exit('Your API key token component appears to be incorrect. ' + externalPrompt)
+
 def checkPermissions():
     if not os.path.exists(arguments.input_template):
         sys.exit('Your input template JSON file (%s) could not be found. Please check your path. Please note that this should be in absolute path format.' % arguments.input_template)
@@ -128,6 +141,7 @@ if __name__ == '__main__':
     if not arguments.strict_ssl:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+    checkApiKey()
     checkPermissions()
     jsonTemplate = checkValidJsonTemplate()
 
