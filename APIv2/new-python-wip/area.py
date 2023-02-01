@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import datetime
 import json
 import os
 import pathlib
@@ -10,6 +11,9 @@ import textwrap
 import urllib3
 
 def areaCalculation(jsonData):
+    now = datetime.datetime.now()
+    requestName = now.strftime('%Y%m%d%H%M%S_' + now.strftime('%f')[:3])
+
     try:
         response = requests.post(
             url = str(arguments.base_url).rstrip('/') + '/area',
@@ -30,7 +34,18 @@ def areaCalculation(jsonData):
             if response.status_code == 500:
                 sys.exit('A problem with the CloudRF API service appears to have occurred.')
         else:
+            print('WIP - Save the actual outputs')
+
+        if arguments.verbose:
             print(response.text)
+        
+        if arguments.save_raw_response:
+            fullSavePath = str(arguments.output_directory).rstrip('/') + '/' + requestName + '.json'
+            with open(fullSavePath, 'w') as rawResponseFile:
+                rawResponseFile.write(response.text)
+
+            print('Response saved at ' + fullSavePath)
+        
     except requests.exceptions.SSLError:
         sys.exit('SSL error occurred. This is common with self-signed certificates. You can try disabling SSL verification with --no-strict-ssl.')
 
@@ -129,7 +144,8 @@ if __name__ == '__main__':
     parser.add_argument('-k', '--api-key', dest = 'api_key', required = True, help = 'Your API key to the CloudRF API service.')
     parser.add_argument('-u', '--base-url', dest = 'base_url', default = 'https://api.cloudrf.com/', help = 'The base URL for the CloudRF API service.')
     parser.add_argument('--no-strict-ssl', dest = 'strict_ssl', action="store_false", default = True, help = 'Do not verify the SSL certificate to the CloudRF API service.')
-    parser.add_argument('-o', '--output-directory', dest = 'output_directory', default = currentScriptPath, help = 'Director where outputs are saved.')
+    parser.add_argument('-r', '--save-raw-response', dest = 'save_raw_response', default = False, action = 'store_true', help = 'Save the raw response from the CloudRF API service. This is saved to the --output-directory value.')
+    parser.add_argument('-o', '--output-directory', dest = 'output_directory', default = currentScriptPath, help = 'Absolute directory path of where outputs are saved.')
     parser.add_argument('-v', '--verbose', action="store_true", default = False, help = 'Output more information on screen. This is often useful when debugging.')
 
     arguments = parser.parse_args()
@@ -144,5 +160,13 @@ if __name__ == '__main__':
     checkApiKey()
     checkPermissions()
     jsonTemplate = checkValidJsonTemplate()
+
+    if jsonTemplate['receiver']['lat'] != 0:
+        print('Your template has a value in the receiver.lat key which will prevent an area calculation. Setting a safe default.')
+        jsonTemplate['receiver']['lat'] = 0
+
+    if jsonTemplate['receiver']['lon'] != 0:
+        print('Your template has a value in the receiver.lon key which will prevent an area calculation. Setting a safe default.')
+        jsonTemplate['receiver']['lon'] = 0
 
     areaCalculation(jsonTemplate)
