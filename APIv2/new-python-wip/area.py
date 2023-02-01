@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import csv
 import datetime
 import json
 import os
@@ -15,6 +16,8 @@ def areaCalculation(jsonData):
     now = datetime.datetime.now()
     requestName = now.strftime('%Y%m%d%H%M%S_' + now.strftime('%f')[:3])
     fullSaveBasePath = str(arguments.output_directory).rstrip('/') + '/' + requestName
+
+    print('Running area calculation.')
 
     try:
         response = requests.post(
@@ -98,6 +101,34 @@ def checkPermissions():
     except PermissionError:
         sys.exit('Unable to create files in output directory (%s)' % arguments.output_directory)
 
+def checkValidCSV():
+    try:
+        returnList = []
+
+        with open(arguments.input_csv, 'r') as csvInputFile:
+            reader = csv.DictReader(csvInputFile)
+
+            for row in reader:
+                for key, value in row.items():
+                    if not key or not value:
+                        raise AttributeError('There is an empty header or value in the input CSV file (%s)' % arguments.input_csv)
+                    
+                    # We are using dot notation, a header should never be more than 2 deep
+                    parts = str(key).split('.')
+
+                    if len(parts) > 2:
+                        raise AttributeError('Maximum depth of dot notation is 2. You have a value with a depth of %d in the input CSV file (%s)' % (len(parts), arguments.input_csv))
+
+                returnList.append(row)
+                
+        return returnList
+    except PermissionError:
+        sys.exit('Permission error when trying to read input CSV file (%s)' % arguments.input_csv)
+    except AttributeError as e:
+        sys.exit(e)
+    except:
+        sys.exit('An unknown error occurred when checking input CSV file (%s)' % (arguments.input_csv))
+
 def checkValidJsonTemplate():
     try:
         with open(arguments.input_template, 'r') as jsonTemplateFile:
@@ -108,6 +139,22 @@ def checkValidJsonTemplate():
         sys.exit('Input template JSON file (%s) is not a valid JSON file.' % arguments.input_template)
     except:
         sys.exit('An unknown error occurred when checking input template JSON file (%s)' % (arguments.input_template))
+
+def customiseJsonTemplateWithCsvValues(templateJson, csvRowDictionary):
+
+    for key, value in csvRowDictionary.items():
+        # We are using dot notation so split out on this
+        parts = str(key).split('.')
+
+        # Should be a maxium of 2 parts so we can just be explicit here and update the template JSON
+        if len(parts) == 2:
+            templateJson[parts[0]][parts[1]] = value
+        elif len(parts) == 1:
+            templateJson[key] = value
+        else:
+            sys.exit('Maximum depth of dot notation 2. Please check your input CSV.')
+    
+    return templateJson
 
 class PythonValidator:
     def version():
@@ -176,7 +223,7 @@ if __name__ == '__main__':
     currentScriptPath = str(pathlib.Path(__file__).parent.resolve()).rstrip('/') + '/output'
 
     parser.add_argument('-t', '--input-template', dest = 'input_template', required = True, help = 'Absolute path to input JSON template used as part of the calculation.')
-    parser.add_argument('-i', '--input-csv', dest = 'input_csv', help = 'Absolute path to input CSV, used in combination with --input-template to customise your template to a specific usecase.')
+    parser.add_argument('-i', '--input-csv', dest = 'input_csv', help = 'Absolute path to input CSV, used in combination with --input-template to customise your template to a specific usecase. The CSV header row must be included. Header row values must be defined in dot notation format of the template key that they are to override in the template, for example transmitter latitude will be named as "transmitter.lat".')
     parser.add_argument('-k', '--api-key', dest = 'api_key', required = True, help = 'Your API key to the CloudRF API service.')
     parser.add_argument('-u', '--base-url', dest = 'base_url', default = 'https://api.cloudrf.com/', help = 'The base URL for the CloudRF API service.')
     parser.add_argument('--no-strict-ssl', dest = 'strict_ssl', action="store_false", default = True, help = 'Do not verify the SSL certificate to the CloudRF API service.')
@@ -198,6 +245,9 @@ if __name__ == '__main__':
     checkPermissions()
     jsonTemplate = checkValidJsonTemplate()
 
+    if arguments.input_csv:
+        csvInputDictionary = checkValidCSV()
+
     if jsonTemplate['receiver']['lat'] != 0:
         print('Your template has a value in the receiver.lat key which will prevent an area calculation. Setting a safe default.')
         jsonTemplate['receiver']['lat'] = 0
@@ -206,6 +256,15 @@ if __name__ == '__main__':
         print('Your template has a value in the receiver.lon key which will prevent an area calculation. Setting a safe default.')
         jsonTemplate['receiver']['lon'] = 0
 
-    areaCalculation(jsonTemplate)
+    if arguments.input_csv and csvInputDictionary:
+        # CSV has been used, run a request for each of the CSV rows
+        for row in csvInputDictionary:
+            # Adjust the input JSON template to meet the values which are found in the CSV row
+            newJsonData = customiseJsonTemplateWithCsvValues(templateJson = jsonTemplate, csvRowDictionary = row)
+            areaCalculation(newJsonData)
+    else:
+        # Just run a calculation based on the template
+        areaCalculation(jsonTemplate)
 
     print('Process completed. Please check your output folder (%s)' % arguments.output_directory)
+    
