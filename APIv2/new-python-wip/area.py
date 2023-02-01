@@ -26,7 +26,7 @@ def areaCalculation(jsonData):
             if response.status_code == 400:
                 sys.exit('You likely have bad values in your input JSON/CSV. For good examples please consult https://github.com/Cloud-RF/CloudRF-API-clients')
             if response.status_code == 401:
-                sys.exit('Your API is likely incorrect.')
+                sys.exit('Your API key is likely incorrect.')
             if response.status_code == 500:
                 sys.exit('A problem with the CloudRF API service appears to have occurred.')
         else:
