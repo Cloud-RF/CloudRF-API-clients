@@ -106,6 +106,13 @@ class CloudRF:
             if self.__arguments.verbose:
                 print(response.text)
 
+            if self.__arguments.save_raw_response:
+                saveJsonResponsePath = saveBasePath + '.json'
+                with open(saveJsonResponsePath, 'w') as rawResponseFile:
+                    rawResponseFile.write(response.text)
+
+                print('Raw response saved at %s' % saveJsonResponsePath)
+
         except requests.exceptions.SSLError:
             sys.exit('SSL error occurred. This is common with self-signed certificates. You can try disabling SSL verification with --no-strict-ssl.')
 
