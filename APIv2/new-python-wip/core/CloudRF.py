@@ -80,6 +80,7 @@ class CloudRF:
         self.__parser.add_argument('-k', '--api-key', dest = 'api_key', required = True, help = 'Your API key to the CloudRF API service.')
         self.__parser.add_argument('-u', '--base-url', dest = 'base_url', default = 'https://api.cloudrf.com/', help = 'The base URL for the CloudRF API service.')
         self.__parser.add_argument('--no-strict-ssl', dest = 'strict_ssl', action="store_false", default = True, help = 'Do not verify the SSL certificate to the CloudRF API service.')
+        self.__parser.add_argument('-srq', '--save-raw-request', dest = 'save_raw_request', default = False, action = 'store_true', help = 'Save the raw request made to the CloudRF API service. This is saved to the --output-directory value.')
         self.__parser.add_argument('-r', '--save-raw-response', dest = 'save_raw_response', default = False, action = 'store_true', help = 'Save the raw response from the CloudRF API service. This is saved to the --output-directory value.')
         self.__parser.add_argument('-o', '--output-directory', dest = 'output_directory', default = outputPath, help = 'Absolute directory path of where outputs are saved.')
         self.__parser.add_argument('-s', '--output-file-type', dest = 'output_file_type', choices = ['all'] + self.allowedOutputTypes, help = 'Type of file to be downloaded.', default = 'kmz')
@@ -95,6 +96,12 @@ class CloudRF:
         self.__verboseLog('Running %s calculation: %s' % (self.requestType, requestName))
 
         try:
+            if self.__arguments.save_raw_request:
+                saveJsonRequestPath = saveBasePath + '.request.json'
+                with open(saveJsonRequestPath, 'w') as rawRequestFile:
+                    rawRequestFile.write(json.dumps(jsonData, indent = 4))
+                print('Raw request saved at %s' % saveJsonRequestPath)
+
             response = requests.post(
                 url = str(self.__arguments.base_url).rstrip('/') + '/' + self.requestType,
                 headers = {
@@ -111,7 +118,7 @@ class CloudRF:
                 print(response.text)
 
             if self.__arguments.save_raw_response:
-                saveJsonResponsePath = saveBasePath + '.json'
+                saveJsonResponsePath = saveBasePath + '.response.json'
                 with open(saveJsonResponsePath, 'w') as rawResponseFile:
                     rawResponseFile.write(response.text)
 
