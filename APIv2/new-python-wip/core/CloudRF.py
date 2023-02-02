@@ -8,6 +8,7 @@ if __name__ != '__main__':
     import json
     import os
     import requests
+    import shutil
     import stat
     import sys
     import textwrap
@@ -102,6 +103,7 @@ class CloudRF:
             )
 
             self.__checkHttpResponse(httpStatusCode = response.status_code, httpRawResponse = response.text)
+            self.__saveOutputFileTypes(httpRawResponse = response.text, saveBasePath = saveBasePath)
 
             if self.__arguments.verbose:
                 print(response.text)
@@ -146,6 +148,39 @@ class CloudRF:
                 sys.exit('Maximum depth of dot notation 2. Please check your input CSV.')
         
         return templateJson
+    
+    def __retrieveOutputFile(self, httpRawResponse, fileType, saveBasePath):
+        self.__verboseLog('Retrieving output file: %s' % fileType)
+
+        responseJson = json.loads(httpRawResponse)
+
+        if fileType == 'png':
+            # PNG links exist already in the response JSON so we can just grab them from there
+            self.__streamUrlToFile(responseJson['PNG_Mercator'], saveBasePath + '.3857.png')
+            self.__verboseLog('3857 projected PNG saved to %s.3857.png' % saveBasePath)
+            self.__streamUrlToFile(responseJson['PNG_WGS84'], saveBasePath + '.4326.png')
+            self.__verboseLog('4326 projected PNG saved to %s.4326.png' % saveBasePath)
+        else:
+            # Anything else we just pull out of the archive
+            savePath = saveBasePath + '.' + fileType
+            self.__streamUrlToFile(
+                requestUrl = str(self.__arguments.base_url).rstrip('/') + '/archive/' + responseJson['sid'] + '/' + fileType,
+                savePath = savePath
+            )
+    
+    def __saveOutputFileTypes(self, httpRawResponse, saveBasePath):
+        if self.__arguments.output_file_type == 'all':
+            # Get all of the available file types for this request
+            for type in self.allowedOutputTypes:
+                self.__retrieveOutputFile(httpRawResponse = httpRawResponse, fileType = type, saveBasePath = saveBasePath)
+        else:
+            self.__retrieveOutputFile(httpRawResponse = httpRawResponse, fileType = self.__arguments.output_file_type, saveBasePath = saveBasePath)
+
+    def __streamUrlToFile(self, requestUrl, savePath):
+        response = requests.get(requestUrl, stream = True, verify = self.__arguments.strict_ssl)
+        with open(savePath, 'wb') as outputFile:
+            shutil.copyfileobj(response.raw, outputFile)
+        del response
 
     def __validateApiKey(self):
         parts = str(self.__arguments.api_key).split('-')
