@@ -56,11 +56,13 @@ class CloudRF:
             for row in self.__csvInputList:
                 # Adjust the input JSON template to meet the values which are found in the CSV row
                 newJsonData = self.__customiseJsonFromCsvRow(templateJson = self.__jsonTemplate, csvRowDictionary = row)
+                fixedJsonData = self.__fixPotentiallyBrokenRequestJson(newJsonData)
 
-                self.__calculate(jsonData = newJsonData)
+                self.__calculate(jsonData = fixedJsonData)
         else:
             # Just run a calculation based on the template
-            self.__calculate(jsonData = self.__jsonTemplate)
+            fixedJsonData = self.__fixPotentiallyBrokenRequestJson(self.__jsonTemplate)
+            self.__calculate(jsonData = fixedJsonData)
 
         sys.exit('Process completed. Please check your output folder (%s)' % self.__arguments.output_directory)
 
@@ -148,6 +150,18 @@ class CloudRF:
                 sys.exit('Maximum depth of dot notation 2. Please check your input CSV.')
         
         return templateJson
+    
+    def __fixPotentiallyBrokenRequestJson(self, jsonData):
+        if self.requestType == 'area':
+            if jsonData['receiver']['lat'] != 0:
+                print('Your template has a value in the receiver.lat key which will prevent an area calculation. Setting a safe default.')
+                jsonData['receiver']['lat'] = 0
+
+            if jsonData['receiver']['lon'] != 0:
+                print('Your template has a value in the receiver.lon key which will prevent an area calculation. Setting a safe default.')
+                jsonData['receiver']['lon'] = 0
+
+        return jsonData
     
     def __retrieveOutputFile(self, httpRawResponse, fileType, saveBasePath):
         self.__verboseLog('Retrieving output file: %s' % fileType)
