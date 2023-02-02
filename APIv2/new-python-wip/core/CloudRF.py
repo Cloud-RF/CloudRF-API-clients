@@ -4,8 +4,10 @@
 if __name__ != '__main__':
     import argparse
     import csv
+    import datetime
     import json
     import os
+    import requests
     import stat
     import sys
     import textwrap
@@ -16,18 +18,20 @@ if __name__ != '__main__':
 
 class CloudRF:
     allowedOutputTypes = []
-    description = 'CloudRF'
     calledFromPath = None
+    description = 'CloudRF'
+    requestType = None
 
     URL_GITHUB = 'https://github.com/Cloud-RF/CloudRF-API-clients'
 
-    def __init__(self, ALLOWED_OUTPUT_TYPES, DESCRIPTION, CURRENT_PATH):
-        PythonValidator.version()
-
+    def __init__(self, REQUEST_TYPE, ALLOWED_OUTPUT_TYPES, DESCRIPTION, CURRENT_PATH):
         self.allowedOutputTypes = ALLOWED_OUTPUT_TYPES
-        self.description = DESCRIPTION
         # Where was the script called from?
         self.calledFromPath = CURRENT_PATH
+        self.description = DESCRIPTION
+        self.requestType = REQUEST_TYPE
+
+        PythonValidator.version()
 
         self.__argparseInitialiser()
 
@@ -40,10 +44,24 @@ class CloudRF:
             self.__verboseLog('Strict SSL disabled.')
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+        self.__validateRequestType()
         self.__validateApiKey()
         self.__validateFileAndDirectoryPermissions()
-        self.__validateJsonTemplate()
-        self.__validateCsv()
+        self.__jsonTemplate = self.__validateJsonTemplate()
+        self.__csvInputList = self.__validateCsv()
+
+        if self.__arguments.input_csv and self.__csvInputList:
+            # CSV has been used, run a request for each of the CSV rows
+            for row in self.__csvInputList:
+                # Adjust the input JSON template to meet the values which are found in the CSV row
+                newJsonData = self.__customiseJsonFromCsvRow(templateJson = self.__jsonTemplate, csvRowDictionary = row)
+
+                self.__calculate(jsonData = newJsonData)
+        else:
+            # Just run a calculation based on the template
+            self.__calculate(jsonData = self.__jsonTemplate)
+
+        sys.exit('Process completed. Please check your output folder (%s)' % self.__arguments.output_directory)
 
     def __argparseInitialiser(self):
         self.__parser = argparse.ArgumentParser(
@@ -65,6 +83,62 @@ class CloudRF:
         self.__parser.add_argument('-v', '--verbose', action="store_true", default = False, help = 'Output more information on screen. This is often useful when debugging.')
 
         self.__arguments = self.__parser.parse_args()
+
+    def __calculate(self, jsonData):
+        now = datetime.datetime.now()
+        requestName = now.strftime('%Y%m%d%H%M%S_' + now.strftime('%f')[:3])
+        saveBasePath = str(self.__arguments.output_directory).rstrip('/') + '/' + requestName
+
+        self.__verboseLog('Running %s calculation: %s' % (self.requestType, requestName))
+
+        try:
+            response = requests.post(
+                url = str(self.__arguments.base_url).rstrip('/') + '/' + self.requestType,
+                headers = {
+                    'key': self.__arguments.api_key
+                },
+                json = jsonData,
+                verify = self.__arguments.strict_ssl
+            )
+
+            self.__checkHttpResponse(httpStatusCode = response.status_code, httpRawResponse = response.text)
+
+            if self.__arguments.verbose:
+                print(response.text)
+
+        except requests.exceptions.SSLError:
+            sys.exit('SSL error occurred. This is common with self-signed certificates. You can try disabling SSL verification with --no-strict-ssl.')
+
+    def __checkHttpResponse(self, httpStatusCode, httpRawResponse):
+        if httpStatusCode != 200:
+            print('An HTTP %d error occurred with your request. Full response from the CloudRF API is listed below.' % httpStatusCode)
+            print(httpRawResponse)
+
+            if httpStatusCode == 400:
+                sys.exit('HTTP 400 refers to a bad request. You likely have bad values in your input JSON/CSV. For good examples please consult %s' % self.URL_GITHUB)
+            elif httpStatusCode == 401:
+                sys.exit('HTTP 401 refers to an unauthorised request. Your API key is likely incorrect.')
+            elif httpStatusCode == 403:
+                sys.exit('HTTP 403 refers to a forbidden request. Your API key appears to be correct but you do not appear to have permission to make your request.')
+            elif httpStatusCode == 500:
+                sys.exit('HTTP 500 refers to an issue with the server. A problem with the CloudRF API service appears to have occurred.')
+            else:
+                sys.exit('An unknown HTTP error has occured. Please consult the above response from the CloudRF API, or %s' % self.URL_GITHUB)
+
+    def __customiseJsonFromCsvRow(self, templateJson, csvRowDictionary):
+        for key, value in csvRowDictionary.items():
+            # We are using dot notation so split out on this
+            parts = str(key).split('.')
+
+            # Should be a maxium of 2 parts so we can just be explicit here and update the template JSON
+            if len(parts) == 2:
+                templateJson[parts[0]][parts[1]] = value
+            elif len(parts) == 1:
+                templateJson[key] = value
+            else:
+                sys.exit('Maximum depth of dot notation 2. Please check your input CSV.')
+        
+        return templateJson
 
     def __validateApiKey(self):
         parts = str(self.__arguments.api_key).split('-')
@@ -100,7 +174,7 @@ class CloudRF:
 
                         returnList.append(row)
                         
-                self.__csvInputList = returnList
+                return returnList
             except PermissionError:
                 sys.exit('Permission error when trying to read input CSV file (%s)' % self.__arguments.input_csv)
             except AttributeError as e:
@@ -140,13 +214,21 @@ class CloudRF:
     def __validateJsonTemplate(self):
         try:
             with open(self.__arguments.input_template, 'r') as jsonTemplateFile:
-                self.__jsonTemplate = json.load(jsonTemplateFile)
+                return json.load(jsonTemplateFile)
         except PermissionError:
             sys.exit('Permission error when trying to read input template JSON file (%s)' % self.__arguments.input_template)
         except json.decoder.JSONDecodeError:
             sys.exit('Input template JSON file (%s) is not a valid JSON file.' % self.__arguments.input_template)
         except:
             sys.exit('An unknown error occurred when checking input template JSON file (%s)' % (self.__arguments.input_template))
+
+    def __validateRequestType(self):
+        allowedRequestTypes = ['area']
+
+        if self.requestType and self.requestType in allowedRequestTypes:
+            self.__verboseLog('Valid request type of %s being used.' % self.requestType)
+        else:
+            sys.exit('Unsupported request type of %s being used. Allowed request types are: %s' % (self.requestType, allowedRequestTypes))
 
     def __verboseLog(self, message):
         if self.__arguments.verbose:
