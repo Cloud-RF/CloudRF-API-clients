@@ -3,6 +3,7 @@
 # This file is not meant to be called directly. It should be imported.
 if __name__ != '__main__':
     import argparse
+    import sys
     import textwrap
     import urllib3
 
@@ -35,6 +36,8 @@ class CloudRF:
             self.__verboseLog('Strict SSL disabled.')
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+        self.__validateApiKey()
+
     def __argparseInitialiser(self):
         self.__parser = argparse.ArgumentParser(
             description = textwrap.dedent(self.description),
@@ -55,6 +58,19 @@ class CloudRF:
         self.__parser.add_argument('-v', '--verbose', action="store_true", default = False, help = 'Output more information on screen. This is often useful when debugging.')
 
         self.__arguments = self.__parser.parse_args()
+
+    def __validateApiKey(self):
+        parts = str(self.__arguments.api_key).split('-')
+        externalPrompt = 'Please make sure that you are using the correct key from https://cloudrf.com/my-account'
+
+        if len(parts) != 2:
+            sys.exit('Your API key appears to be in the incorrect format. %s' % externalPrompt)
+
+        if not parts[0].isnumeric():
+            sys.exit('Your API key UID component (part before "-") appears to be incorrect. %s' % externalPrompt)
+
+        if len(parts[1]) != 40:
+            sys.exit('Your API key token component (part after "-") appears to be incorrect. %s' % externalPrompt)
 
     def __verboseLog(self, message):
         if self.__arguments.verbose:
