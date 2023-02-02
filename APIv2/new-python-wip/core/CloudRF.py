@@ -102,6 +102,9 @@ class CloudRF:
                     rawRequestFile.write(json.dumps(jsonData, indent = 4))
                 print('Raw request saved at %s' % saveJsonRequestPath)
 
+            self.__verboseLog('Request JSON:')
+            self.__verboseLog(jsonData)
+
             response = requests.post(
                 url = str(self.__arguments.base_url).rstrip('/') + '/' + self.requestType,
                 headers = {
@@ -114,8 +117,8 @@ class CloudRF:
             self.__checkHttpResponse(httpStatusCode = response.status_code, httpRawResponse = response.text)
             self.__saveOutputFileTypes(httpRawResponse = response.text, saveBasePath = saveBasePath)
 
-            if self.__arguments.verbose:
-                print(response.text)
+            self.__verboseLog('Raw response:')
+            self.__verboseLog(response.text)
 
             if self.__arguments.save_raw_response:
                 saveJsonResponsePath = saveBasePath + '.response.json'
@@ -191,6 +194,7 @@ class CloudRF:
                     requestUrl = str(self.__arguments.base_url).rstrip('/') + '/archive/' + responseJson['sid'] + '/' + fileType,
                     savePath = savePath
                 )
+                self.__verboseLog('%s file saved to %s' % (fileType, savePath))
         elif self.requestType == 'path':
             if fileType == 'png':
                 pngPath = saveBasePath + '.png'
