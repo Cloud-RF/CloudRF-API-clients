@@ -298,7 +298,7 @@ class CloudRF:
         if self.requestType and self.requestType in allowedRequestTypes:
             self.__verboseLog('Valid request type of %s being used.' % self.requestType)
         else:
-            sys.exit('Unsupported request type of %s being used. Allowed request types are: %s' % (self.requestType, allowedRequestTypes))
+            sys.exit('Unsupported request type of "%s" being used. Allowed request types are: %s' % (self.requestType, allowedRequestTypes))
 
     def __verboseLog(self, message):
         if self.__arguments.verbose:
