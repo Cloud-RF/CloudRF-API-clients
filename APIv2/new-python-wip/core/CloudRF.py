@@ -168,19 +168,33 @@ class CloudRF:
 
         responseJson = json.loads(httpRawResponse)
 
-        if fileType == 'png':
-            # PNG links exist already in the response JSON so we can just grab them from there
-            self.__streamUrlToFile(responseJson['PNG_Mercator'], saveBasePath + '.3857.png')
-            self.__verboseLog('3857 projected PNG saved to %s.3857.png' % saveBasePath)
-            self.__streamUrlToFile(responseJson['PNG_WGS84'], saveBasePath + '.4326.png')
-            self.__verboseLog('4326 projected PNG saved to %s.4326.png' % saveBasePath)
+        if self.requestType == 'area':
+            if fileType == 'png':
+                # PNG links exist already in the response JSON so we can just grab them from there
+                pngPath3857 = saveBasePath + '.3857.png'
+                self.__streamUrlToFile(responseJson['PNG_Mercator'], pngPath3857)
+                self.__verboseLog('3857 projected PNG saved to %s' % pngPath3857)
+                pngPath4326 = saveBasePath + '.4326.png'
+                self.__streamUrlToFile(responseJson['PNG_WGS84'], pngPath4326)
+                self.__verboseLog('4326 projected PNG saved to %s' % pngPath4326)
+            else:
+                # Anything else we just pull out of the archive
+                savePath = saveBasePath + '.' + fileType
+                self.__streamUrlToFile(
+                    requestUrl = str(self.__arguments.base_url).rstrip('/') + '/archive/' + responseJson['sid'] + '/' + fileType,
+                    savePath = savePath
+                )
+        elif self.requestType == 'path':
+            if fileType == 'png':
+                pngPath = saveBasePath + '.png'
+                self.__streamUrlToFile(responseJson['Chart image'], pngPath)
+                self.__verboseLog('Path profile PNG saved to %s' % pngPath)
+            if fileType == 'kmz':
+                kmzPath = saveBasePath + '.kmz'
+                self.__streamUrlToFile(responseJson['kmz'], kmzPath)
+                self.__verboseLog('Path profile PNG saved to %s' % kmzPath)
         else:
-            # Anything else we just pull out of the archive
-            savePath = saveBasePath + '.' + fileType
-            self.__streamUrlToFile(
-                requestUrl = str(self.__arguments.base_url).rstrip('/') + '/archive/' + responseJson['sid'] + '/' + fileType,
-                savePath = savePath
-            )
+            sys.exit('Unable to retrieve output file of unsupported request type.')
     
     def __saveOutputFileTypes(self, httpRawResponse, saveBasePath):
         if self.__arguments.output_file_type == 'all':
@@ -279,7 +293,7 @@ class CloudRF:
             sys.exit('An unknown error occurred when checking input template JSON file (%s)' % (self.__arguments.input_template))
 
     def __validateRequestType(self):
-        allowedRequestTypes = ['area']
+        allowedRequestTypes = ['area', 'path']
 
         if self.requestType and self.requestType in allowedRequestTypes:
             self.__verboseLog('Valid request type of %s being used.' % self.requestType)
