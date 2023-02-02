@@ -3,6 +3,7 @@
 # This file is not meant to be called directly. It should be imported.
 if __name__ != '__main__':
     import argparse
+    import csv
     import json
     import os
     import stat
@@ -42,6 +43,7 @@ class CloudRF:
         self.__validateApiKey()
         self.__validateFileAndDirectoryPermissions()
         self.__validateJsonTemplate()
+        self.__validateCsv()
 
     def __argparseInitialiser(self):
         self.__parser = argparse.ArgumentParser(
@@ -76,6 +78,35 @@ class CloudRF:
 
         if len(parts[1]) != 40:
             sys.exit('Your API key token component (part after "-") appears to be incorrect. %s' % externalPrompt)
+
+    def __validateCsv(self):
+        if self.__arguments.input_csv:
+            try:
+                returnList = []
+
+                with open(self.__arguments.input_csv, 'r') as csvInputFile:
+                    reader = csv.DictReader(csvInputFile)
+
+                    for row in reader:
+                        for key, value in row.items():
+                            if not key or not value:
+                                raise AttributeError('There is an empty header or value in the input CSV file (%s)' % self.__arguments.input_csv)
+                            
+                            # We are using dot notation, a header should never be more than 2 deep
+                            parts = str(key).split('.')
+
+                            if len(parts) > 2:
+                                raise AttributeError('Maximum depth of dot notation is 2. You have a value with a depth of %d in the input CSV file (%s)' % (len(parts), self.__arguments.input_csv))
+
+                        returnList.append(row)
+                        
+                self.__csvInputList = returnList
+            except PermissionError:
+                sys.exit('Permission error when trying to read input CSV file (%s)' % self.__arguments.input_csv)
+            except AttributeError as e:
+                sys.exit(e)
+            except:
+                sys.exit('An unknown error occurred when checking input CSV file (%s)' % (self.__arguments.input_csv))
 
     def __validateFileAndDirectoryPermissions(self):
         if not os.path.exists(self.__arguments.input_template):
