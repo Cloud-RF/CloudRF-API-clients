@@ -122,4 +122,4 @@ class CloudRF:
             print(message)
 
 if __name__ == '__main__':
-    print('This is a core file and should not be executed natively. Please see %s for more details.' % CloudRF.URL_GITHUB)
+    sys.exit('This is a core file and should not be executed directly. Please see %s for more details.' % CloudRF.URL_GITHUB)
