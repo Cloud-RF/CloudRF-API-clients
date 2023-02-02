@@ -3,6 +3,9 @@
 # This file is not meant to be called directly. It should be imported.
 if __name__ != '__main__':
     import argparse
+    import json
+    import os
+    import stat
     import sys
     import textwrap
     import urllib3
@@ -37,6 +40,8 @@ class CloudRF:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         self.__validateApiKey()
+        self.__validateFileAndDirectoryPermissions()
+        self.__jsonTemplate = self.__validateJsonTemplate()
 
     def __argparseInitialiser(self):
         self.__parser = argparse.ArgumentParser(
@@ -71,6 +76,46 @@ class CloudRF:
 
         if len(parts[1]) != 40:
             sys.exit('Your API key token component (part after "-") appears to be incorrect. %s' % externalPrompt)
+
+    def __validateFileAndDirectoryPermissions(self):
+        if not os.path.exists(self.__arguments.input_template):
+            sys.exit('Your input template JSON file (%s) could not be found. Please check your path. Please note that this should be in absolute path format.' % self.__arguments.input_template)
+        else:
+            self.__verboseLog('Input template JSON file (%s) found with file permissions: %s' % (self.__arguments.input_template, oct(stat.S_IMODE(os.lstat(self.__arguments.input_template).st_mode))))
+
+        if self.__arguments.input_csv:
+            if not os.path.exists(self.__arguments.input_csv):
+                sys.exit('Your input CSV file (%s) could not be found. Please check your path. Please note that this should be in absolute path format.' % self.__arguments.input_csv)
+            else:
+                self.__verboseLog('Input CSV file (%s) found with file permissions: %s' % (self.__arguments.input_csv, oct(stat.S_IMODE(os.lstat(self.__arguments.input_csv).st_mode))))
+        else:
+            print('Input CSV has not been specified. Default values in input template JSON file will be used.')
+
+        if not os.path.exists(self.__arguments.output_directory):
+            self.__verboseLog('Output directory (%s) does not exist, attempting to create.' % self.__arguments.output_directory)
+            os.makedirs(self.__arguments.output_directory)
+            self.__verboseLog('Output directory (%s) created successfully.' % self.__arguments.output_directory)
+
+        self.__verboseLog('Output directory (%s) exists with permissions: %s' % (self.__arguments.output_directory, oct(stat.S_IMODE(os.lstat(self.__arguments.output_directory).st_mode))))
+
+        try:
+            # Check if any file can be written to the output directory
+            testFilePath = str(self.__arguments.output_directory).rstrip('/') + '/tmp'
+            open(testFilePath, 'a')
+            os.remove(testFilePath)
+        except PermissionError:
+            sys.exit('Unable to create files in output directory (%s)' % self.__arguments.output_directory)
+
+    def __validateJsonTemplate(self):
+        try:
+            with open(self.__arguments.input_template, 'r') as jsonTemplateFile:
+                return json.load(jsonTemplateFile)
+        except PermissionError:
+            sys.exit('Permission error when trying to read input template JSON file (%s)' % self.__arguments.input_template)
+        except json.decoder.JSONDecodeError:
+            sys.exit('Input template JSON file (%s) is not a valid JSON file.' % self.__arguments.input_template)
+        except:
+            sys.exit('An unknown error occurred when checking input template JSON file (%s)' % (self.__arguments.input_template))
 
     def __verboseLog(self, message):
         if self.__arguments.verbose:
