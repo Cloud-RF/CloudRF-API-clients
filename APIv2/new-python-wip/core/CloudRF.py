@@ -41,7 +41,7 @@ class CloudRF:
 
         self.__validateApiKey()
         self.__validateFileAndDirectoryPermissions()
-        self.__jsonTemplate = self.__validateJsonTemplate()
+        self.__validateJsonTemplate()
 
     def __argparseInitialiser(self):
         self.__parser = argparse.ArgumentParser(
@@ -109,7 +109,7 @@ class CloudRF:
     def __validateJsonTemplate(self):
         try:
             with open(self.__arguments.input_template, 'r') as jsonTemplateFile:
-                return json.load(jsonTemplateFile)
+                self.__jsonTemplate = json.load(jsonTemplateFile)
         except PermissionError:
             sys.exit('Permission error when trying to read input template JSON file (%s)' % self.__arguments.input_template)
         except json.decoder.JSONDecodeError:
