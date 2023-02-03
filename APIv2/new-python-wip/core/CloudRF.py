@@ -33,7 +33,7 @@ class CloudRF:
         self.requestType = REQUEST_TYPE
 
         PythonValidator.version()
-
+        self.__validateRequestType()
         self.__argparseInitialiser()
 
         # If we are in verbose mode then just output everything
@@ -45,7 +45,6 @@ class CloudRF:
             self.__verboseLog('Strict SSL disabled.')
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        self.__validateRequestType()
         self.__validateApiKey()
         self.__validateFileAndDirectoryPermissions()
         self.__jsonTemplate = self.__validateJsonTemplate()
