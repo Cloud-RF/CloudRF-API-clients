@@ -184,11 +184,6 @@ class CloudRF:
         templateJson['points'] = []
 
         for row in csvListOfDictionaries:
-            # Check required keys are set
-            keys = row.keys()
-            if 'lat' not in keys or 'lon' not in keys or 'alt' not in keys:
-                sys.exit('You are missing at least one of "lat", "lon" or "alt" from your CSV.')
-
             point = {
                 'lat': row['lat'],
                 'lon': row['lon'],
@@ -292,9 +287,10 @@ class CloudRF:
                             # Points request doesn't customise the JSON template, the CSV is the list of points
                             if self.requestType == 'points':
                                 allowedHeaders = ['lat', 'lon', 'alt']
-
-                                if key not in allowedHeaders:
-                                    raise AttributeError('You have a CSV header value of "%s" which is not valid for a points request. Please use one of: %s' % (key, allowedHeaders))
+                                submittedHeaders = list(row.keys())
+                                
+                                if set(allowedHeaders) != set(submittedHeaders):
+                                    raise AttributeError('You have a bad CSV header. You are missing at least one of the following header keys from your CSV: %s' % allowedHeaders)
 
                             # We are using dot notation, a header should never be more than 2 deep
                             parts = str(key).split('.')
