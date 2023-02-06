@@ -139,6 +139,8 @@ class CloudRF:
 
         except requests.exceptions.SSLError:
             sys.exit('SSL error occurred. This is common with self-signed certificates. You can try disabling SSL verification with --no-strict-ssl.')
+        except requests.exceptions.ConnectionError:
+            sys.exit('Unable to connect to CloudRF API service at %s. Please check your network settings, or if you are trying to use a custom endpoint please use the --base-url flag.' % self.__arguments.base_url)
 
     def __checkHttpResponse(self, httpStatusCode, httpRawResponse):
         if httpStatusCode != 200:
