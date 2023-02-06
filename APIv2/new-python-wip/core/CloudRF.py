@@ -73,7 +73,7 @@ class CloudRF:
                 # Just run a calculation based on the template
                 self.__calculate(jsonData = self.__jsonTemplate)
 
-        elif self.requestType in ['interference', 'mesh']:
+        elif self.requestType in ['interference', 'network', 'mesh']:
             self.__calculate(jsonData = None)
 
         sys.exit('Process completed. Please check your output folder (%s)' % self.__arguments.output_directory)
@@ -99,8 +99,14 @@ class CloudRF:
             else:
                 self.__parser.add_argument('-i', '--input-csv', dest = 'input_csv', help = 'Absolute path to input CSV, used in combination with --input-template to customise your template to a specific usecase. The CSV header row must be included. Header row values must be defined in dot notation format of the template key that they are to override in the template, for example transmitter latitude will be named as "transmitter.lat".')
 
-        if self.requestType in ['mesh', 'interference']:
+        if self.requestType in ['interference', 'mesh', 'network']:
             self.__parser.add_argument('-nn', '--network-name', dest = 'network_name', required = True, help = 'The name of the network which you wish to run the analysis on.')
+
+        # Network only has specific requirements
+        if self.requestType == 'network':
+            self.__parser.add_argument('-lat', '--latitude', dest = 'latitude', required = True, help = 'The latitude of the receiver in decimal degrees.')
+            self.__parser.add_argument('-lon', '--longitude', dest = 'longitude', required = True, help = 'The longitude of the receiver in decimal degrees.')
+            self.__parser.add_argument('-alt', '--altitude', dest = 'altitude', required = True, help = 'The altitude of the receiver in meters.')
 
         outputPath = str(self.calledFromPath).rstrip('/') + '/output'
 
@@ -146,24 +152,32 @@ class CloudRF:
                     with open(saveJsonRequestPath, 'w') as rawRequestFile:
                         rawRequestFile.write(json.dumps(fixedJsonData, indent = 4))
                     print('Raw request saved at %s' % saveJsonRequestPath)
-            elif self.requestType in ['interference', 'mesh']:
-                # Mesh requests have explicit parameters
+            elif self.requestType in ['interference', 'network', 'mesh']:
+                # Other requests use params rather than a JSON body
+                requestParams = {}
+
+                if self.requestType == 'network':
+                    requestParams['net'] = self.__arguments.network_name
+                    requestParams['lat'] = self.__arguments.latitude
+                    requestParams['lon'] = self.__arguments.longitude
+                    requestParams['rxh'] = self.__arguments.altitude
+                else:
+                    requestParams['network'] = self.__arguments.network_name
+
                 response = requests.post(
                     url = str(self.__arguments.base_url).rstrip('/') + '/' + self.requestType,
                     headers = {
                         'key': self.__arguments.api_key
                     },
-                    params = {
-                        'network': self.__arguments.network_name
-                    },
+                    params = requestParams,
                     verify = self.__arguments.strict_ssl
                 )
 
-                if self.__arguments.save_raw_request:
-                    saveRequestPath = saveBasePath + '.request.txt'
-                    with open(saveRequestPath, 'w') as rawRequestFile:
-                        rawRequestFile.write(response.request.url)
-                    print('Raw request saved at %s' % saveRequestPath)
+            if self.__arguments.save_raw_request:
+                saveRequestPath = saveBasePath + '.request.txt'
+                with open(saveRequestPath, 'w') as rawRequestFile:
+                    rawRequestFile.write(response.request.url)
+                print('Raw request saved at %s' % saveRequestPath)
 
             self.__checkHttpResponse(httpStatusCode = response.status_code, httpRawResponse = response.text)
             self.__saveOutputFileTypes(httpRawResponse = response.text, saveBasePath = saveBasePath)
@@ -302,6 +316,7 @@ class CloudRF:
                     savePath = savePath
                 )
                 self.__verboseLog('%s file saved to %s' % (fileType, savePath))
+        
         elif self.requestType == 'interference':
             if fileType == 'png':
                 # PNG links exist already in the response JSON so we can just grab them from there
@@ -311,6 +326,7 @@ class CloudRF:
                 pngPath4326 = saveBasePath + '.4326.png'
                 self.__streamUrlToFile(responseJson['png_wgs84'], pngPath4326)
                 self.__verboseLog('4326 projected PNG saved to %s' % pngPath4326)
+        
         elif self.requestType == 'mesh':
             if fileType == 'png':
                 # PNG links exist already in the response JSON so we can just grab them from there
@@ -324,12 +340,39 @@ class CloudRF:
                 kmzPath = saveBasePath + '.kmz'
                 self.__streamUrlToFile(responseJson['kmz'], kmzPath)
                 self.__verboseLog('Mesh KMZ saved to %s' % kmzPath)
+        
         elif self.requestType == 'multisite':
             if fileType == 'png':
                 # PNG links exist already in the response JSON so we can just grab them from there
                 pngPath4326 = saveBasePath + '.4326.png'
                 self.__streamUrlToFile(responseJson['PNG_WGS84'], pngPath4326)
                 self.__verboseLog('4326 projected PNG saved to %s' % pngPath4326)
+        
+        elif self.requestType == 'network':
+            # Network returns an array of responses
+            if fileType == 'png':
+                count = 1
+                for row in responseJson:
+                    pngPath = saveBasePath + '_' + str(count) + '.png'
+                    self.__streamUrlToFile(row['Chart image'], pngPath)
+                    self.__verboseLog('Path profile PNG saved to %s' % pngPath)
+                    count += 1
+            if fileType == 'txt':
+                txtPath = saveBasePath + '.txt'
+                count = 1
+                with open(txtPath, 'a') as txtOutputFile:
+                    for row in responseJson:
+                        txtOutputFile.write('Site %d (%s, %s): %s dBm\n' % (
+                                                                        count, 
+                                                                        row['Transmitters'][0]['Latitude'],
+                                                                        row['Transmitters'][0]['Longitude'],
+                                                                        row['Transmitters'][0]['Signal power at receiver dBm'],
+                                                                      )
+                                                                    )
+                        count += 1
+                txtOutputFile.close()
+                self.__verboseLog('TXT saved to %s' % txtPath)
+
         elif self.requestType == 'path':
             if fileType == 'png':
                 pngPath = saveBasePath + '.png'
@@ -339,11 +382,13 @@ class CloudRF:
                 kmzPath = saveBasePath + '.kmz'
                 self.__streamUrlToFile(responseJson['kmz'], kmzPath)
                 self.__verboseLog('Path profile KMZ saved to %s' % kmzPath)
+        
         elif self.requestType == 'points':
             if fileType == 'kmz':
                 kmzPath = saveBasePath + '.kmz'
                 self.__streamUrlToFile(responseJson['kmz'], kmzPath)
                 self.__verboseLog('Points KMZ saved to %s' % kmzPath)
+        
         else:
             sys.exit('Unable to retrieve output file of unsupported request type.')
     
@@ -458,7 +503,7 @@ class CloudRF:
             sys.exit('An unknown error occurred when checking input template JSON file (%s)' % (self.__arguments.input_template))
 
     def __validateRequestType(self):
-        allowedRequestTypes = ['area', 'interference', 'mesh', 'multisite', 'path', 'points']
+        allowedRequestTypes = ['area', 'interference', 'mesh', 'multisite', 'network', 'path', 'points']
 
         if self.requestType and self.requestType in allowedRequestTypes:
             self.__verboseLog('Valid request type of %s being used.' % self.requestType)
