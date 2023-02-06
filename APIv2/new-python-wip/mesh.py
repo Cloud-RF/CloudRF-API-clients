@@ -11,7 +11,7 @@ if __name__ == '__main__':
         DESCRIPTION = '''
             CloudRF Mesh API
 
-            Mesh merges multiple area calculations into a single super layer.
+            Mesh merges multiple area calculations into a single super layer based on a common network name.
         ''',
         ALLOWED_OUTPUT_TYPES = ['kmz', 'png'],
         CURRENT_PATH = pathlib.Path(__file__).parent.resolve()
