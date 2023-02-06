@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 
-# This file is not meant to be called directly. It should be imported.
-if __name__ != '__main__':
-    import argparse
-    import csv
-    import datetime
-    import json
-    import os
-    import requests
-    import shutil
-    import stat
-    import sys
-    import textwrap
-    import urllib3
+import argparse
+import csv
+import datetime
+import json
+import os
+import pathlib
+import requests
+import shutil
+import stat
+import sys
+import textwrap
+import urllib3
 
-    from .ArgparseCustomFormatter import ArgparseCustomFormatter
-    from .PythonValidator import PythonValidator
+from core.ArgparseCustomFormatter import ArgparseCustomFormatter
+from core.PythonValidator import PythonValidator
 
 class CloudRF:
     allowedOutputTypes = []
@@ -23,16 +22,14 @@ class CloudRF:
     description = 'CloudRF'
     requestType = None
 
+    ALLOWED_REQUEST_TYPES = ['area', 'interference', 'mesh', 'multisite', 'network', 'path', 'points']
     CSV_REQUIRED_HEADERS_MULTISITE = ['lat', 'lon', 'alt', 'frq', 'txw', 'bwi', 'antenna.txg', 'antenna.txl', 'antenna.ant', 'antenna.azi', 'antenna.tlt', 'antenna.hbw', 'antenna.vbw', 'antenna.fbr', 'antenna.pol']
     CSV_REQUIRED_HEADERS_POINTS = ['lat', 'lon', 'alt']
-
     URL_GITHUB = 'https://github.com/Cloud-RF/CloudRF-API-clients'
 
-    def __init__(self, REQUEST_TYPE, ALLOWED_OUTPUT_TYPES, DESCRIPTION, CURRENT_PATH):
-        self.allowedOutputTypes = ALLOWED_OUTPUT_TYPES
+    def __init__(self, REQUEST_TYPE):
         # Where was the script called from?
-        self.calledFromPath = CURRENT_PATH
-        self.description = DESCRIPTION
+        self.calledFromPath = pathlib.Path(__file__).parent.resolve()
         self.requestType = REQUEST_TYPE
 
         PythonValidator.version()
@@ -503,12 +500,65 @@ class CloudRF:
             sys.exit('An unknown error occurred when checking input template JSON file (%s)' % (self.__arguments.input_template))
 
     def __validateRequestType(self):
-        allowedRequestTypes = ['area', 'interference', 'mesh', 'multisite', 'network', 'path', 'points']
-
-        if self.requestType and self.requestType in allowedRequestTypes:
+        if self.requestType and self.requestType in self.ALLOWED_REQUEST_TYPES:
             self.__verboseLog('Valid request type of %s being used.' % self.requestType)
+
+            if self.requestType == 'area':
+                self.allowedOutputTypes = ['kmz', 'png', 'shp', 'tiff']
+                self.description = '''
+                    CloudRF Area API
+
+                    Area coverage performs a circular sweep around a transmitter out to a user defined radius.
+                    It factors in system parameters, antenna patterns, environmental characteristics and terrain data to show a heatmap in customisable colours and units.
+                '''
+            elif self.requestType == 'interference':
+                self.allowedOutputTypes = ['png']
+                self.description = '''
+                    CloudRF Interference API
+
+                    Interference will use a common network name to merge and analyse sites within that network to show the best site at a given location.
+                '''
+            elif self.requestType == 'mesh':
+                self.allowedOutputTypes = ['kmz', 'png']
+                self.description = '''
+                    CloudRF Mesh API
+
+                    Mesh merges multiple area calculations into a single super layer based on a common network name.
+                '''
+            elif self.requestType == 'multisite':
+                self.allowedOutputTypes = ['png']
+                self.description = '''
+                    CloudRF Multisite API
+
+                    Multisite creates multiple area multipoint calculations in a single request.
+                    It uses multiple transmitter locations to produce one response which factors in each transmitter.
+                '''
+            elif self.requestType == 'network':
+                self.allowedOutputTypes = ['png', 'txt']
+                self.description = '''
+                    CloudRF Network API
+
+                    Network allows to find the best site for a given location based upon a common network name.
+                '''
+            elif self.requestType == 'path':
+                self.allowedOutputTypes = ['kmz', 'png']
+                self.description = '''
+                    CloudRF Path API
+
+                    Path profile studies the link from one site to another in a direct line.
+                    It factors in system parameters, antenna patterns, environmental characteristics and terrain data to produce a JSON report containing enough values to incorporate into your analysis or create a chart from.
+                '''
+            elif self.requestType == 'points':
+                self.allowedOutputTypes = ['kmz']
+                self.description = '''
+                    CloudRF Points API
+
+                    Points calculates multiple point-to-point links in one call.
+                    It uses points to test many transmitters to one receiver and is commonly used for route analysis or calculating signal at known locations.
+                '''
+
         else:
-            sys.exit('Unsupported request type of "%s" being used. Allowed request types are: %s' % (self.requestType, allowedRequestTypes))
+            sys.exit('Unsupported request type of "%s" being used. Allowed request types are: %s' % (self.requestType, self.ALLOWED_REQUEST_TYPES))
 
     def __verboseLog(self, message):
         try:
@@ -518,4 +568,9 @@ class CloudRF:
             pass
 
 if __name__ == '__main__':
-    sys.exit('This is a core file and should not be executed directly. Please see %s for more details.' % CloudRF.URL_GITHUB)
+    try:
+        CloudRF(
+            REQUEST_TYPE = sys.argv[1]
+        )
+    except IndexError:
+        sys.exit('This script should be executed by specifying the request type you wish to run. Please pass in one of the following arguments after the call of this script: %s' % CloudRF.ALLOWED_REQUEST_TYPES)
