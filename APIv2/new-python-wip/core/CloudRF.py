@@ -50,26 +50,31 @@ class CloudRF:
 
         self.__validateApiKey()
         self.__validateFileAndDirectoryPermissions()
-        self.__jsonTemplate = self.__validateJsonTemplate()
-        self.__csvInputList = self.__validateCsv()
 
-        if self.__arguments.input_csv and self.__csvInputList:
-            # For points/multisite requests the CSV input is handled differently to others
-            if self.requestType == 'points':
-                newJsonData = self.__customiseJsonPointsFromCsv(templateJson = self.__jsonTemplate, csvListOfDictionaries = self.__csvInputList)
-                self.__calculate(jsonData = newJsonData)
-            elif self.requestType == 'multisite':
-                newJsonData = self.__customiseJsonMultisiteFromCsv(templateJson = self.__jsonTemplate, csvListOfDictionaries = self.__csvInputList)
-                self.__calculate(jsonData = newJsonData)
-            else:
-                # CSV has been used, run a request for each of the CSV rows
-                for row in self.__csvInputList:
-                    # Adjust the input JSON template to meet the values which are found in the CSV row
-                    newJsonData = self.__customiseJsonFromCsvRow(templateJson = self.__jsonTemplate, csvRowDictionary = row)
+        if self.requestType in ['area', 'multisite', 'path', 'points']:
+            self.__jsonTemplate = self.__validateJsonTemplate()
+            self.__csvInputList = self.__validateCsv()
+
+            if self.__arguments.input_csv and self.__csvInputList:
+                # For points/multisite requests the CSV input is handled differently to others
+                if self.requestType == 'points':
+                    newJsonData = self.__customiseJsonPointsFromCsv(templateJson = self.__jsonTemplate, csvListOfDictionaries = self.__csvInputList)
                     self.__calculate(jsonData = newJsonData)
-        else:
-            # Just run a calculation based on the template
-            self.__calculate(jsonData = self.__jsonTemplate)
+                elif self.requestType == 'multisite':
+                    newJsonData = self.__customiseJsonMultisiteFromCsv(templateJson = self.__jsonTemplate, csvListOfDictionaries = self.__csvInputList)
+                    self.__calculate(jsonData = newJsonData)
+                else:
+                    # CSV has been used, run a request for each of the CSV rows
+                    for row in self.__csvInputList:
+                        # Adjust the input JSON template to meet the values which are found in the CSV row
+                        newJsonData = self.__customiseJsonFromCsvRow(templateJson = self.__jsonTemplate, csvRowDictionary = row)
+                        self.__calculate(jsonData = newJsonData)
+            else:
+                # Just run a calculation based on the template
+                self.__calculate(jsonData = self.__jsonTemplate)
+
+        elif self.requestType == 'mesh':
+            self.__calculate(jsonData = None)
 
         sys.exit('Process completed. Please check your output folder (%s)' % self.__arguments.output_directory)
 
@@ -80,19 +85,24 @@ class CloudRF:
             epilog = 'For more details about this script please consult the GitHub documentation at %s.' % self.URL_GITHUB
         )
 
+        # Some endpoints have common inputs
+        if self.requestType in ['area', 'multisite', 'path', 'points']:
+            self.__parser.add_argument('-t', '--input-template', dest = 'input_template', required = True, help = 'Absolute path to input JSON template used as part of the calculation.')
+
+            if self.requestType == 'points' or self.requestType == 'multisite':
+                if self.requestType == 'points':
+                    requiredCsvHeaders = self.CSV_REQUIRED_HEADERS_POINTS
+                elif self.requestType == 'multisite':
+                    requiredCsvHeaders = self.CSV_REQUIRED_HEADERS_MULTISITE
+
+                self.__parser.add_argument('-i', '--input-csv', dest = 'input_csv', required = True, help = 'Absolute path to input CSV of points to be used in your request. The CSV header row must be included with the keys of: %s' % requiredCsvHeaders)
+            else:
+                self.__parser.add_argument('-i', '--input-csv', dest = 'input_csv', help = 'Absolute path to input CSV, used in combination with --input-template to customise your template to a specific usecase. The CSV header row must be included. Header row values must be defined in dot notation format of the template key that they are to override in the template, for example transmitter latitude will be named as "transmitter.lat".')
+
+        if self.requestType == 'mesh':
+            self.__parser.add_argument('-nn', '--network-name', dest = 'network_name', required = True, help = 'The name of the networks which you wish to mesh together.')
+
         outputPath = str(self.calledFromPath).rstrip('/') + '/output'
-
-        self.__parser.add_argument('-t', '--input-template', dest = 'input_template', required = True, help = 'Absolute path to input JSON template used as part of the calculation.')
-
-        if self.requestType == 'points' or self.requestType == 'multisite':
-            if self.requestType == 'points':
-                requiredCsvHeaders = self.CSV_REQUIRED_HEADERS_POINTS
-            elif self.requestType == 'multisite':
-                requiredCsvHeaders = self.CSV_REQUIRED_HEADERS_MULTISITE
-
-            self.__parser.add_argument('-i', '--input-csv', dest = 'input_csv', required = True, help = 'Absolute path to input CSV of points to be used in your request. The CSV header row must be included with the keys of: %s' % requiredCsvHeaders)
-        else:
-            self.__parser.add_argument('-i', '--input-csv', dest = 'input_csv', help = 'Absolute path to input CSV, used in combination with --input-template to customise your template to a specific usecase. The CSV header row must be included. Header row values must be defined in dot notation format of the template key that they are to override in the template, for example transmitter latitude will be named as "transmitter.lat".')
 
         self.__parser.add_argument('-k', '--api-key', dest = 'api_key', required = True, help = 'Your API key to the CloudRF API service.')
         self.__parser.add_argument('-u', '--base-url', dest = 'base_url', default = 'https://api.cloudrf.com/', help = 'The base URL for the CloudRF API service.')
@@ -104,7 +114,7 @@ class CloudRF:
         outputFileChoices = ['all'] + self.allowedOutputTypes if len(self.allowedOutputTypes) > 1 else self.allowedOutputTypes
         self.__parser.add_argument('-s', '--output-file-type', dest = 'output_file_type', choices = outputFileChoices, help = 'Type of file to be downloaded.', default = self.allowedOutputTypes[0])
         self.__parser.add_argument('-v', '--verbose', action="store_true", default = False, help = 'Output more information on screen. This is often useful when debugging.')
-
+        
         self.__arguments = self.__parser.parse_args()
 
     def __calculate(self, jsonData):
@@ -112,28 +122,48 @@ class CloudRF:
         requestName = now.strftime('%Y%m%d%H%M%S_' + now.strftime('%f')[:3])
         saveBasePath = str(self.__arguments.output_directory).rstrip('/') + '/' + requestName
 
-        fixedJsonData = self.__fixPotentiallyBrokenRequestJson(jsonData)
-
         self.__verboseLog('Running %s calculation: %s' % (self.requestType, requestName))
 
         try:
-            if self.__arguments.save_raw_request:
-                saveJsonRequestPath = saveBasePath + '.request.json'
-                with open(saveJsonRequestPath, 'w') as rawRequestFile:
-                    rawRequestFile.write(json.dumps(fixedJsonData, indent = 4))
-                print('Raw request saved at %s' % saveJsonRequestPath)
+            if jsonData:
+                fixedJsonData = self.__fixPotentiallyBrokenRequestJson(jsonData)
 
-            self.__verboseLog('Request JSON:')
-            self.__verboseLog(fixedJsonData)
+                # If we have JSON data then we can pass the JSON straight through
+                self.__verboseLog('Request JSON:')
+                self.__verboseLog(fixedJsonData)
 
-            response = requests.post(
-                url = str(self.__arguments.base_url).rstrip('/') + '/' + self.requestType,
-                headers = {
-                    'key': self.__arguments.api_key
-                },
-                json = fixedJsonData,
-                verify = self.__arguments.strict_ssl
-            )
+                response = requests.post(
+                    url = str(self.__arguments.base_url).rstrip('/') + '/' + self.requestType,
+                    headers = {
+                        'key': self.__arguments.api_key
+                    },
+                    json = fixedJsonData,
+                    verify = self.__arguments.strict_ssl
+                )
+
+                if self.__arguments.save_raw_request:
+                    saveJsonRequestPath = saveBasePath + '.request.json'
+                    with open(saveJsonRequestPath, 'w') as rawRequestFile:
+                        rawRequestFile.write(json.dumps(fixedJsonData, indent = 4))
+                    print('Raw request saved at %s' % saveJsonRequestPath)
+            elif self.requestType == 'mesh':
+                # Mesh requests have explicit parameters
+                response = requests.post(
+                    url = str(self.__arguments.base_url).rstrip('/') + '/' + self.requestType,
+                    headers = {
+                        'key': self.__arguments.api_key
+                    },
+                    params = {
+                        'network': self.__arguments.network_name
+                    },
+                    verify = self.__arguments.strict_ssl
+                )
+
+                if self.__arguments.save_raw_request:
+                    saveRequestPath = saveBasePath + '.request.txt'
+                    with open(saveRequestPath, 'w') as rawRequestFile:
+                        rawRequestFile.write(response.request.url)
+                    print('Raw request saved at %s' % saveRequestPath)
 
             self.__checkHttpResponse(httpStatusCode = response.status_code, httpRawResponse = response.text)
             self.__saveOutputFileTypes(httpRawResponse = response.text, saveBasePath = saveBasePath)
@@ -272,6 +302,25 @@ class CloudRF:
                     savePath = savePath
                 )
                 self.__verboseLog('%s file saved to %s' % (fileType, savePath))
+        elif self.requestType == 'mesh':
+            if fileType == 'png':
+                # PNG links exist already in the response JSON so we can just grab them from there
+                pngPath3857 = saveBasePath + '.3857.png'
+                self.__streamUrlToFile(responseJson['png_mercator'], pngPath3857)
+                self.__verboseLog('3857 projected PNG saved to %s' % pngPath3857)
+                pngPath4326 = saveBasePath + '.4326.png'
+                self.__streamUrlToFile(responseJson['png_wgs84'], pngPath4326)
+                self.__verboseLog('4326 projected PNG saved to %s' % pngPath4326)
+            if fileType == 'kmz':
+                kmzPath = saveBasePath + '.kmz'
+                self.__streamUrlToFile(responseJson['kmz'], kmzPath)
+                self.__verboseLog('Mesh KMZ saved to %s' % kmzPath)
+        elif self.requestType == 'multisite':
+            if fileType == 'png':
+                # PNG links exist already in the response JSON so we can just grab them from there
+                pngPath4326 = saveBasePath + '.4326.png'
+                self.__streamUrlToFile(responseJson['PNG_WGS84'], pngPath4326)
+                self.__verboseLog('4326 projected PNG saved to %s' % pngPath4326)
         elif self.requestType == 'path':
             if fileType == 'png':
                 pngPath = saveBasePath + '.png'
@@ -286,12 +335,6 @@ class CloudRF:
                 kmzPath = saveBasePath + '.kmz'
                 self.__streamUrlToFile(responseJson['kmz'], kmzPath)
                 self.__verboseLog('Points KMZ saved to %s' % kmzPath)
-        elif self.requestType == 'multisite':
-            if fileType == 'png':
-                # PNG links exist already in the response JSON so we can just grab them from there
-                pngPath4326 = saveBasePath + '.4326.png'
-                self.__streamUrlToFile(responseJson['PNG_WGS84'], pngPath4326)
-                self.__verboseLog('4326 projected PNG saved to %s' % pngPath4326)
         else:
             sys.exit('Unable to retrieve output file of unsupported request type.')
     
@@ -364,12 +407,13 @@ class CloudRF:
                 sys.exit('An unknown error occurred when checking input CSV file (%s)' % (self.__arguments.input_csv))
 
     def __validateFileAndDirectoryPermissions(self):
-        if not os.path.exists(self.__arguments.input_template):
-            sys.exit('Your input template JSON file (%s) could not be found. Please check your path. Please note that this should be in absolute path format.' % self.__arguments.input_template)
-        else:
-            self.__verboseLog('Input template JSON file (%s) found with file permissions: %s' % (self.__arguments.input_template, oct(stat.S_IMODE(os.lstat(self.__arguments.input_template).st_mode))))
+        if hasattr(self.__arguments, 'input_template') and self.__arguments.input_template:
+            if not os.path.exists(self.__arguments.input_template):
+                sys.exit('Your input template JSON file (%s) could not be found. Please check your path. Please note that this should be in absolute path format.' % self.__arguments.input_template)
+            else:
+                self.__verboseLog('Input template JSON file (%s) found with file permissions: %s' % (self.__arguments.input_template, oct(stat.S_IMODE(os.lstat(self.__arguments.input_template).st_mode))))
 
-        if self.__arguments.input_csv:
+        if hasattr(self.__arguments, 'input_csv') and self.__arguments.input_csv:
             if not os.path.exists(self.__arguments.input_csv):
                 sys.exit('Your input CSV file (%s) could not be found. Please check your path. Please note that this should be in absolute path format.' % self.__arguments.input_csv)
             else:
@@ -404,7 +448,7 @@ class CloudRF:
             sys.exit('An unknown error occurred when checking input template JSON file (%s)' % (self.__arguments.input_template))
 
     def __validateRequestType(self):
-        allowedRequestTypes = ['area', 'path', 'points', 'multisite']
+        allowedRequestTypes = ['area', 'mesh', 'multisite', 'path', 'points']
 
         if self.requestType and self.requestType in allowedRequestTypes:
             self.__verboseLog('Valid request type of %s being used.' % self.requestType)
