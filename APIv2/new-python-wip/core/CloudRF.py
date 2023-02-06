@@ -73,7 +73,7 @@ class CloudRF:
                 # Just run a calculation based on the template
                 self.__calculate(jsonData = self.__jsonTemplate)
 
-        elif self.requestType == 'mesh':
+        elif self.requestType in ['interference', 'mesh']:
             self.__calculate(jsonData = None)
 
         sys.exit('Process completed. Please check your output folder (%s)' % self.__arguments.output_directory)
@@ -99,8 +99,8 @@ class CloudRF:
             else:
                 self.__parser.add_argument('-i', '--input-csv', dest = 'input_csv', help = 'Absolute path to input CSV, used in combination with --input-template to customise your template to a specific usecase. The CSV header row must be included. Header row values must be defined in dot notation format of the template key that they are to override in the template, for example transmitter latitude will be named as "transmitter.lat".')
 
-        if self.requestType == 'mesh':
-            self.__parser.add_argument('-nn', '--network-name', dest = 'network_name', required = True, help = 'The name of the networks which you wish to mesh together.')
+        if self.requestType in ['mesh', 'interference']:
+            self.__parser.add_argument('-nn', '--network-name', dest = 'network_name', required = True, help = 'The name of the network which you wish to run the analysis on.')
 
         outputPath = str(self.calledFromPath).rstrip('/') + '/output'
 
@@ -146,7 +146,7 @@ class CloudRF:
                     with open(saveJsonRequestPath, 'w') as rawRequestFile:
                         rawRequestFile.write(json.dumps(fixedJsonData, indent = 4))
                     print('Raw request saved at %s' % saveJsonRequestPath)
-            elif self.requestType == 'mesh':
+            elif self.requestType in ['interference', 'mesh']:
                 # Mesh requests have explicit parameters
                 response = requests.post(
                     url = str(self.__arguments.base_url).rstrip('/') + '/' + self.requestType,
@@ -302,6 +302,15 @@ class CloudRF:
                     savePath = savePath
                 )
                 self.__verboseLog('%s file saved to %s' % (fileType, savePath))
+        elif self.requestType == 'interference':
+            if fileType == 'png':
+                # PNG links exist already in the response JSON so we can just grab them from there
+                pngPath3857 = saveBasePath + '.3857.png'
+                self.__streamUrlToFile(responseJson['png_mercator'], pngPath3857)
+                self.__verboseLog('3857 projected PNG saved to %s' % pngPath3857)
+                pngPath4326 = saveBasePath + '.4326.png'
+                self.__streamUrlToFile(responseJson['png_wgs84'], pngPath4326)
+                self.__verboseLog('4326 projected PNG saved to %s' % pngPath4326)
         elif self.requestType == 'mesh':
             if fileType == 'png':
                 # PNG links exist already in the response JSON so we can just grab them from there
@@ -413,13 +422,14 @@ class CloudRF:
             else:
                 self.__verboseLog('Input template JSON file (%s) found with file permissions: %s' % (self.__arguments.input_template, oct(stat.S_IMODE(os.lstat(self.__arguments.input_template).st_mode))))
 
-        if hasattr(self.__arguments, 'input_csv') and self.__arguments.input_csv:
-            if not os.path.exists(self.__arguments.input_csv):
-                sys.exit('Your input CSV file (%s) could not be found. Please check your path. Please note that this should be in absolute path format.' % self.__arguments.input_csv)
+        if hasattr(self.__arguments, 'input_csv'):
+            if self.__arguments.input_csv:
+                if not os.path.exists(self.__arguments.input_csv):
+                    sys.exit('Your input CSV file (%s) could not be found. Please check your path. Please note that this should be in absolute path format.' % self.__arguments.input_csv)
+                else:
+                    self.__verboseLog('Input CSV file (%s) found with file permissions: %s' % (self.__arguments.input_csv, oct(stat.S_IMODE(os.lstat(self.__arguments.input_csv).st_mode))))
             else:
-                self.__verboseLog('Input CSV file (%s) found with file permissions: %s' % (self.__arguments.input_csv, oct(stat.S_IMODE(os.lstat(self.__arguments.input_csv).st_mode))))
-        else:
-            print('Input CSV has not been specified. Default values in input template JSON file will be used.')
+                print('Input CSV has not been specified. Default values in input template JSON file will be used.')
 
         if not os.path.exists(self.__arguments.output_directory):
             self.__verboseLog('Output directory (%s) does not exist, attempting to create.' % self.__arguments.output_directory)
@@ -448,7 +458,7 @@ class CloudRF:
             sys.exit('An unknown error occurred when checking input template JSON file (%s)' % (self.__arguments.input_template))
 
     def __validateRequestType(self):
-        allowedRequestTypes = ['area', 'mesh', 'multisite', 'path', 'points']
+        allowedRequestTypes = ['area', 'interference', 'mesh', 'multisite', 'path', 'points']
 
         if self.requestType and self.requestType in allowedRequestTypes:
             self.__verboseLog('Valid request type of %s being used.' % self.requestType)
