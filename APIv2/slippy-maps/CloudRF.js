@@ -197,7 +197,7 @@ function createPointsRequest(rxLat, rxLon, points, map) {
 
 
 // Advanced use. Point-to-multipoint with antenna azimuth and customised parameters
-function createRFSector(lat, lon, azi, txh, col, map) {
+function createRFSectorRequest(lat, lon, azi, txh, col, map) {
     /*
     1. Fetch a template
     2. Apply any variables like latitude, longitude, altitude
@@ -226,7 +226,7 @@ function createRFSector(lat, lon, azi, txh, col, map) {
     template.receiver.rxs = -105;
     template.receiver.rxg = 1;
 
-    let JSONtemplate = JSON.stringify(template);
+    let JSONtemplate = JSON.stringify(template, null, 4);
     CloudRFAreaAPI(JSONtemplate, map);
 }
 
