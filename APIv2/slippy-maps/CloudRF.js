@@ -173,9 +173,6 @@ function createAreaRequest(lat, lon, map, engine = '2') {
     template.transmitter.lon = lon;
 
     let JSONtemplate = JSON.stringify(template, null, 4);
-
-    $('#requestRawOutput').html(JSONtemplate)
-
     CloudRFAreaAPI(JSONtemplate, map);
 }
 
@@ -250,6 +247,8 @@ function validateApiKey() {
 function CloudRFAreaAPI(request, slippyMap) {
     validateApiKey();
 
+    $('#requestRawOutput').html(request)
+
     let xhr = new XMLHttpRequest();
     xhr.withCredentials = false;
     xhr.addEventListener("readystatechange", function () {
@@ -267,10 +266,14 @@ function CloudRFAreaAPI(request, slippyMap) {
 function CloudRFPathAPI(request, slippyMap) {
     validateApiKey();
 
+    $('#requestRawOutput').html(request)
+
     let xhr = new XMLHttpRequest();
     xhr.withCredentials = false;
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
+            responseJson = JSON.parse(this.responseText)
+            $('#responseRawOutput').html(JSON.stringify(responseJson, null, 4))
             PathCallback(this.responseText, slippyMap);
         }
     });
@@ -330,9 +333,8 @@ function PathCallback(text) {
     var polyline = L.polyline(latlngs, { color: style, title: "link" }).addTo(map);
 
     // Pull the PNG image
-    document.getElementById("chart").innerHTML = "<img src='" + json["Chart image"] + "'/>";
-    document.getElementById("report").innerHTML = "<textarea rows='20' cols='100'>" + JSON.stringify(json, undefined, 4) + "</textarea>";
-
+    $('#chartImage').remove();
+    $(`<img id="chartImage" class="w-100" src="${json["Chart image"]}" />`).insertBefore('#responseRawOutput');
 }
 
 // Leaflet only :p
