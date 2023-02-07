@@ -382,7 +382,12 @@ function AreaCallback(text, slippyMap) {
     if (slippyMap === "leaflet") { // Leaflet bounds are SOUTH,WEST, NORTH, EAST
         var boundsNESW = json.bounds; // CloudRF uses NORTH,EAST,SOUTH,WEST
         var imageBounds = [[boundsNESW[2], boundsNESW[3]], [boundsNESW[0], boundsNESW[1]]];
-        L.imageOverlay(json.PNG_Mercator, imageBounds).setOpacity(0.5).addTo(map);
+        L.imageOverlay(
+            $('input[name="calculationEngine"]:checked').val() == 1 ? json.PNG_WGS84 : json.PNG_Mercator, 
+            imageBounds
+        )
+        .setOpacity($('input[name="calculationEngine"]:checked').val() == 1 ? 0.9 : 0.5)
+        .addTo(map);
     }
     if (slippyMap === "mapbox") { // Leaflet bounds are SOUTH,WEST, NORTH, EAST
         var boundsNESW = json.bounds; // CloudRF uses NORTH,EAST,SOUTH,WEST
