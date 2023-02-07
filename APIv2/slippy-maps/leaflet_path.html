@@ -1,127 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-	<title>Leaflet CloudRF demo</title>
-  <script src="cloudrf.js"></script>
-  <script src="radio_templates.js"></script>
-	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
-  <style>
-    .map {
-      width: 100%;
-      height:400px;
-    }
-    body{
-      font-family: Arial;
-    }
-  </style>
+    <title>Leaflet CloudRF Demo</title>
+    <script src="CloudRF.js"></script>
+    <script src="radioTemplates.js"></script>
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <link rel="stylesheet" href="CloudRF.css">
 </head>
+
 <body>
-    <center>
-  <h2>CloudRF path API demo</h2>
-  Drag the markers to position them. Edit RF settings in radio_templates.js<br>
-  Template <select id="templateSelect" ></select>
-  <a href="#" onclick="testPath()">Go</a>
-  <br>
+    <h2>CloudRF Path API Demo</h2>
 
-<div id="mapid" style="width: 1000px; height: 400px;"></div>
-<div id="chart"></div>
-<div id="report"></div>
-<script>
-	var map = L.map('mapid').setView([38.93, 1.448], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '<a href="https://cloudrf.com">CloudRF</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(map);
+    <p>Drag the markers to position them. Edit RF settings in radioTemplates.js</p>
+    <p>Template <select id="templateSelect" class="mr-1"></select><a href="#" onclick="testPath()">Go</a></p>
 
-// Fetch lat/lon for all points on map
-function testPath(){
-	var txLat = 0;
-	var txLon = 0;
-    var rxLat = 0;
-	var rxLon = 0;   
-    var request = my_templates[document.getElementById("templateSelect").value];
+    <div id="mapid" class="map"></div>
+    <div id="chart"></div>
+    <div id="report"></div>
 
+    <p>
+        <a href="https://cloudrf.com/documentation/developer/swagger-ui/">API schema</a>
+        <a href="https://leafletjs.com/examples/quick-start/">Map documentation</a>
+    </p>
 
-	map.eachLayer(function(layer){
-			if(layer.options.title === "Tx"){
-				txLat = layer.getLatLng().lat;
-				txLon = layer.getLatLng().lng;
-			}
-			if(layer.options.title === "Rx"){
-				rxLat = layer.getLatLng().lat;
-				rxLon = layer.getLatLng().lng;
-			}
-	});
+    <script>
+        var map = L.map('mapid').setView([38.93, 1.448], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '<a href="https://cloudrf.com">CloudRF</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-    // update the JSON with our locations
-    request.transmitter.lat = txLat;
-    request.transmitter.lon = txLon;
-    request.receiver.lat = rxLat;
-    request.receiver.lon = rxLon;           
-    request.antenna.azi = bearing(txLat,txLon,rxLat,rxLon);
-
-    // API accepts a JSON string in the body
-    console.log(request);
-    CloudRFPathAPI(JSON.stringify(request));
-
-}
-var LeafIcon = L.Icon.extend({
-    options: {
-        iconSize:     [32, 32],
-        iconAnchor:   [16, 16],
-        popupAnchor:  [0, 0]
-    }
-});
-
-var antIcon = new LeafIcon({
-    iconUrl: 'marker.png'
-})
+        // Fetch lat/lon for all points on map
+        function testPath() {
+            var txLat = 0;
+            var txLon = 0;
+            var rxLat = 0;
+            var rxLon = 0;
+            var request = myTemplates[document.getElementById("templateSelect").value];
 
 
-function addTx(latitude,longitude){
-	ap = new L.marker([latitude,longitude], {title: 'Tx', draggable:'true', icon: antIcon});
-	map.addLayer(ap);
-	ap.on('dragend', function(event){
-		var marker = event.target;
-		var position = marker.getLatLng();
-		marker.setLatLng(new L.LatLng(position.lat, position.lng),{draggable:'true'});
-		testPath();
-	});
-}
+            map.eachLayer(function (layer) {
+                if (layer.options.title === "Tx") {
+                    txLat = layer.getLatLng().lat;
+                    txLon = layer.getLatLng().lng;
+                }
+                if (layer.options.title === "Rx") {
+                    rxLat = layer.getLatLng().lat;
+                    rxLon = layer.getLatLng().lng;
+                }
+            });
 
-function addRx(latitude,longitude){
-	ap = new L.marker([latitude,longitude], {title: 'Rx', draggable:'true', icon: antIcon});
-	map.addLayer(ap);
-    ap.on('dragend', function(event){
-		var marker = event.target;
-		var position = marker.getLatLng();
-		marker.setLatLng(new L.LatLng(position.lat, position.lng),{draggable:'true'});
-		testPath();
-	});
-}
+            // update the JSON with our locations
+            request.transmitter.lat = txLat;
+            request.transmitter.lon = txLon;
+            request.receiver.lat = rxLat;
+            request.receiver.lon = rxLon;
+            request.antenna.azi = bearing(txLat, txLon, rxLat, rxLon);
 
-// Add our markers for the path
-addTx(38.92957,1.417623);
-addRx(38.91915,1.4647);
+            // API accepts a JSON string in the body
+            console.log(request);
+            CloudRFPathAPI(JSON.stringify(request));
 
-// populate templates
-var options = "";
+        }
+        var LeafIcon = L.Icon.extend({
+            options: {
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, 0]
+            }
+        });
 
-for(var t=0; t<my_templates.length; t++){
-    console.log(my_templates[t].site);
-    options = options + "<option value='"+t+"'>"+my_templates[t].site+"</option>\n";
-}
-document.getElementById("templateSelect").innerHTML = options; // "sing a song of old school I don't really care..."
+        var antIcon = new LeafIcon({
+            iconUrl: 'marker.png'
+        })
 
-testPath();
 
-</script>
+        function addTx(latitude, longitude) {
+            ap = new L.marker([latitude, longitude], { title: 'Tx', draggable: 'true', icon: antIcon });
+            map.addLayer(ap);
+            ap.on('dragend', function (event) {
+                var marker = event.target;
+                var position = marker.getLatLng();
+                marker.setLatLng(new L.LatLng(position.lat, position.lng), { draggable: 'true' });
+                testPath();
+            });
+        }
 
-<a href="https://cloudrf.com/documentation/developer/swagger-ui/">API schema</a>, 
-<a href="https://leafletjs.com/examples/quick-start/">Map documentation</a>
+        function addRx(latitude, longitude) {
+            ap = new L.marker([latitude, longitude], { title: 'Rx', draggable: 'true', icon: antIcon });
+            map.addLayer(ap);
+            ap.on('dragend', function (event) {
+                var marker = event.target;
+                var position = marker.getLatLng();
+                marker.setLatLng(new L.LatLng(position.lat, position.lng), { draggable: 'true' });
+                testPath();
+            });
+        }
 
-</center>
+        // Add our markers for the path
+        addTx(38.92957, 1.417623);
+        addRx(38.91915, 1.4647);
+
+        // populate templates
+        var options = "";
+
+        for (var t = 0; t < myTemplates.length; t++) {
+            console.log(myTemplates[t].site);
+            options = options + "<option value='" + t + "'>" + myTemplates[t].site + "</option>\n";
+        }
+        document.getElementById("templateSelect").innerHTML = options; // "sing a song of old school I don't really care..."
+
+        testPath();
+
+    </script>
 
 </body>
+
 </html>
