@@ -13,7 +13,10 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 var apiKey = undefined;
 var apiServiceBaseUrl = undefined;
 
-setApiServiceBaseUrl();
+$(document).ready(function() {
+    setApiServiceBaseUrl();
+    validateApiKey();
+})
 
 $('input#apiKey').on('change', function() {
     apiKey = $('input#apiKey').val();
