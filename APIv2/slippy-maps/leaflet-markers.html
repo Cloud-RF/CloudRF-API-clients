@@ -16,39 +16,37 @@
     <link rel="stylesheet" href="CloudRF.css">
 </head>
 
-<body>
-	<div class="p-2">
-		<h1>Leaflet CloudRF Points API Demo</h1>
+<body class="p-2">
+	<h1>Leaflet CloudRF Points API Demo</h1>
 
-		<div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
+	<div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
 
-		<div class="input-group input-group-sm mb-3">
-            <span class="input-group-text">API Key</span>
-            <input id="apiKey" type="text" class="form-control" placeholder="Your API Key for service defined below.">
-        </div>
+	<div class="input-group input-group-sm mb-3">
+		<span class="input-group-text">API Key</span>
+		<input id="apiKey" type="text" class="form-control" placeholder="Your API Key for service defined below.">
+	</div>
 
-        <div class="input-group input-group-sm mb-3">
-            <span class="input-group-text">API Service Base URL</span>
-            <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
-        </div>
+	<div class="input-group input-group-sm mb-3">
+		<span class="input-group-text">API Service Base URL</span>
+		<input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
+	</div>
 
-		<p>Click the map to add a customer. Drag the tower and the customers to move them. To change RF settings, edit the template within CloudRF.js</p>
-		<p>API reference: <a href="https://docs.cloudrf.com">docs.cloudrf.com</a></p>
+	<p>Click the map to add a customer. Drag the tower and the customers to move them. To change RF settings, edit the template within CloudRF.js</p>
+	<p>API reference: <a href="https://docs.cloudrf.com">docs.cloudrf.com</a></p>
 
-		<div id="mapMarkers" class="map"></div>
+	<div id="mapMarkers" class="map"></div>
 
-		<div class="d-flex justify-content-between">
-            <div class="w-50 mx-4">
-                <h2>Request</h2>
+	<div class="d-flex justify-content-between">
+		<div class="w-50 mx-4">
+			<h2>Request</h2>
 
-                <pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
-            </div>
-            <div class="w-50 mx-4">
-                <h2>Response</h2>
+			<pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+		</div>
+		<div class="w-50 mx-4">
+			<h2>Response</h2>
 
-                <pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
-            </div>
-        </div>
+			<pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+		</div>
 	</div>
 
 	<script 

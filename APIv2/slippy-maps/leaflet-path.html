@@ -16,43 +16,41 @@
     <link rel="stylesheet" href="CloudRF.css">
 </head>
 
-<body>
-    <div class="p-2">
-        <h1>CloudRF Path API Demo</h1>
+<body class="p-2">
+    <h1>CloudRF Path API Demo</h1>
 
-        <div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
+    <div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
 
-        <div class="input-group input-group-sm mb-3">
-            <span class="input-group-text">API Key</span>
-            <input id="apiKey" type="text" class="form-control" placeholder="Your API Key for service defined below.">
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Key</span>
+        <input id="apiKey" type="text" class="form-control" placeholder="Your API Key for service defined below.">
+    </div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Service Base URL</span>
+        <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
+    </div>
+
+    <p>Drag the markers to position them. Edit RF settings in radioTemplates.js</p>
+    <p>Template <select id="templateSelect"></select><button class="mx-2 btn btn-secondary btn-sm" onclick="testPath()">Go</button></p>
+
+    <p>
+        <a href="https://cloudrf.com/documentation/developer/swagger-ui/">API schema</a>
+        <a href="https://leafletjs.com/examples/quick-start/">Map documentation</a>
+    </p>
+
+    <div id="mapPath" class="map"></div>
+
+    <div class="d-flex justify-content-between">
+        <div class="w-50 mx-4">
+            <h2>Request</h2>
+
+            <pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
         </div>
+        <div class="w-50 mx-4">
+            <h2>Response</h2>
 
-        <div class="input-group input-group-sm mb-3">
-            <span class="input-group-text">API Service Base URL</span>
-            <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
-        </div>
-
-        <p>Drag the markers to position them. Edit RF settings in radioTemplates.js</p>
-        <p>Template <select id="templateSelect"></select><button class="mx-2 btn btn-secondary btn-sm" onclick="testPath()">Go</button></p>
-
-        <p>
-            <a href="https://cloudrf.com/documentation/developer/swagger-ui/">API schema</a>
-            <a href="https://leafletjs.com/examples/quick-start/">Map documentation</a>
-        </p>
-
-        <div id="mapPath" class="map"></div>
-
-        <div class="d-flex justify-content-between">
-            <div class="w-50 mx-4">
-                <h2>Request</h2>
-
-                <pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
-            </div>
-            <div class="w-50 mx-4">
-                <h2>Response</h2>
-
-                <pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
-            </div>
+            <pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
         </div>
     </div>
 
