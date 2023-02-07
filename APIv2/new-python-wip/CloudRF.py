@@ -71,6 +71,7 @@ class CloudRF:
                 self.__calculate(jsonData = self.__jsonTemplate)
 
         elif self.requestType in ['interference', 'network', 'mesh']:
+            # Each of these do not use JSON data, instead they make use of parameters which are expected in argparse
             self.__calculate(jsonData = None)
 
         sys.exit('Process completed. Please check your output folder (%s)' % self.__arguments.output_directory)
@@ -158,7 +159,7 @@ class CloudRF:
                     requestParams['lat'] = self.__arguments.latitude
                     requestParams['lon'] = self.__arguments.longitude
                     requestParams['rxh'] = self.__arguments.altitude
-                else:
+                elif self.requestType in ['interference', 'mesh']:
                     requestParams['network'] = self.__arguments.network_name
 
                 response = requests.post(
