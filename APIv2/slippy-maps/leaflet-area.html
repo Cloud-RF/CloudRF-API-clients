@@ -46,7 +46,7 @@
         <p>Click the map to add RF coverage. To change settings, edit the template within CloudRF.js</p>
         <p>API reference: <a href="https://docs.cloudrf.com" target="_blank">docs.cloudrf.com</a></p>
 
-        <div id="map" class="map"></div>
+        <div id="mapArea" class="map"></div>
 
         <div class="d-flex justify-content-between">
             <div class="w-50 mx-4">
@@ -76,7 +76,7 @@
     <script src="CloudRF.js"></script>
 
     <script>
-        var map = L.map('map').setView([38.916, 1.448], 12);
+        var map = L.map('mapArea').setView([38.916, 1.448], 12);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
