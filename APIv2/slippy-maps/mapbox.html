@@ -70,7 +70,7 @@ font-size: 13px;
 
 	function onMapClick(e) {
 		  console.log(e);
-			createRFLayer(e.lngLat.lat,e.lngLat.lng,"mapbox");
+		  createAreaRequest(e.lngLat.lat,e.lngLat.lng,"mapbox");
 	}
 
 map.on('click', onMapClick);

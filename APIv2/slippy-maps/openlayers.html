@@ -40,7 +40,7 @@
     map.on('click', function(evt){
         var point = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
         console.log(point);
-        createRFLayer(point[1],point[0],"openlayers");
+        createAreaRequest(point[1],point[0],"openlayers");
     });
   </script>
   Click the map to add RF coverage. To change settings, edit the template within CloudRF.js<br>
