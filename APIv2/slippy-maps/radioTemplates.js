@@ -1,7 +1,7 @@
 var myTemplates = [
     {
         "site": "4GHz parabolic, 21dBi",
-        "network": "DEMO",
+        "network": "CloudRF-API-clients-DEMO",
         "transmitter": {
             "lat": 38.916,
             "lon": 1.448,
@@ -52,7 +52,7 @@ var myTemplates = [
     },
     {
         "site": "PMR446 2W handheld",
-        "network": "DEMO",
+        "network": "CloudRF-API-clients-DEMO",
         "transmitter": {
             "lat": 38.916,
             "lon": 1.448,
