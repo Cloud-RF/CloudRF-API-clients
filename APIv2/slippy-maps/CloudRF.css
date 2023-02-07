@@ -1,12 +1,4 @@
-body {
-    font-family: Arial;
-}
-
 .map {
     width: 100%;
     height: 400px;
-}
-
-.mr-1 {
-    margin-right: 0.25rem;
 }
