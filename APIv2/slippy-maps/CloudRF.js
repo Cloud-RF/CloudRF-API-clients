@@ -9,7 +9,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-var apiKey = "101-IBIZA.DEMO.KEY"; // Look after your API key. You can hide it by putting a proxy script
+
+var apiKey = undefined;
+var apiServiceBaseUrl = undefined;
+
+setApiServiceBaseUrl();
+
+$('input#apiKey').on('change', function() {
+    apiKey = $('input#apiKey').val();
+})
+
+$('input#apiServiceBaseUrl').on('change', function() {
+    setApiServiceBaseUrl()
+})
+
+function setApiServiceBaseUrl() {
+    apiServiceBaseUrl = $('input#apiServiceBaseUrl').val().replace(/\/$/, "");
+}
 
 // Converts from degrees to radians.
 function toRadians(degrees) {
@@ -214,41 +230,61 @@ function createRFSector(lat, lon, azi, txh, col, map) {
     CloudRFAreaAPI(JSONtemplate, map);
 }
 
-function CloudRFPathAPI(request, slippyMap) {
-    var xhr = new XMLHttpRequest();
-    xhr.withCredentials = false;
-    xhr.addEventListener("readystatechange", function () {
-        if (this.readyState === 4) {
-            PathCallback(this.responseText, slippyMap);
-        }
-    });
-    xhr.open("POST", "https://api.cloudrf.com/path");
-    xhr.setRequestHeader("key", apiKey);
-    xhr.send(request);
+function displayAlertMessage(message) {
+    $('#dangerAlert').removeClass('d-none').html(message);
+}
+
+function hideAlertMessage() {
+    $('#dangerAlert').addClass('d-none')
+}
+
+function validateApiKey() {
+    hideAlertMessage()
+
+    if(!apiKey) displayAlertMessage('You do not have an API key set!');
 }
 
 function CloudRFAreaAPI(request, slippyMap) {
-    var xhr = new XMLHttpRequest();
+    validateApiKey();
+
+    let xhr = new XMLHttpRequest();
     xhr.withCredentials = false;
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
             AreaCallback(this.responseText, slippyMap);
         }
     });
-    xhr.open("POST", "https://api.cloudrf.com/area");
+    xhr.open("POST", `${apiServiceBaseUrl}/area`);
+    xhr.setRequestHeader("key", apiKey);
+    xhr.send(request);
+}
+
+function CloudRFPathAPI(request, slippyMap) {
+    validateApiKey();
+
+    let xhr = new XMLHttpRequest();
+    xhr.withCredentials = false;
+    xhr.addEventListener("readystatechange", function () {
+        if (this.readyState === 4) {
+            PathCallback(this.responseText, slippyMap);
+        }
+    });
+    xhr.open("POST", `${apiServiceBaseUrl}/path`);
     xhr.setRequestHeader("key", apiKey);
     xhr.send(request);
 }
 
 function CloudRFPointsAPI(request, slippyMap) {
-    var xhr = new XMLHttpRequest();
+    validateApiKey();
+
+    let xhr = new XMLHttpRequest();
     xhr.withCredentials = false;
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
             PointsCallback(this.responseText, slippyMap);
         }
     });
-    xhr.open("POST", "https://api.cloudrf.com/points");
+    xhr.open("POST", `${apiServiceBaseUrl}/points`);
     xhr.setRequestHeader("key", apiKey);
     xhr.send(request);
 }
