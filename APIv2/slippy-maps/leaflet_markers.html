@@ -2,29 +2,70 @@
 <html lang="en">
 
 <head>
-	<title>Leaflet CloudRF Demo</title>
-	<script src="CloudRF.js"></script>
-	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-		integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
-		crossorigin="" />
-	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
-		integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
-		crossorigin=""></script>
-	<link rel="stylesheet" href="CloudRF.css">
+    <title>Leaflet CloudRF Demo</title>
+    <link 
+        rel="stylesheet" 
+        href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" 
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="CloudRF.css">
 </head>
 
 <body>
-	<!-- https://leafletjs.com/examples/quick-start/ -->
-	<h2>Leaflet CloudRF Points API Demo</h2>
+	<div class="p-2">
+		<h1>Leaflet CloudRF Points API Demo</h1>
 
-	<div id="mapid" class="map"></div>
+		<div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
 
-	<p>Click the map to add a customer. Drag the tower and the customers to move them. To change RF settings, edit the template within CloudRF.js</p>
-	<p>API reference: <a href="https://docs.cloudrf.com">docs.cloudrf.com</a></p>
+		<div class="input-group input-group-sm mb-3">
+            <span class="input-group-text">API Key</span>
+            <input id="apiKey" type="text" class="form-control" placeholder="Your API Key for service defined below.">
+        </div>
+
+        <div class="input-group input-group-sm mb-3">
+            <span class="input-group-text">API Service Base URL</span>
+            <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
+        </div>
+
+		<p>Click the map to add a customer. Drag the tower and the customers to move them. To change RF settings, edit the template within CloudRF.js</p>
+		<p>API reference: <a href="https://docs.cloudrf.com">docs.cloudrf.com</a></p>
+
+		<div id="mapMarkers" class="map"></div>
+
+		<div class="d-flex justify-content-between">
+            <div class="w-50 mx-4">
+                <h2>Request</h2>
+
+                <pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+            </div>
+            <div class="w-50 mx-4">
+                <h2>Response</h2>
+
+                <pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+            </div>
+        </div>
+	</div>
+
+	<script 
+		src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" 
+		integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" 
+		crossorigin="anonymous"></script>
+	<script
+		src="https://code.jquery.com/jquery-3.6.3.min.js"
+		integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+		crossorigin="anonymous"></script>
+	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+		integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+		crossorigin=""></script>
+	<script src="CloudRF.js"></script>
 
 	<script>
-		var map = L.map('mapid').setView([38.916, 1.448], 12);
+		var map = L.map('mapMarkers').setView([38.916, 1.448], 12);
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			attribution: '<a href="https://cloudrf.com">CloudRF</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 		}).addTo(map);
@@ -46,7 +87,7 @@
 				}
 			});
 
-			createPoints(apLat, apLon, customers);
+			createPointsRequest(apLat, apLon, customers);
 		}
 		var LeafIcon = L.Icon.extend({
 			options: {

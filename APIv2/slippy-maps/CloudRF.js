@@ -177,7 +177,7 @@ function createAreaRequest(lat, lon, map, engine = '2') {
 }
 
 // Points API. One AP to many CPE
-function createPoints(rxLat, rxLon, points, map) {
+function createPointsRequest(rxLat, rxLon, points, map) {
     /*
     1. Fetch a template
     2. Apply any variables like latitude, longitude, altitude
@@ -190,7 +190,7 @@ function createPoints(rxLat, rxLon, points, map) {
     // Add the CPE array :)
     multipointTemplate.points = points;
 
-    let JSONtemplate = JSON.stringify(multipointTemplate);
+    let JSONtemplate = JSON.stringify(multipointTemplate, null, 4);
     console.log(JSONtemplate);
     CloudRFPointsAPI(JSONtemplate, map);
 }
@@ -285,10 +285,14 @@ function CloudRFPathAPI(request, slippyMap) {
 function CloudRFPointsAPI(request, slippyMap) {
     validateApiKey();
 
+    $('#requestRawOutput').html(request)
+
     let xhr = new XMLHttpRequest();
     xhr.withCredentials = false;
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
+            responseJson = JSON.parse(this.responseText)
+            $('#responseRawOutput').html(JSON.stringify(responseJson, null, 4))
             PointsCallback(this.responseText, slippyMap);
         }
     });
