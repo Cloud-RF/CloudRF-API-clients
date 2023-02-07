@@ -17,6 +17,7 @@ setApiServiceBaseUrl();
 
 $('input#apiKey').on('change', function() {
     apiKey = $('input#apiKey').val();
+    validateApiKey();
 })
 
 $('input#apiServiceBaseUrl').on('change', function() {
@@ -54,8 +55,8 @@ function bearing(startLat, startLng, destLat, destLng) {
 // For extra points, create multiple templates to have many radios in your tool
 
 var template = {
-    "site": "DEMO",
-    "network": "DEMO",
+    "site": "CloudRF-API-clients-DEMO",
+    "network": "CloudRF-API-clients-DEMO",
     "transmitter": {
         "lat": 38.916,
         "lon": 1.448,
@@ -89,11 +90,6 @@ var template = {
         "rel": 95,
         "ter": 4
     },
-    "environment": {
-        "clm": 1,
-        "cll": 2,
-        "mat": 0.5
-    },
     "output": {
         "units": "metric",
         "col": "RAINBOW.dBm",
@@ -109,8 +105,8 @@ var template = {
 // Contains an array of points for the points API
 // https://cloudrf.com/documentation/developer/swagger-ui/#/Create/points
 var multipointTemplate = {
-    "site": "DEMO",
-    "network": "DEMO",
+    "site": "CloudRF-API-clients-DEMO",
+    "network": "CloudRF-API-clients-DEMO",
     "transmitter": {
         "lat": 38.916,
         "lon": 1.448,
@@ -162,17 +158,21 @@ var multipointTemplate = {
     }
 };
 // Simplest use. Point-to-multimpoint around a location with fixed settings
-function createRFLayer(lat, lon, map) {
+function createAreaRequest(lat, lon, map, engine = '2') {
     /*
     1. Fetch a template
     2. Apply any variables like latitude, longitude, altitude
     3. Send to api
     4. Put on map
     */
+    template.engine = engine;
     template.transmitter.lat = lat;
     template.transmitter.lon = lon;
 
-    var JSONtemplate = JSON.stringify(template);
+    let JSONtemplate = JSON.stringify(template, null, 4);
+
+    $('#requestRawOutput').html(JSONtemplate)
+
     CloudRFAreaAPI(JSONtemplate, map);
 }
 
@@ -190,7 +190,7 @@ function createPoints(rxLat, rxLon, points, map) {
     // Add the CPE array :)
     multipointTemplate.points = points;
 
-    var JSONtemplate = JSON.stringify(multipointTemplate);
+    let JSONtemplate = JSON.stringify(multipointTemplate);
     console.log(JSONtemplate);
     CloudRFPointsAPI(JSONtemplate, map);
 }
@@ -226,7 +226,7 @@ function createRFSector(lat, lon, azi, txh, col, map) {
     template.receiver.rxs = -105;
     template.receiver.rxg = 1;
 
-    var JSONtemplate = JSON.stringify(template);
+    let JSONtemplate = JSON.stringify(template);
     CloudRFAreaAPI(JSONtemplate, map);
 }
 
@@ -251,6 +251,8 @@ function CloudRFAreaAPI(request, slippyMap) {
     xhr.withCredentials = false;
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
+            responseJson = JSON.parse(this.responseText)
+            $('#responseRawOutput').html(JSON.stringify(responseJson, null, 4))
             AreaCallback(this.responseText, slippyMap);
         }
     });
