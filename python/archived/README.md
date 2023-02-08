@@ -1,6 +1,8 @@
-# API v2 Examples
+# FILES DEPRECATED
 
 > WARNING! The files in this directory are archived and are not maintained. They are kept for reference. Use these at your own risk.
+
+# API v2 Examples
 
 These examples use API 2.0 and a default configuration with the Ibiza demo key in cloudrf.ini:
 
