@@ -15,6 +15,7 @@
 - Added input box on slippy map examples to allow the base URL to be customised.
 - Added input box on Mapbox slippy map example to allow you to set your Mapbox public access token without needing to edit the HTML source.
 - Removed Windows executables. Instead the Python examples should be run once Python has been installed. Tested as working on Windows 11 with Python 3.11.
+- Restructured repository to make directories clearer as to what they do.
 - Added CHANGELOG.
 
 ## 2022-11-16
