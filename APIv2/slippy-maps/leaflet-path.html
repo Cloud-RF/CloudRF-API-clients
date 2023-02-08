@@ -31,13 +31,11 @@
         <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
     </div>
 
-    <p>Drag the markers to position them. Edit RF settings in radioTemplates.js</p>
-    <p>Template <select id="templateSelect"></select><button class="mx-2 btn btn-secondary btn-sm" onclick="testPath()">Go</button></p>
+    <p>Enter your API key above and then select a template from the dropdown. Templates are stored in the <code>radioTemplates.js</code> file.</p>
+    <p>Drag the markers to position them and a path profile will be calculated using the CloudRF API for your markers. You can also force a request by clicking the "Go" button.</p>
+    <p><a href="index.html">Click here</a> to see reference documentation and other demos.</p>
 
-    <p>
-        <a href="https://cloudrf.com/documentation/developer/swagger-ui/">API schema</a>
-        <a href="https://leafletjs.com/examples/quick-start/">Map documentation</a>
-    </p>
+    <p><strong>Template</strong> <select id="templateSelect"></select><button class="mx-2 btn btn-secondary btn-sm" onclick="testPath()">Go</button></p>
 
     <div id="mapPath" class="map"></div>
 
