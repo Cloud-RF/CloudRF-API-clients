@@ -2,85 +2,127 @@
 <html>
 
 <head>
-	<meta charset="utf-8">
-	<title>CloudRF Mapbox GL demo</title>
-	<script src="CloudRF.js"></script>
-	<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+	<title>CloudRF Mapbox Demo</title>
 	<link href="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css" rel="stylesheet">
-	<script src="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js"></script>
-	<style>
-		#map {
-			width: 100%;
-			height: 600px
-		}
-	</style>
+	<link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" 
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="CloudRF.css">
 </head>
 
-<body>
-	<style>
-		.calculation-box {
-			height: 75px;
-			width: 150px;
-			position: absolute;
-			bottom: 40px;
-			left: 10px;
-			background-color: rgba(255, 255, 255, 0.9);
-			padding: 15px;
-			text-align: center;
-		}
+<body class="p-2">
+	<h1>CloudRF Mapbox Demo</h1>
 
-		p {
-			font-family: 'Open Sans';
-			margin: 0;
-			font-size: 13px;
-		}
-	</style>
+	<div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
 
-	<h1>CloudRF Mapbox GL demo</h1>
-	<div id="map"></div>
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">Mapbox Public Token</span>
+        <input id="mapboxPublicToken" type="text" class="form-control" placeholder="Your public token for your Mapbox account at https://account.mapbox.com.">
+    </div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Key</span>
+        <input id="apiKey" type="text" class="form-control" placeholder="Your API Key for service defined below.">
+    </div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Service Base URL</span>
+        <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
+    </div>
+
+	<div class="pb-2">
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="calculationEngine" id="cpuEngine" value="2" checked>
+            <label class="form-check-label" for="cpuEngine">CPU Engine</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="calculationEngine" id="gpuEngine" value="1">
+            <label class="form-check-label" for="gpuEngine">GPU Engine (Requires GPU plan)</label>
+        </div>
+    </div>
+
+	<p>Added your Mapbox public token, and your CloudRF API key and then click on the map to add RF coverage.</p>
+	<p>To change settings, edit the template within CloudRF.js</p>
+    <p>API reference: <a href="https://docs.cloudrf.com" target="_blank">docs.cloudrf.com</a></p>
+
+	<div id="mapArea" class="map"></div>
+
+	<div class="d-flex justify-content-between">
+        <div class="w-50 mx-4">
+            <h2>Request</h2>
+
+            <pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+        <div class="w-50 mx-4">
+            <h2>Response</h2>
+
+            <pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+    </div>
+
+	<script 
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" 
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" 
+        crossorigin="anonymous"></script>
+    <script
+        src="https://code.jquery.com/jquery-3.6.3.min.js"
+        integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+        crossorigin="anonymous"></script>
+	<script src="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js"></script>
+    <script src="CloudRF.js"></script>
 
 	<script>
-		// ADD YOUR ACCESS TOKEN FROM
-		// https://account.mapbox.com
-		mapboxgl.accessToken = 'YOUR MAPBOX ACCESS TOKEN';
-		const map = new mapboxgl.Map({
-			container: 'map', // container ID
-			style: 'mapbox://styles/mapbox/satellite-v9', // style URL
-			center: [1.448, 38.916], // starting position [lng, lat]
-			zoom: 13, // starting zoom
-			pitch: 45
-		});
+		mapboxgl.accessToken = undefined;
+		var map = undefined;
 
-		map.on('load', () => {
-			map.addSource('mapbox-dem', {
-				'type': 'raster-dem',
-				'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
-				'tileSize': 512,
-				'maxzoom': 14
+		$('input#mapboxPublicToken').on('change', function() {
+			mapboxgl.accessToken = $('input#mapboxPublicToken').val();
+
+			map = new mapboxgl.Map({
+				container: 'mapArea', // container ID
+				style: 'mapbox://styles/mapbox/satellite-v9', // style URL
+				center: [1.448, 38.916], // starting position [lng, lat]
+				zoom: 13, // starting zoom
+				pitch: 45
 			});
-			// add the DEM source as a terrain layer with exaggerated height
-			map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 2 });
 
-			// add a sky layer that will show when the map is highly pitched
-			map.addLayer({
-				'id': 'sky',
-				'type': 'sky',
-				'paint': {
-					'sky-type': 'atmosphere',
-					'sky-atmosphere-sun': [0.0, 0.0],
-					'sky-atmosphere-sun-intensity': 15
-				}
+			map.on('load', () => {
+				map.addSource('mapbox-dem', {
+					'type': 'raster-dem',
+					'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+					'tileSize': 512,
+					'maxzoom': 14
+				});
+				// add the DEM source as a terrain layer with exaggerated height
+				map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 2 });
+
+				// add a sky layer that will show when the map is highly pitched
+				map.addLayer({
+					'id': 'sky',
+					'type': 'sky',
+					'paint': {
+						'sky-type': 'atmosphere',
+						'sky-atmosphere-sun': [0.0, 0.0],
+						'sky-atmosphere-sun-intensity': 15
+					}
+				});
 			});
-		});
 
-		function onMapClick(e) {
-			console.log(e);
-			createAreaRequest(e.lngLat.lat, e.lngLat.lng, "mapbox");
-		}
+			function onMapClick(e) {
+				createAreaRequest(
+					e.lngLat.lat, 
+					e.lngLat.lng, 
+					"mapbox",
+					$('input[name="calculationEngine"]:checked').val()
+				);
+			}
 
-		map.on('click', onMapClick);
+			map.on('click', onMapClick);
+		})
+
 	</script>
-	Add your mapbox token in the HTML source then click the map.
 </body>
 
 </html>
