@@ -34,6 +34,10 @@ class CloudRF:
 
         PythonValidator.version()
         self.__validateRequestType()
+
+        # We use the first argument passed in to determine the type of request, but this conflicts with argparse, need to remove it
+        sys.argv.pop(1)
+
         self.__argparseInitialiser()
 
         # If we are in verbose mode then just output everything
