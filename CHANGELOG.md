@@ -17,6 +17,7 @@
 - Removed Windows executables. Instead the Python examples should be run once Python has been installed. Tested as working on Windows 11 with Python 3.11.
 - Restructured repository to make directories clearer as to what they do.
 - Improvements to all README files, giving instructions on how to execute each example.
+- Added GitHub templates for issues on new bugs and feature requests, and on pull requests.
 - Added CHANGELOG.
 
 ## 2022-11-16
