@@ -1,80 +1,86 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta charset="utf-8">
-<title>CloudRF Mapbox GL demo</title>
-<script src="CloudRF.js"></script>
-<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-<link href="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css" rel="stylesheet">
-<script src="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js"></script>
-<style>
-#map { width: 100%; height: 600px}
-</style>
+	<meta charset="utf-8">
+	<title>CloudRF Mapbox GL demo</title>
+	<script src="CloudRF.js"></script>
+	<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+	<link href="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css" rel="stylesheet">
+	<script src="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js"></script>
+	<style>
+		#map {
+			width: 100%;
+			height: 600px
+		}
+	</style>
 </head>
+
 <body>
-<style>
-.calculation-box {
-height: 75px;
-width: 150px;
-position: absolute;
-bottom: 40px;
-left: 10px;
-background-color: rgba(255, 255, 255, 0.9);
-padding: 15px;
-text-align: center;
-}
+	<style>
+		.calculation-box {
+			height: 75px;
+			width: 150px;
+			position: absolute;
+			bottom: 40px;
+			left: 10px;
+			background-color: rgba(255, 255, 255, 0.9);
+			padding: 15px;
+			text-align: center;
+		}
 
-p {
-font-family: 'Open Sans';
-margin: 0;
-font-size: 13px;
-}
-</style>
+		p {
+			font-family: 'Open Sans';
+			margin: 0;
+			font-size: 13px;
+		}
+	</style>
 
-<h1>CloudRF Mapbox GL demo</h1>
-<div id="map"></div>
+	<h1>CloudRF Mapbox GL demo</h1>
+	<div id="map"></div>
 
-<script>
-	// ADD YOUR ACCESS TOKEN FROM
-	// https://account.mapbox.com
-	mapboxgl.accessToken = 'YOUR MAPBOX ACCESS TOKEN';
-	const map = new mapboxgl.Map({
-	container: 'map', // container ID
-	style: 'mapbox://styles/mapbox/satellite-v9', // style URL
-	center: [1.448, 38.916], // starting position [lng, lat]
-	zoom: 13, // starting zoom
-	pitch: 45
-	});
+	<script>
+		// ADD YOUR ACCESS TOKEN FROM
+		// https://account.mapbox.com
+		mapboxgl.accessToken = 'YOUR MAPBOX ACCESS TOKEN';
+		const map = new mapboxgl.Map({
+			container: 'map', // container ID
+			style: 'mapbox://styles/mapbox/satellite-v9', // style URL
+			center: [1.448, 38.916], // starting position [lng, lat]
+			zoom: 13, // starting zoom
+			pitch: 45
+		});
 
-	map.on('load', () => {
-	map.addSource('mapbox-dem', {
-	'type': 'raster-dem',
-	'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
-	'tileSize': 512,
-	'maxzoom': 14
-	});
-	// add the DEM source as a terrain layer with exaggerated height
-	map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 2 });
+		map.on('load', () => {
+			map.addSource('mapbox-dem', {
+				'type': 'raster-dem',
+				'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+				'tileSize': 512,
+				'maxzoom': 14
+			});
+			// add the DEM source as a terrain layer with exaggerated height
+			map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 2 });
 
-	// add a sky layer that will show when the map is highly pitched
-	map.addLayer({
-	'id': 'sky',
-	'type': 'sky',
-	'paint': {
-	'sky-type': 'atmosphere',
-	'sky-atmosphere-sun': [0.0, 0.0],
-	'sky-atmosphere-sun-intensity': 15
-	}
-	});
-	});
+			// add a sky layer that will show when the map is highly pitched
+			map.addLayer({
+				'id': 'sky',
+				'type': 'sky',
+				'paint': {
+					'sky-type': 'atmosphere',
+					'sky-atmosphere-sun': [0.0, 0.0],
+					'sky-atmosphere-sun-intensity': 15
+				}
+			});
+		});
 
-	function onMapClick(e) {
-		  console.log(e);
-		  createAreaRequest(e.lngLat.lat,e.lngLat.lng,"mapbox");
-	}
+		function onMapClick(e) {
+			console.log(e);
+			createAreaRequest(e.lngLat.lat, e.lngLat.lng, "mapbox");
+		}
 
-map.on('click', onMapClick);
-</script>
-Add your mapbox token in the HTML source then click the map.
+		map.on('click', onMapClick);
+	</script>
+	Add your mapbox token in the HTML source then click the map.
 </body>
+
 </html>
