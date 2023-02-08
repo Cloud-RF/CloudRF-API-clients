@@ -3,14 +3,14 @@
 ## 2023-02-08
 
 - Complete redesign of Python example making use of a single entry script for each of the request types: `area`, `interference`, `mesh`, `multisite`, `network`, `path`, `points`.
-- Validate file/directory permissions and minimum Python version.
-- Validate CloudRF API key before sending to API.
-- Validate input JSON templates and CSV files.
-- Added `--api-key`, `--base-url`, and `--no-strict-ssl` flags, removing the need for `cloudrf.ini`.
-- Added error logging to output when an API request did not return a HTTP 200 response.
-- Added logic to fix potential broken JSON request for some request types.
-- Added `--save-raw-request` flag to save the response which was sent to the CloudRF API service.
-- Improvements to `--verbose` logging.
+- Validate file/directory permissions and minimum Python version in Python client.
+- Validate CloudRF API key before sending to API in Python client.
+- alidate input JSON templates and CSV files in Python client.
+- Added `--api-key`, `--base-url`, and `--no-strict-ssl` flags, removing the need for `cloudrf.ini` in Python client.
+- Added error logging to output when an API request did not return a HTTP 200 response in Python client.
+- Added logic to fix potential broken JSON request for some request types in Python client.
+- Added `--save-raw-request` flag to save the response which was sent to the CloudRF API service in Python client.
+- Improvements to `--verbose` logging in Python client.
 - Updated all slippy map examples to work with new CloudRF logic whereby Ibiza requires an API key. Input box on map example allows you to set this for your environment.
 - Added input box on slippy map examples to allow the base URL to be customised.
 - Added input box on Mapbox slippy map example to allow you to set your Mapbox public access token without needing to edit the HTML source.
