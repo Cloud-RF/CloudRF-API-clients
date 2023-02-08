@@ -56,7 +56,7 @@ python3 CloudRF.py area --base-url https://not-api.cloudrf.com
 
 ### Disable Strict SSL
 
-When customising the `--base-url` you may be using a server which may have a self-signed SSL certificate and as such the connection over HTTPS can not be verified and will fail. A workaround for this is to disable strict SSL verification if you trust the server which you are making the request to. This is done with the `--no-strict-ssl` flag.
+When customising the `--base-url` you may be using a server which has a self-signed SSL certificate and therefore the connection over HTTPS can not be verified and will fail. A workaround for this is to disable strict SSL verification if you trust the server which you are making the request to. This is done with the `--no-strict-ssl` flag.
 
 By default this value is disabled.
 
