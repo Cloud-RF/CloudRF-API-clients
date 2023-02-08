@@ -427,9 +427,9 @@ function AreaCallback(text, slippyMap) {
 
         // Create an image layer
         var imageLayer = new ol.layer.Image({
-            opacity: 0.5,
+            opacity: $('input[name="calculationEngine"]:checked').val() == 1 ? 0.9 : 0.5,
             source: new ol.source.ImageStatic({
-                url: json.PNG_Mercator,
+                url: $('input[name="calculationEngine"]:checked').val() == 1 ? json.PNG_WGS84 : json.PNG_Mercator,
                 projection: map.getView().getProjection(),
                 imageExtent: ol.proj.transformExtent(boundsWSEN, 'EPSG:4326', 'EPSG:3857')
             })
