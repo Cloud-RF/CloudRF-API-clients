@@ -1,6 +1,6 @@
 # CloudRF API Clients Changelog
 
-## Upcoming Changes
+## 2023-02-08
 
 - Complete redesign of Python example making use of a single entry script for each of the request types: `area`, `interference`, `mesh`, `multisite`, `network`, `path`, `points`.
 - Validate file/directory permissions and minimum Python version.
