@@ -4,7 +4,15 @@ In this directory contains a Python client which is used to interface with the C
 
 ## Quick Start
 
-To get started quickly with this example, you should ensure that you have Python installed on your machine, and then you can execute the [CloudRF.py](CloudRF.py) script. This script has been written to be as verbose and helpful as possible and so should provide useful feedback when you have passed in an incorrect or missing parameter.
+To get started quickly with this example, you should ensure that you have Python installed on your machine, then you should `pip` install the libraries in the [requirements.txt](requirements.txt) file:
+
+```bash
+python3 -m pip install -r requirements.txt
+# or
+python -m pip install -r requirements.txt
+```
+
+Once done then you can execute the [CloudRF.py](CloudRF.py) script. This script has been written to be as verbose and helpful as possible and so should provide useful feedback when you have passed in an incorrect or missing parameter.
 
 ```bash
 python3 CloudRF.py
