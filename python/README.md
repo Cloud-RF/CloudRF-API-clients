@@ -1,6 +1,6 @@
 # CloudRF Python Client
 
-In this directory contains a Python client which is used to interface with the CloudRF API.
+In this directory contains a Python client which can be used to interface with the CloudRF API.
 
 ## Quick Start
 
