@@ -403,7 +403,7 @@ function AreaCallback(text, slippyMap) {
         }
         map.addSource('cloudrf', {
             'type': 'image',
-            'url': json.PNG_Mercator,
+            'url': $('input[name="calculationEngine"]:checked').val() == 1 ? json.PNG_WGS84 : json.PNG_Mercator,
             'coordinates': [
                 [boundsNESW[3], boundsNESW[0]],
                 [boundsNESW[1], boundsNESW[0]],
@@ -417,7 +417,7 @@ function AreaCallback(text, slippyMap) {
             'source': 'cloudrf',
             'paint': {
                 'raster-fade-duration': 0,
-                'raster-opacity': 0.5
+                'raster-opacity': $('input[name="calculationEngine"]:checked').val() == 1 ? 0.9 : 0.5
             }
         });
     }
