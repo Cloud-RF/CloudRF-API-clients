@@ -10,8 +10,8 @@ If you have integrated your own application(s) with the CloudRF API and wish to 
 
 In order to make use of these examples you will require:
 
-- An internet connection which is accessible to the CloudRF API service of `https://api.cloudrf.com`.
-- An account on the CloudRF service with your API key. This can be obtained from `https://cloudrf.com/my-account`.
+- An internet connection which is accessible to the CloudRF API service of [https://api.cloudrf.com](https://api.cloudrf.com).
+- An account on the CloudRF service with your API key. This can be obtained from [https://cloudrf.com/my-account](https://cloudrf.com/my-account).
 
 ## Examples
 
