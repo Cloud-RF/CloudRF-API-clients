@@ -22,7 +22,7 @@ Below are the list of available examples which can be used. You are encouraged t
 - The [slippy-maps](slippy-maps/) directoriy contains examples of various slippy map libraries which interface with the CloudRF API to present layers of RF coverage and results.
 - The [templates](templates/) directory contains a list of example JSON templates which can be used to interface with the CloudRF API. For a more comprehensive list of templates you should consult the [CloudRF UI](https://cloudrf.com/ui).
 
-You can view a live hosted version of the [slippy map](slippy-map) examples at [https://cloud-rf.github.io/CloudRF-API-clients/Slippy%20maps/index.html](https://cloud-rf.github.io/CloudRF-API-clients/Slippy%20maps/index.html)
+You can view a live hosted version of the [slippy map](slippy-map) examples at [https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/index.html](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/index.html)
 
 ## Commercial Use
 
