@@ -2,7 +2,7 @@
 
 In this directory contains a Python client which can be used to interface with the CloudRF API.
 
-## Quick Start
+## Installation
 
 To get started quickly with this example, you should ensure that you have Python installed on your machine, then you should `pip` install the libraries in the [requirements.txt](requirements.txt) file:
 
@@ -32,6 +32,17 @@ The above example will initialise the `CloudRF.py` script in `area` mode and wil
 
 For each of the request types you can use the `-h` or `--help` flag to output in full a description of what the request type is along with all required and optional parameters.
 
+## Hello World!
+
+The below example will do a single `area` request based upon the values in the `5G-CBand-sector.json` template.
+
+```bash
+python3 CloudRF.py area \
+    --api-key MY-API-KEY \
+    --input-template ../templates/5G-CBand-sector.json
+```
+
+
 ## Customise Your Request/Response
 
 The script has a number of flags which can be passed in which can be used to customise your request and/or response. Full details of each flag can be viewed by passing in the `-h`/`--help` flag, but below details some of the more important flags:
@@ -51,7 +62,7 @@ The `-u` or `--base-url` flag can be used to define a different endpoint for the
 By default the script is set to use `https://api.cloudrf.com`.
 
 ```bash
-python3 CloudRF.py area --base-url https://not-api.cloudrf.com
+python3 CloudRF.py area --base-url https://soothsayer
 ```
 
 ### Disable Strict SSL
@@ -69,7 +80,7 @@ python3 CloudRF.py area --no-strict-ssl
 Making use of the `-t` or `--input-template` is used to customise your request body through the use of a JSON template, such as those available in the [templates](../templates/) directory. The argument passed into this flag should be given as an absolute path.
 
 ```bash
-python3 CloudRF.py area --input-template /home/user/CloudRF-API-clients/templates/5G-CBand-sector.json
+python3 CloudRF.py area --input-template ../templates/5G-CBand-sector.json
 ```
 
 For most request types `-t` or `--input-template` is a required flag.
@@ -137,25 +148,25 @@ The below example will do a single `area` request based upon the values in the `
 ```bash
 python3 CloudRF.py area \
     --api-key MY-API-KEY \
-    --input-template /home/user/CloudRF-API-clients/templates/5G-CBand-sector.json
+    --input-template ../templates/5G-CBand-sector.json
 ```
 
 ### Fully Customised Area Request
 
 The below example is fully customised of all that available options. 
 
-It runs numerous requests based upon the rows in `area.csv` which override any values in `5G-CBand-sector.json`. It uses `https://not-api.cloudrf.com` as the CloudRF API service and disabled SSL verification. It saves all output types, the raw request and raw response to the `/home/user/5G-outputs` directory and runs in `verbose` mode to aid with any potential issues which may occur during the process.
+It runs numerous requests based upon the rows in `area.csv` which override any values in `5G-CBand-sector.json`. It uses `https://soothsayer` as the CloudRF API service and disabled SSL verification. It saves all output types, the raw request and raw response to the `5G-outputs` directory and runs in `verbose` mode to aid with any potential issues which may occur during the process.
 
 ```bash
 python3 CloudRF.py area \
     --api-key MY-API-KEY \
-    --input-template /home/user/CloudRF-API-clients/templates/5G-CBand-sector.json \
-    --input-csv /home/user/CloudRF-API-clients/python/area.csv \
-    --base-url https://not-api.cloudrf.com \
+    --input-template ../templates/5G-CBand-sector.json \
+    --input-csv area.csv \
+    --base-url https://soothsayer \
     --no-strict-ssl \
     --save-raw-request \
     --save-raw-response \
-    --output-directory /home/user/5G-outputs \
+    --output-directory 5G-outputs \
     --output-file-type all \
     --verbose
 ```

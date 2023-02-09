@@ -19,14 +19,20 @@ Below are the list of available examples which can be used. You are encouraged t
 
 - The [python](python/) directory contains a parent Python 3 script which allows interaction with all of the primary CloudRF API endpoints. This script is quite comprehensive and so for usage you are recommended to consult the [README](python/README.md) for more information.
 - The [bash](bash/) directory contains some Bash scripts which make use of cURL to to CloudRF API.
-- The [slippy-maps](slippy-maps/) directoriy contains examples of various slippy map libraries which interface with the CloudRF API to present layers of RF coverage and results.
+- The [slippy-maps](slippy-maps/) directory contains examples of various popular web mapping libraries which interface with the CloudRF API to present layers of RF coverage and results.
 - The [templates](templates/) directory contains a list of example JSON templates which can be used to interface with the CloudRF API. For a more comprehensive list of templates you should consult the [CloudRF UI](https://cloudrf.com/ui).
 
 You can view a live hosted version of the [slippy map](slippy-map) examples at [https://cloud-rf.github.io/CloudRF-API-clients/Slippy%20maps/index.html](https://cloud-rf.github.io/CloudRF-API-clients/Slippy%20maps/index.html)
 
 ## Commercial Use
 
-You are free to use this API in commercial apps, even ones where you charge customers. Attribution is welcomed but not required.
+You are free to use this API in commercial apps with attribution to *CloudRF*. If you need an exemption get in touch with a business case.
+
+*An example of acceptable use would be a online map with a feature to add RF coverage as a layer.*
+
+If you are building an application or business which is entirely ***dependent*** upon our API, you should contact us first to **request approval and establish a service level agreement.** 
+
+*A random example of unacceptable use would be a used car salesman with a business MBA launching a new RF planning tool, without prior communication, which just wraps our API for a markup.*
 
 Full terms and conditions are available at [https://cloudrf.com/terms-and-conditions](https://cloudrf.com/terms-and-conditions)
 

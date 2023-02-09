@@ -88,10 +88,8 @@ var template = {
     "model": {
         "pm": 1,
         "pe": 2,
-        "cli": 6,
-        "ked": 0,
-        "rel": 95,
-        "ter": 4
+        "ked": 1,
+        "rel": 95
     },
     "output": {
         "units": "metric",
@@ -101,7 +99,7 @@ var template = {
         "mod": 0,
         "nf": -114,
         "res": 16,
-        "rad": 2
+        "rad": 3
     }
 };
 
@@ -139,10 +137,8 @@ var multipointTemplate = {
     "model": {
         "pm": 1,
         "pe": 2,
-        "cli": 6,
-        "ked": 0,
-        "rel": 95,
-        "ter": 4
+        "ked": 1,
+        "rel": 95
     },
     "environment": {
         "clm": 0,
@@ -156,7 +152,7 @@ var multipointTemplate = {
         "ber": 0,
         "mod": 0,
         "nf": -114,
-        "res": 8,
+        "res": 10,
         "rad": 2
     }
 };
@@ -213,17 +209,18 @@ function createRFSectorRequest(lat, lon, azi, txh, col, map) {
     template.antenna.txg = 12;
     template.antenna.azi = azi;
     template.antenna.tlt = 0;
-    template.antenna.ant = 16322; // COMMSCOPE_HBX-6516DS-VTM_2110_00NELH04NQT804JQWB.ADF
-    template.antenna.hbw = 120;
-    template.antenna.vbw = 60;
+    template.antenna.ant = 0; 
+    template.antenna.hbw = 90;
+    template.antenna.vbw = 30;
+    template.antenna.fbr = 12;
 
     // Colour key is GREEN #2
     template.output.col = col;
     template.output.rad = 3;
-    template.output.res = 10;
+    template.output.res = 20;
 
     // Mobile UE
-    template.receiver.rxs = -105;
+    template.receiver.rxs = -80;
     template.receiver.rxg = 1;
 
     let JSONtemplate = JSON.stringify(template, null, 4);

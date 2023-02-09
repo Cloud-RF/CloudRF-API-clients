@@ -98,7 +98,7 @@ var myTemplates = [
             "mod": 0,
             "nf": -114,
             "res": 10,
-            "rad": 2
+            "rad": 3
         }
     }
 ];
