@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>CloudRF Area Mapbox Demo</title>
+	<link href="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css" rel="stylesheet">
+	<link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" 
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="CloudRF.css">
+</head>
+
+<body class="p-2">
+	<h1>CloudRF Area Mapbox Demo</h1>
+
+	<div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">Mapbox Public Token</span>
+        <input id="mapboxPublicToken" type="text" class="form-control" placeholder="Your public token for your Mapbox account at https://account.mapbox.com.">
+    </div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Key</span>
+        <input id="apiKey" type="text" class="form-control" placeholder="Your API Key for service defined below.">
+    </div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Service Base URL</span>
+        <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
+    </div>
+
+	<div class="pb-2">
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="calculationEngine" id="cpuEngine" value="2" checked>
+            <label class="form-check-label" for="cpuEngine">CPU Engine</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="calculationEngine" id="gpuEngine" value="1">
+            <label class="form-check-label" for="gpuEngine">GPU Engine (Requires GPU plan)</label>
+        </div>
+    </div>
+
+	<p>Enter your API key and Mapbox public token above and then click on the map to add an RF coverage layer to the Mapbox map calculated by the CloudRF API. RF settings are taken from the <code>CloudRF.js</code> file.</p>
+    <p><a href="index.html">Click here</a> to see reference documentation and other demos.</p>
+
+	<div id="mapArea" class="map"></div>
+
+	<div class="d-flex justify-content-between">
+        <div class="w-50 mx-4">
+            <h2>Request</h2>
+
+            <pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+        <div class="w-50 mx-4">
+            <h2>Response</h2>
+
+            <pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+    </div>
+
+	<script 
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" 
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" 
+        crossorigin="anonymous"></script>
+    <script
+        src="https://code.jquery.com/jquery-3.6.3.min.js"
+        integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+        crossorigin="anonymous"></script>
+	<script src="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js"></script>
+    <script src="CloudRF.js"></script>
+
+	<script>
+		mapboxgl.accessToken = undefined;
+		var map = undefined;
+
+		$('input#mapboxPublicToken').on('change', function() {
+			mapboxgl.accessToken = $('input#mapboxPublicToken').val();
+
+			map = new mapboxgl.Map({
+				container: 'mapArea', // container ID
+				style: 'mapbox://styles/mapbox/satellite-v9', // style URL
+				center: [1.448, 38.916], // starting position [lng, lat]
+				zoom: 13, // starting zoom
+				pitch: 45
+			});
+
+			map.on('load', () => {
+				map.addSource('mapbox-dem', {
+					'type': 'raster-dem',
+					'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+					'tileSize': 512,
+					'maxzoom': 14
+				});
+				// add the DEM source as a terrain layer with exaggerated height
+				map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 2 });
+
+				// add a sky layer that will show when the map is highly pitched
+				map.addLayer({
+					'id': 'sky',
+					'type': 'sky',
+					'paint': {
+						'sky-type': 'atmosphere',
+						'sky-atmosphere-sun': [0.0, 0.0],
+						'sky-atmosphere-sun-intensity': 15
+					}
+				});
+			});
+
+			function onMapClick(e) {
+				createAreaRequest(
+					e.lngLat.lat, 
+					e.lngLat.lng, 
+					"mapbox",
+					$('input[name="calculationEngine"]:checked').val()
+				);
+			}
+
+			map.on('click', onMapClick);
+		})
+
+	</script>
+</body>
+
+</html>

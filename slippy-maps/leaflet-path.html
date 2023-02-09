@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>CloudRF Path Leaflet Demo</title>
+    <link 
+        rel="stylesheet" 
+        href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" 
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="CloudRF.css">
+</head>
+
+<body class="p-2">
+    <h1>CloudRF Path Leaflet Demo</h1>
+
+    <div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Key</span>
+        <input id="apiKey" type="text" class="form-control" placeholder="Your API Key for service defined below.">
+    </div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Service Base URL</span>
+        <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
+    </div>
+
+    <p>Enter your API key above and then select a template from the dropdown. Templates are stored in the <code>radioTemplates.js</code> file.</p>
+    <p>Drag the markers to position them and a path profile will be calculated using the CloudRF API for your markers. You can also force a request by clicking the "Go" button.</p>
+    <p><a href="index.html">Click here</a> to see reference documentation and other demos.</p>
+
+    <p><strong>Template</strong> <select id="templateSelect"></select><button class="mx-2 btn btn-secondary btn-sm" onclick="testPath()">Go</button></p>
+
+    <div id="mapPath" class="map"></div>
+
+    <div class="d-flex justify-content-between">
+        <div class="w-50 mx-4">
+            <h2>Request</h2>
+
+            <pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+        <div class="w-50 mx-4">
+            <h2>Response</h2>
+
+            <pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+    </div>
+
+    <script 
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" 
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" 
+        crossorigin="anonymous"></script>
+    <script
+        src="https://code.jquery.com/jquery-3.6.3.min.js"
+        integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <script src="CloudRF.js"></script>
+    <script src="radioTemplates.js"></script>
+
+    <script>
+        var map = L.map('mapPath').setView([38.93, 1.448], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '<a href="https://cloudrf.com">CloudRF</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Fetch lat/lon for all points on map
+        function testPath() {
+            var txLat = 0;
+            var txLon = 0;
+            var rxLat = 0;
+            var rxLon = 0;
+            var request = myTemplates[document.getElementById("templateSelect").value];
+
+            map.eachLayer(function (layer) {
+                if (layer.options.title === "Tx") {
+                    txLat = layer.getLatLng().lat;
+                    txLon = layer.getLatLng().lng;
+                }
+                if (layer.options.title === "Rx") {
+                    rxLat = layer.getLatLng().lat;
+                    rxLon = layer.getLatLng().lng;
+                }
+            });
+
+            // update the JSON with our locations
+            request.transmitter.lat = txLat;
+            request.transmitter.lon = txLon;
+            request.receiver.lat = rxLat;
+            request.receiver.lon = rxLon;
+            request.antenna.azi = bearing(txLat, txLon, rxLat, rxLon);
+
+            // API accepts a JSON string in the body
+            CloudRFPathAPI(JSON.stringify(request, null, 4));
+        }
+        var LeafIcon = L.Icon.extend({
+            options: {
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, 0]
+            }
+        });
+
+        function addTx(latitude, longitude) {
+            ap = new L.marker([latitude, longitude], { title: 'Tx', draggable: 'true', icon: new LeafIcon({iconUrl: 'images/marker.png'}) });
+            map.addLayer(ap);
+            ap.on('dragend', function (event) {
+                var marker = event.target;
+                var position = marker.getLatLng();
+                marker.setLatLng(new L.LatLng(position.lat, position.lng), { draggable: 'true' });
+                testPath();
+            });
+        }
+
+        function addRx(latitude, longitude) {
+            ap = new L.marker([latitude, longitude], { title: 'Rx', draggable: 'true', icon: new LeafIcon({iconUrl: 'images/markerRx.png'}) });
+            map.addLayer(ap);
+            ap.on('dragend', function (event) {
+                var marker = event.target;
+                var position = marker.getLatLng();
+                marker.setLatLng(new L.LatLng(position.lat, position.lng), { draggable: 'true' });
+                testPath();
+            });
+        }
+
+        // Add our markers for the path
+        addTx(38.92957, 1.417623);
+        addRx(38.91915, 1.4647);
+
+        // populate templates
+        var options = "";
+
+        for (var t = 0; t < myTemplates.length; t++) {
+            console.log(myTemplates[t].site);
+            options = options + `<option value="${t}">${myTemplates[t].site}</option>\n`;
+        }
+        document.getElementById("templateSelect").innerHTML = options; // "sing a song of old school I don't really care..."
+
+        testPath();
+
+    </script>
+
+</body>
+
+</html>
