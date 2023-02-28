@@ -123,7 +123,7 @@ class CloudRF:
         outputFileChoices = ['all'] + self.allowedOutputTypes if len(self.allowedOutputTypes) > 1 else self.allowedOutputTypes
         self.__parser.add_argument('-s', '--output-file-type', dest = 'output_file_type', choices = outputFileChoices, help = 'Type of file to be downloaded.', default = self.allowedOutputTypes[0])
         self.__parser.add_argument('-v', '--verbose', action="store_true", default = False, help = 'Output more information on screen. This is often useful when debugging.')
-        self.__parser.add_argument('-w', '--wait', dest = 'wait', action="store_true", default = 3, help = 'Wait this long before the next calculation. Default is 3 seconds')
+        self.__parser.add_argument('-w', '--wait', dest = 'wait', default = 3, help = 'Time in seconds to wait before running the next calculation.')
         
         self.__arguments = self.__parser.parse_args()
 
@@ -133,7 +133,7 @@ class CloudRF:
         saveBasePath = str(self.__arguments.output_directory).rstrip('/') + '/' + requestName
 
         self.__verboseLog('Waiting %d seconds...' % (self.__arguments.wait))
-        time.sleep(self.__arguments.wait)
+        time.sleep(int(self.__arguments.wait))
         self.__verboseLog('Running %s calculation: %s' % (self.requestType, requestName))
 
         try:
