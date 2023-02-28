@@ -12,6 +12,7 @@ import stat
 import sys
 import textwrap
 import urllib3
+import time
 
 from core.ArgparseCustomFormatter import ArgparseCustomFormatter
 from core.PythonValidator import PythonValidator
@@ -122,14 +123,17 @@ class CloudRF:
         outputFileChoices = ['all'] + self.allowedOutputTypes if len(self.allowedOutputTypes) > 1 else self.allowedOutputTypes
         self.__parser.add_argument('-s', '--output-file-type', dest = 'output_file_type', choices = outputFileChoices, help = 'Type of file to be downloaded.', default = self.allowedOutputTypes[0])
         self.__parser.add_argument('-v', '--verbose', action="store_true", default = False, help = 'Output more information on screen. This is often useful when debugging.')
+        self.__parser.add_argument('-w', '--wait', dest = 'wait', action="store_true", default = 3, help = 'Wait this long before the next calculation. Default is 3 seconds')
         
         self.__arguments = self.__parser.parse_args()
 
     def __calculate(self, jsonData):
         now = datetime.datetime.now()
-        requestName = now.strftime('%Y%m%d%H%M%S_' + now.strftime('%f')[:3])
+        requestName = now.strftime('%y-%m-%d_%H%M_' + jsonData["network"]+"_"+jsonData["site"]) 
         saveBasePath = str(self.__arguments.output_directory).rstrip('/') + '/' + requestName
 
+        self.__verboseLog('Waiting %d seconds...' % (self.__arguments.wait))
+        time.sleep(self.__arguments.wait)
         self.__verboseLog('Running %s calculation: %s' % (self.requestType, requestName))
 
         try:
@@ -304,9 +308,9 @@ class CloudRF:
         if self.requestType == 'area':
             if fileType == 'png':
                 # PNG links exist already in the response JSON so we can just grab them from there
-                pngPath3857 = saveBasePath + '.3857.png'
-                self.__streamUrlToFile(responseJson['PNG_Mercator'], pngPath3857)
-                self.__verboseLog('3857 projected PNG saved to %s' % pngPath3857)
+                #pngPath3857 = saveBasePath + '.3857.png'
+                #self.__streamUrlToFile(responseJson['PNG_Mercator'], pngPath3857)
+                #self.__verboseLog('3857 projected PNG saved to %s' % pngPath3857)
                 pngPath4326 = saveBasePath + '.4326.png'
                 self.__streamUrlToFile(responseJson['PNG_WGS84'], pngPath4326)
                 self.__verboseLog('4326 projected PNG saved to %s' % pngPath4326)
