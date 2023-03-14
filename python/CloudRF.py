@@ -6,13 +6,14 @@ import datetime
 import json
 import os
 import pathlib
+import re
 import requests
 import shutil
 import stat
 import sys
 import textwrap
-import urllib3
 import time
+import urllib3
 
 from core.ArgparseCustomFormatter import ArgparseCustomFormatter
 from core.PythonValidator import PythonValidator
@@ -408,6 +409,17 @@ class CloudRF:
 
     def __streamUrlToFile(self, requestUrl, savePath):
         response = requests.get(requestUrl, stream = True, verify = self.__arguments.strict_ssl)
+
+        # If we are retrieving a stream
+        if response.headers.get('Content-Disposition'):
+            # The file extension may be different on the server side, so we should use that by default
+            serverFilename = re.findall("filename=(.+)", response.headers.get('Content-Disposition'))[0]
+            serverFilename = serverFilename.replace('"', '')
+            serverFileExtension = serverFilename.split('.', 1)[1]
+
+            savePathBaseFilename = savePath.split('.', 1)[0]
+            savePath = savePathBaseFilename + '.' + serverFileExtension
+
         with open(savePath, 'wb') as outputFile:
             shutil.copyfileobj(response.raw, outputFile)
         del response
