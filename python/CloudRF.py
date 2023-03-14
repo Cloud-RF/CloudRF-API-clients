@@ -8,7 +8,6 @@ import os
 import pathlib
 import re
 import requests
-import shutil
 import stat
 import sys
 import textwrap
@@ -421,7 +420,7 @@ class CloudRF:
             savePath = savePathBaseFilename + '.' + serverFileExtension
 
         with open(savePath, 'wb') as outputFile:
-            shutil.copyfileobj(response.raw, outputFile)
+            outputFile.write(response.content)
         del response
 
     def __validateApiKey(self):
