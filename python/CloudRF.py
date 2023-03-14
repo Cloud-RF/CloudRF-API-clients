@@ -129,7 +129,7 @@ class CloudRF:
 
     def __calculate(self, jsonData):
         now = datetime.datetime.now()
-        requestName = now.strftime('%y-%m-%d_%H%M_' + jsonData["network"]+"_"+jsonData["site"]) 
+        requestName = now.strftime('%Y-%m-%d_%H%M%S_' + jsonData["network"] + "_" + jsonData["site"]) 
         saveBasePath = str(self.__arguments.output_directory).rstrip('/') + '/' + requestName
 
         self.__verboseLog('Waiting %d seconds...' % (self.__arguments.wait))
