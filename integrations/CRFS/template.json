@@ -1,0 +1,71 @@
+{
+    "version": "CloudRF-API-v3.4.0",
+    "reference": "https://cloudrf.com/documentation/developer/swagger-ui/",
+    "template": {
+        "name": "DEMO",
+        "service": "CloudRF https://api.cloudrf.com",
+        "created_at": "2023-04-27T10:50:55+00:00",
+        "owner": "1",
+        "bom_value": 0
+    },
+    "site": "DEMO",
+    "network": "NOISE",
+    "engine": 2,
+    "coordinates": 1,
+    "transmitter": {
+        "lat": 50.813057,
+        "lon": -0.92739,
+        "alt": 8,
+        "frq": 2450,
+        "txw": 0.1,
+        "bwi": 40,
+        "powerUnit": "W"
+    },
+    "receiver": {
+        "lat": 0,
+        "lon": 0,
+        "alt": 2,
+        "rxg": 2,
+        "rxs": 0
+    },
+    "feeder": {
+        "flt": "1",
+        "fll": 0,
+        "fcc": 0
+    },
+    "antenna": {
+        "mode": "custom",
+        "txg": 19,
+        "txl": 0,
+        "ant": 0,
+        "azi": 49,
+        "tlt": 0,
+        "hbw": 30,
+        "vbw": 30,
+        "fbr": 25,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 1,
+        "pe": 2,
+        "ked": 1,
+        "rel": 90
+    },
+    "environment": {
+        "clm": 0,
+        "elevation": 1,
+        "landcover": 0,
+        "buildings": 0,
+        "obstacles": 0
+    },
+    "output": {
+        "units": "m",
+        "col": "SNR.dB",
+        "out": 4,
+        "ber": 0,
+        "mod": 0,
+        "nf": -120,
+        "res": 10,
+        "rad": 4
+    }
+}
