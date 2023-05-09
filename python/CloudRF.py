@@ -111,7 +111,8 @@ class CloudRF:
             self.__parser.add_argument('-lon', '--longitude', dest = 'longitude', required = True, help = 'The longitude of the receiver in decimal degrees.')
             self.__parser.add_argument('-alt', '--altitude', dest = 'altitude', required = True, help = 'The altitude of the receiver in meters.')
 
-        outputPath = str(self.calledFromPath).rstrip('/') + '/output'
+        rawOutputPath = str(self.calledFromPath).rstrip('/').rstrip('\\')
+        outputPath = os.path.join(rawOutputPath, 'output')
 
         self.__parser.add_argument('-k', '--api-key', dest = 'api_key', required = True, help = 'Your API key to the CloudRF API service.')
         self.__parser.add_argument('-u', '--base-url', dest = 'base_url', default = 'https://api.cloudrf.com/', help = 'The base URL for the CloudRF API service.')
@@ -130,7 +131,8 @@ class CloudRF:
     def __calculate(self, jsonData):
         now = datetime.datetime.now()
         requestName = now.strftime('%Y-%m-%d_%H%M%S_' + jsonData["network"] + "_" + jsonData["site"]) 
-        saveBasePath = str(self.__arguments.output_directory).rstrip('/') + '/' + requestName
+        rawSaveBasePath = str(self.__arguments.output_directory).rstrip('/').rstrip('\\')
+        saveBasePath = os.path.join(rawSaveBasePath, requestName)
 
         self.__verboseLog('Waiting %d seconds...' % (int(self.__arguments.wait)))
         time.sleep(int(self.__arguments.wait))
@@ -502,7 +504,8 @@ class CloudRF:
 
         try:
             # Check if any file can be written to the output directory
-            testFilePath = str(self.__arguments.output_directory).rstrip('/') + '/tmp'
+            rawTestFilePath = str(self.__arguments.output_directory).rstrip('/').rstrip('\\')
+            testFilePath = os.path.join(rawTestFilePath, 'tmp')
             open(testFilePath, 'a')
             os.remove(testFilePath)
         except PermissionError:

@@ -1,5 +1,13 @@
 # CloudRF API Clients Changelog
 
+## 2023-05-09
+
+- Fixed incorrect path directory separator.
+
+## 2023-03-27
+
+- Added RFeye demo.
+
 ## 2023-02-08
 
 - Complete redesign of Python example making use of a single entry script for each of the request types: `area`, `interference`, `mesh`, `multisite`, `network`, `path`, `points`.
