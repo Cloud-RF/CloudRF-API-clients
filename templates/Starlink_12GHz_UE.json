@@ -1,0 +1,69 @@
+{
+    "version": "CloudRF-API-v3.8.10",
+    "reference": "https://cloudrf.com/documentation/developer/swagger-ui/",
+    "template": {
+        "name": "Starlink",
+        "service": "CloudRF https://api.cloudrf.com",
+        "created_at": "2023-08-31T09:19:43+00:00",
+        "owner": 1,
+        "bom_value": 0
+    },
+    "site": "Site",
+    "network": "UHF",
+    "engine": 1,
+    "coordinates": 1,
+    "transmitter": {
+        "lat": -1.518515,
+        "lon": 36.599143,
+        "alt": 1,
+        "frq": 12000,
+        "txw": 10,
+        "bwi": 80,
+        "powerUnit": "W"
+    },
+    "receiver": {
+        "lat": 38.913,
+        "lon": 1.45,
+        "alt": 100,
+        "rxg": 25,
+        "rxs": -90
+    },
+    "feeder": {
+        "flt": 1,
+        "fll": 0,
+        "fcc": 0
+    },
+    "antenna": {
+        "mode": "template",
+        "txg": 18,
+        "txl": 0,
+        "ant": 1,
+        "azi": 0,
+        "tlt": 0,
+        "hbw": 1,
+        "vbw": 1,
+        "fbr": 18,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 7,
+        "pe": 2,
+        "ked": 0,
+        "rel": 99
+    },
+    "environment": {
+        "clm": 1,
+        "cll": 2,
+        "clt": "Minimal.clt"
+    },
+    "output": {
+        "units": "m",
+        "col": "LTE.dBm",
+        "out": 2,
+        "ber": 1,
+        "mod": 0,
+        "nf": -95,
+        "res": 10,
+        "rad": 2
+    }
+}
