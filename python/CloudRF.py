@@ -130,7 +130,14 @@ class CloudRF:
 
     def __calculate(self, jsonData):
         now = datetime.datetime.now()
-        requestName = now.strftime('%Y-%m-%d_%H%M%S_' + jsonData["network"] + "_" + jsonData["site"]) 
+
+        calculationName = self.requestType
+        if isinstance(jsonData, dict) and "network" in jsonData and "site" in jsonData:
+            calculationName = jsonData["network"] + "_" + jsonData["site"]
+        elif self.requestType in ['interference', 'mesh', 'network']:
+            calculationName = self.__arguments.network_name
+
+        requestName = now.strftime('%Y-%m-%d_%H%M%S_' + calculationName) 
         rawSaveBasePath = str(self.__arguments.output_directory).rstrip('/').rstrip('\\')
         saveBasePath = os.path.join(rawSaveBasePath, requestName)
 
@@ -540,6 +547,7 @@ class CloudRF:
                     CloudRF Interference API
 
                     Interference will use a common network name to merge and analyse sites within that network to show the best site at a given location.
+                    In order to properly use the interference API you area required to have area calculations already completed which have a common network name.
                 '''
             elif self.requestType == 'mesh':
                 self.allowedOutputTypes = ['kmz', 'png']
@@ -547,6 +555,7 @@ class CloudRF:
                     CloudRF Mesh API
 
                     Mesh merges multiple area calculations into a single super layer based on a common network name.
+                    In order to properly use the mesh API you area required to have area calculations already completed which have a common network name.
                 '''
             elif self.requestType == 'multisite':
                 self.allowedOutputTypes = ['png']
@@ -562,6 +571,7 @@ class CloudRF:
                     CloudRF Network API
 
                     Network allows to find the best site for a given location based upon a common network name.
+                    In order to properly use the network API you area required to have area calculations already completed which have a common network name.
                 '''
             elif self.requestType == 'path':
                 self.allowedOutputTypes = ['kmz', 'png']

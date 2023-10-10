@@ -42,7 +42,6 @@ python3 CloudRF.py area \
     --input-template ../templates/5G-CBand-sector.json
 ```
 
-
 ## Customise Your Request/Response
 
 The script has a number of flags which can be passed in which can be used to customise your request and/or response. Full details of each flag can be viewed by passing in the `-h`/`--help` flag, but below details some of the more important flags:
@@ -141,7 +140,11 @@ You are encouraged to make use of the `-h`/`--help` flag to understand what each
 
 Below shows some examples of the uses of this Python script.
 
-### Basic Area Request
+Please note that for more verbose instructions on each of the request types then you can the `--help` flag to provide full details of how to use each.
+
+### Area
+
+#### Basic Area Request
 
 The below example will do a single `area` request based upon the values in the `5G-CBand-sector.json` template.
 
@@ -151,7 +154,7 @@ python3 CloudRF.py area \
     --input-template ../templates/5G-CBand-sector.json
 ```
 
-### Fully Customised Area Request
+#### Fully Customised Area Request
 
 The below example is fully customised of all that available options. 
 
@@ -171,12 +174,67 @@ python3 CloudRF.py area \
     --verbose
 ```
 
-### Interference Request
+### Interference
 
-The below example shows a basic interference request for the network name of `MY-NETWORK`.
+The below example shows a basic `interference` request for the network name of `MY-NETWORK`. This assumes that you have already created `area` calculations with the network name of `MY-NETWORK` to be used to build the interference layer.
 
 ```bash
 python3 CloudRF.py interference \
     --api-key MY-API-KEY \
     --network-name MY-NETWORK
+```
+
+### Mesh
+
+The below example shows a basic `mesh` request for the network name of `MY-NETWORK`. This assumes that you have already created `area` calculations with the network name of `MY-NETWORK` to be used to build the mesh network layer.
+
+```bash
+python3 CloudRF.py mesh \
+    --api-key MY-API-KEY \
+    --network-name MY-NETWORK
+```
+
+### Multisite
+
+The below example shows how a `multisite` request can be executed. Please note that an input CSV is required to customise sites in order to execute a successful `multisite` request. An example CSV can be found at [multisite.csv](multisite.csv).
+
+```bash
+python3 CloudRF.py multisite \
+    --api-key MY-API-KEY \
+    --input-template ../templates/5G-CBand-sector.json \
+    --input-csv multisite.csv
+```
+
+### Network
+
+The below example shows a basic request for the network name of `MY-NETWORK`. This assumes that you have already created `area` calculations with the network name of `MY-NETWORK` to be used to build the mesh network layer.
+
+```bash
+python3 CloudRF.py network \
+    --api-key MY-API-KEY \
+    --network-name MY-NETWORK \
+    --latitude 38.911892 \
+    --longitude 1.442087 \
+    --altitude 10
+```
+
+### Path
+
+The below example shows a basic use case for the `path` API.
+
+```bash
+python3 CloudRF.py path \
+    --api-key MY-API-KEY \
+    --input-template ../templates/5G-CBand-sector.json
+```
+
+### Points
+
+The below example shows a basic use case for the `points` API. Please note that a CSV of points is required. An example CSV can be found at [points.csv](points.csv).
+
+```bash
+python3 CloudRF.py points \
+    --api-key MY-API-KEY \
+    --input-template ../templates/5G-CBand-sector.json \
+    --input-csv points.csv
 ```
