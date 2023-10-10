@@ -1,5 +1,14 @@
 # CloudRF API Clients Changelog
 
+## 2023-10-10
+
+- Fixed bug with `CloudRF.py` when using `mesh` would throw an error for a missing `network` and `site`.
+- Improvements on Python documentation for example scripts.
+
+## 2023-08-31
+
+- Added GoTenna and Starlink templates.
+
 ## 2023-05-09
 
 - Fixed incorrect path directory separator.
