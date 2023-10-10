@@ -130,7 +130,14 @@ class CloudRF:
 
     def __calculate(self, jsonData):
         now = datetime.datetime.now()
-        requestName = now.strftime('%Y-%m-%d_%H%M%S_' + jsonData["network"] + "_" + jsonData["site"]) 
+
+        calculationName = self.requestType
+        if isinstance(jsonData, dict) and "network" in jsonData and "site" in jsonData:
+            calculationName = jsonData["network"] + "_" + jsonData["site"]
+        elif self.requestType in ['interference', 'mesh', 'network']:
+            calculationName = self.__arguments.network_name
+
+        requestName = now.strftime('%Y-%m-%d_%H%M%S_' + calculationName) 
         rawSaveBasePath = str(self.__arguments.output_directory).rstrip('/').rstrip('\\')
         saveBasePath = os.path.join(rawSaveBasePath, requestName)
 
