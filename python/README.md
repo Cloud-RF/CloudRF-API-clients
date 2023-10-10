@@ -140,6 +140,8 @@ You are encouraged to make use of the `-h`/`--help` flag to understand what each
 
 Below shows some examples of the uses of this Python script.
 
+Please note that for more verbose instructions on each of the request types then you can the `--help` flag to provide full details of how to use each.
+
 ### Area
 
 #### Basic Area Request
@@ -190,4 +192,49 @@ The below example shows a basic `mesh` request for the network name of `MY-NETWO
 python3 CloudRF.py mesh \
     --api-key MY-API-KEY \
     --network-name MY-NETWORK
+```
+
+### Multisite
+
+The below example shows how a `multisite` request can be executed. Please note that an input CSV is required to customise sites in order to execute a successful `multisite` request. An example CSV can be found at [multisite.csv](multisite.csv).
+
+```bash
+python3 CloudRF.py multisite \
+    --api-key MY-API-KEY \
+    --input-template ../templates/5G-CBand-sector.json \
+    --input-csv multisite.csv
+```
+
+### Network
+
+The below example shows a basic request for the network name of `MY-NETWORK`. This assumes that you have already created `area` calculations with the network name of `MY-NETWORK` to be used to build the mesh network layer.
+
+```bash
+python3 CloudRF.py network \
+    --api-key MY-API-KEY \
+    --network-name MY-NETWORK \
+    --latitude 38.911892 \
+    --longitude 1.442087 \
+    --altitude 10
+```
+
+### Path
+
+The below example shows a basic use case for the `path` API.
+
+```bash
+python3 CloudRF.py path \
+    --api-key MY-API-KEY \
+    --input-template ../templates/5G-CBand-sector.json
+```
+
+### Points
+
+The below example shows a basic use case for the `points` API. Please note that a CSV of points is required. An example CSV can be found at [points.csv](points.csv).
+
+```bash
+python3 CloudRF.py points \
+    --api-key MY-API-KEY \
+    --input-template ../templates/5G-CBand-sector.json \
+    --input-csv points.csv
 ```
