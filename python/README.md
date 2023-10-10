@@ -42,7 +42,6 @@ python3 CloudRF.py area \
     --input-template ../templates/5G-CBand-sector.json
 ```
 
-
 ## Customise Your Request/Response
 
 The script has a number of flags which can be passed in which can be used to customise your request and/or response. Full details of each flag can be viewed by passing in the `-h`/`--help` flag, but below details some of the more important flags:
@@ -141,7 +140,9 @@ You are encouraged to make use of the `-h`/`--help` flag to understand what each
 
 Below shows some examples of the uses of this Python script.
 
-### Basic Area Request
+### Area
+
+#### Basic Area Request
 
 The below example will do a single `area` request based upon the values in the `5G-CBand-sector.json` template.
 
@@ -151,7 +152,7 @@ python3 CloudRF.py area \
     --input-template ../templates/5G-CBand-sector.json
 ```
 
-### Fully Customised Area Request
+#### Fully Customised Area Request
 
 The below example is fully customised of all that available options. 
 
@@ -171,7 +172,7 @@ python3 CloudRF.py area \
     --verbose
 ```
 
-### Interference Request
+### Interference
 
 The below example shows a basic interference request for the network name of `MY-NETWORK`.
 
