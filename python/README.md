@@ -174,10 +174,20 @@ python3 CloudRF.py area \
 
 ### Interference
 
-The below example shows a basic interference request for the network name of `MY-NETWORK`.
+The below example shows a basic `interference` request for the network name of `MY-NETWORK`. This assumes that you have already created `area` calculations with the network name of `MY-NETWORK` to be used to build the interference layer.
 
 ```bash
 python3 CloudRF.py interference \
+    --api-key MY-API-KEY \
+    --network-name MY-NETWORK
+```
+
+### Mesh
+
+The below example shows a basic `mesh` request for the network name of `MY-NETWORK`. This assumes that you have already created `area` calculations with the network name of `MY-NETWORK` to be used to build the mesh network layer.
+
+```bash
+python3 CloudRF.py mesh \
     --api-key MY-API-KEY \
     --network-name MY-NETWORK
 ```
