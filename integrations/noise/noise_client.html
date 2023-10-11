@@ -1,0 +1,18 @@
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+    function bringTheNoise(){
+        var noiseArray = $("#noiseValues").val().split("\n");
+        for(i=0;i<noiseArray.length;i++){
+            var parts = noiseArray[i].split(",");
+            console.log(parts);
+        }
+    }
+
+</script>
+Paste noise here as latitude,longitude,noise:
+<br>
+<textarea id="noiseValues" rows="20" cols="30">
+</textarea>
+<br>
+<input type="submit" value="Bring the noise" onclick="bringTheNoise()"/>
+<div id="status"></div>
