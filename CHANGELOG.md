@@ -1,5 +1,10 @@
 # CloudRF API Clients Changelog
 
+## 2023-10-12
+
+- Added Leaflet `multisite` example.
+- API key input changed to `password`.
+
 ## 2023-10-10
 
 - Fixed bug with `CloudRF.py` when using `mesh` would throw an error for a missing `network` and `site`.
