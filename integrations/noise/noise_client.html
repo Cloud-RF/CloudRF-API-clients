@@ -1,18 +1,68 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
+
     function bringTheNoise(){
         var noiseArray = $("#noiseValues").val().split("\n");
+        var status = "";
+        
         for(i=0;i<noiseArray.length;i++){
             var parts = noiseArray[i].split(",");
-            console.log(parts);
+            var lat = parts[0];
+            var lon = parts[1];
+            var frequency = parts[2];
+            var noise = parts[3];
+            var apikey = $("#apiKey").val();
+            var requestBody = JSON.stringify({"latitude": lat, "longitude": lon, "frequency": frequency, "noise": noise});
+            $.ajax({
+                type: "POST",
+                url: "https://api.cloudrf.com/noise/create",
+                headers: {"key": apikey},
+                data: requestBody,
+                dataType: "json",
+                success: function(xhr,requestBody){
+                    status += requestBody+"\n";
+                    $("#status").html(status);
+                },
+                error: function(xhr, msg) {
+                    status += "FAIL"+": "+xhr.responseText+"\n";
+                    $("#status").html(status);                   
+                }
+            });
+
         }
     }
 
 </script>
-Paste noise here as latitude,longitude,noise:
-<br>
-<textarea id="noiseValues" rows="20" cols="30">
-</textarea>
-<br>
-<input type="submit" value="Bring the noise" onclick="bringTheNoise()"/>
-<div id="status"></div>
+<h1>Noise import client</h1>
+<table>
+<td>
+    API key:<input type="password" id="apiKey" value=""></input>
+    <h2>Request</h2>
+    <textarea id="noiseValues" rows="20" cols="40">
+    </textarea>
+    <br>
+    <input type="submit" value="Bring the noise" onclick="bringTheNoise()"/>
+    <h2>Response</h2>
+    <textarea id="status" rows="20" cols="40"></textarea>
+</td>
+<td valign="top">
+    <h2>API endpoint</h2>
+    https://api.cloudrf.com/noise/create
+    <h3>Parameters</h3>
+    <table border="1">
+        <th>Value<th>Description</th>
+        <tr><td>latitude</td><td>Decimal degrees WGS84. Range: -90 to 90</td></tr>
+        <tr><td>longitude</td><td>Decimal degrees WGS84. Range: -180 to 180</td></tr>
+        <tr><td>frequency</td><td>Frequency in MHz. Range: 2 to 90,000MHz</td></tr>       
+        <tr><td>noise</td><td>Measurement as dBm. Range: -150 to -40dBm</td></tr>                
+    </table>
+    <h2>CURL example</h2>
+ <pre>
+    curl -d '{"latitude":"50.1234", "longitude":-2.1234, "frequency": 446, "noise": -99}' -H "Content-Type: application/json" -X POST https://api.cloudrf.com/noise/create
+ </pre>
+ <h2>Notes</h2>
+ Noise data is private to your account only.<br>
+ Duplicate values for the same location(s) will prioritise the latest data.<br>
+ Ensure your data matches the frequencies you are planning with.
+</td>
+</table>
