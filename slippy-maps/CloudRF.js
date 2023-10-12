@@ -78,18 +78,26 @@ var template = {
     "antenna": {
         "txg": 2.15,
         "txl": 0,
-        "ant": 39,
+        "ant": 1,
         "azi": 0,
         "tlt": 0,
-        "hbw": 0,
-        "vbw": 0,
-        "pol": "v"
+        "hbw": 120,
+        "vbw": 120,
+        "pol": "v",
+        "fbr": 2
     },
     "model": {
         "pm": 1,
         "pe": 2,
         "ked": 1,
         "rel": 95
+    },
+    "environment": {
+        "clt": "Minimal.clt",
+        "elevation": 1,
+        "landcover": 1,
+        "buildings": 0,
+        "obstacles": 0
     },
     "output": {
         "units": "metric",
@@ -170,6 +178,29 @@ function createAreaRequest(lat, lon, map, engine = '2') {
 
     let JSONtemplate = JSON.stringify(template, null, 4);
     CloudRFAreaAPI(JSONtemplate, map);
+}
+
+function createMultisiteRequest(sites) {
+    // Clone the object and delete values not required
+    let multisiteRequest = {...template};
+    delete multisiteRequest.transmitter;
+    delete multisiteRequest.antenna;
+    multisiteRequest.transmitters = [];
+
+    sites.forEach((site) => {
+        console.log(site._latlng.lat)
+        console.log(site._latlng.lng)
+
+        let transmitter = {...template.transmitter};
+        transmitter.lat = site._latlng.lat;
+        transmitter.lon = site._latlng.lng;
+        transmitter.antenna = template.antenna;
+
+        multisiteRequest.transmitters.push(transmitter);
+    });
+
+    let jsonBody = JSON.stringify(multisiteRequest, null, 4);
+    CloudRFMultisiteApi(jsonBody);
 }
 
 // Points API. One AP to many CPE
@@ -256,6 +287,25 @@ function CloudRFAreaAPI(request, slippyMap) {
         }
     });
     xhr.open("POST", `${apiServiceBaseUrl}/area`);
+    xhr.setRequestHeader("key", apiKey);
+    xhr.send(request);
+}
+
+function CloudRFMultisiteApi(request) {
+    validateApiKey();
+
+    $('#requestRawOutput').html(request)
+
+    let xhr = new XMLHttpRequest();
+    xhr.withCredentials = false;
+    xhr.addEventListener("readystatechange", function () {
+        if (this.readyState === 4) {
+            responseJson = JSON.parse(this.responseText)
+            $('#responseRawOutput').html(JSON.stringify(responseJson, null, 4))
+            MultisiteCallback(this.responseText);
+        }
+    });
+    xhr.open("POST", `${apiServiceBaseUrl}/multisite`);
     xhr.setRequestHeader("key", apiKey);
     xhr.send(request);
 }
@@ -434,4 +484,24 @@ function AreaCallback(text, slippyMap) {
         console.log(imageLayer);
         map.addLayer(imageLayer);
     }
+}
+
+function MultisiteCallback(response) {
+    // Remove any layers already existing
+    map.eachLayer(function (layer) {
+        if (layer instanceof L.ImageOverlay) {
+            map.removeLayer(layer);
+        }
+    });
+
+    let json = JSON.parse(response);
+
+    let boundsNESW = json.bounds; // CloudRF uses NORTH,EAST,SOUTH,WEST
+    let imageBounds = [[boundsNESW[2], boundsNESW[3]], [boundsNESW[0], boundsNESW[1]]];
+    L.imageOverlay(
+            json.PNG_Mercator, 
+            imageBounds
+        )
+        .setOpacity(0.9)
+        .addTo(map);
 }
