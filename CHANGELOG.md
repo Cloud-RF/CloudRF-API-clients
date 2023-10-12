@@ -4,6 +4,7 @@
 
 - Added Leaflet `multisite` example.
 - API key input changed to `password`.
+- Added `noise` integration client.
 
 ## 2023-10-10
 
