@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>CloudRF Area Leaflet Demo</title>
+    <title>CloudRF Multisite Leaflet Demo</title>
     <link 
         rel="stylesheet" 
         href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
@@ -17,7 +17,7 @@
 </head>
 
 <body class="p-2">
-    <h1>CloudRF Area Leaflet Demo</h1>
+    <h1>CloudRF Multisite Leaflet Demo</h1>
 
     <div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
 
@@ -31,21 +31,11 @@
         <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
     </div>
 
-    <div class="pb-2">
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="calculationEngine" id="cpuEngine" value="2" checked>
-            <label class="form-check-label" for="cpuEngine">CPU Engine</label>
-        </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="calculationEngine" id="gpuEngine" value="1">
-            <label class="form-check-label" for="gpuEngine">GPU Engine (Requires GPU plan)</label>
-        </div>
-    </div>
-
     <p>Enter your API key above and then click on the map to add an RF coverage layer to the Leaflet map calculated by the CloudRF API. RF settings are taken from the <code>CloudRF.js</code> file.</p>
+    <p>Please note that in order to make use of the multiste demo you are required to have a plan with GPU support.</p>
     <p><a href="index.html">Click here</a> to see reference documentation and other demos.</p>
 
-    <div id="mapArea" class="map"></div>
+    <div id="mapMultisite" class="map"></div>
 
     <div class="d-flex justify-content-between">
         <div class="w-50 mx-4">
@@ -74,22 +64,44 @@
     <script src="CloudRF.js"></script>
 
     <script>
-        var map = L.map('mapArea').setView([38.916, 1.448], 12);
+        var map = L.map('mapMultisite').setView([50.333, 6.941], 14);
+        var cars = [];
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        function onMapClick(e) {
-            createAreaRequest(
-                e.latlng.lat, 
-                e.latlng.lng, 
-                'leaflet',
-                $('input[name="calculationEngine"]:checked').val()
-            );
+        var LeafIcon = L.Icon.extend({
+            options: {
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, 0]
+            }
+        });
+
+        function addCar(latitude, longitude) {
+            car = new L.marker([latitude, longitude], { title: `Car${cars.length + 1}`, draggable: 'true', icon: new LeafIcon({iconUrl: 'images/car.png'}) });
+            map.addLayer(car);
+            car.on('dragend', function (event) {
+                var marker = event.target;
+                var position = marker.getLatLng();
+                marker.setLatLng(new L.LatLng(position.lat, position.lng), { draggable: 'true' });
+                createMultisiteRequest(cars);
+            });
+            cars.push(car);
         }
 
+        function onMapClick(e) {
+			marker = addCar(e.latlng.lat, e.latlng.lng);
+            createMultisiteRequest(cars);
+		};
+
         map.on('click', onMapClick);
+
+        addCar(50.33508780839669, 6.946938369950825);
+        addCar(50.33630126946575, 6.943714563675718);
+        addCar(50.33094332349924, 6.938598138059326);
+        addCar(50.32554681914269, 6.93672434416994);
     </script>
 </body>
 
