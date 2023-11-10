@@ -15,7 +15,7 @@
             var requestBody = JSON.stringify({"latitude": lat, "longitude": lon, "frequency": frequency, "noise": noise});
             $.ajax({
                 type: "POST",
-                url: "https://api.cloudrf.com/noise/create",
+                url: "https://dev.cloudrf.com/noise/create",
                 headers: {"key": apikey},
                 data: requestBody,
                 dataType: "json",

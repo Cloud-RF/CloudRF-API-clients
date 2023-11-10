@@ -1,0 +1,9 @@
+{
+	"site":"Site","ui":3,"network":"DMR",
+	"transmitter":{"lat":"51.7747","lon":"-2.425474","alt":2,"frq":"450","txw":"2","bwi":"0.1"},
+	"receiver":{"lat":"51.774","lon":"-2.425","alt":4,"rxg":"2","rxs":"-100"},
+	"antenna":{"txg":"2","txl":"0","ant":"39","azi":"0","tlt":"0","hbw":"1","vbw":"1","pol":"v"},
+	"model":{"pm":"1","pe":"2","ked":"1","rel":"50"},
+	"environment":{"clt":"Minimal.clt","elevation":"2","landcover":"1","buildings":"1","obstacles":"0"},
+	"output":{"units":"m","col":"LTE.dBm","out":"2","ber":"1","mod":null,"nf":"-124","res":"10","rad":"7"}
+}
