@@ -52,8 +52,10 @@
         "rel": 90
     },
     "environment": {
-        "clm": 1,
-        "cll": 2,
+        "elevation": 1,
+        "landcover": 1,
+        "buildings": 1,
+        "obstacles": 0,
         "clt": "Minimal.clt"
     },
     "output": {

@@ -1,5 +1,13 @@
 # CloudRF API Clients Changelog
 
+## 2024-01-22
+
+- Templates updated to use newer `elevation`, `landcover`, `buildings` and `obstacles` values.
+
+## 2023-11-10
+
+- AGC demo.
+
 ## 2023-10-12
 
 - Added Leaflet `multisite` example.
