@@ -1,0 +1,5 @@
+site,network,transmitter.lat,transmitter.lon,transmitter.alt,transmitter.frq,transmitter.txw,transmitter.bwi,antenna.ant,antenna.txg,antenna.txl,antenna.azi,antenna.tlt,antenna.hbw,antenna.vbw,antenna.fbr
+Omni,ANTENNA,38.9122136252874,1.44247809248173,10,2200,2,1,1,2,0,0,0,0,0,0
+Sector,ANTENNA,38.9164403569545,1.43349227066416,10,2200,2,1,0,12,0,45,0,120,90,24
+MultiSector,ANTENNA,38.9164403569545,1.43349227066416,10,2200,2,1,0,12,0,"0,120,240",0,120,90,24
+HighPower,RADIO,38.9122136252874,1.44247809248173,10,2200,20,1,1,2,0,0,0,0,0,0

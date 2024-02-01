@@ -15,16 +15,16 @@
     "transmitter": {
         "lat": 50.78986,
         "lon": -1.107861,
-        "alt": 1,
-        "frq": 2500,
-        "txw": 6,
-        "bwi": 2.5,
+        "alt": 2,
+        "frq": 2200,
+        "txw": 10,
+        "bwi": 5,
         "powerUnit": "W"
     },
     "receiver": {
-        "lat": 50.78611438537993,
-        "lon": -1.1432767173634943,
-        "alt": 1,
+        "lat": 0,
+        "lon": 0,
+        "alt": 2,
         "rxg": 2,
         "rxs": 10
     },
@@ -37,19 +37,19 @@
         "mode": "template",
         "txg": 2,
         "txl": 0,
-        "ant": 39,
+        "ant": 1,
         "azi": 0,
         "tlt": 0,
-        "hbw": 120,
-        "vbw": 120,
-        "fbr": 2,
+        "hbw": 0,
+        "vbw": 0,
+        "fbr": 0,
         "pol": "v"
     },
     "model": {
         "pm": 11,
         "pe": 2,
-        "ked": 1,
-        "rel": 90
+        "ked": 2,
+        "rel": 80
     },
     "environment": {
         "elevation": 1,
@@ -64,8 +64,8 @@
         "out": 4,
         "ber": 1,
         "mod": 0,
-        "nf": -110,
-        "res": 5,
+        "nf": -100,
+        "res": 10,
         "rad": 2
     }
 }
