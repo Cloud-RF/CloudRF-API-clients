@@ -1,0 +1,72 @@
+{
+    "version": "CloudRF-API-v3.9.9",
+    "reference": "https://cloudrf.com/documentation/developer/swagger-ui/",
+    "template": {
+        "name": "Meshtastic-Heltec-EU",
+        "service": "CloudRF https://api.cloudrf.com",
+        "created_at": "2024-02-25T21:07:45+00:00",
+        "owner": 1,
+        "bom_value": 0
+    },
+    "site": "Site",
+    "network": "Meshtastic",
+    "engine": 2,
+    "coordinates": 1,
+    "transmitter": {
+        "lat": 51.839948,
+        "lon": -2.242436,
+        "alt": 1,
+        "frq": 868,
+        "txw": 0.1,
+        "bwi": 0.01,
+        "powerUnit": "W"
+    },
+    "receiver": {
+        "lat": 51.85509972215077,
+        "lon": -2.254817186953675,
+        "alt": 1,
+        "rxg": 2.15,
+        "rxs": -136
+    },
+    "feeder": {
+        "flt": 1,
+        "fll": 0,
+        "fcc": 0
+    },
+    "antenna": {
+        "mode": "template",
+        "txg": 2.15,
+        "txl": 0,
+        "ant": 39,
+        "azi": 0,
+        "tlt": 0,
+        "hbw": 1,
+        "vbw": 1,
+        "fbr": 2.15,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 11,
+        "pe": 2,
+        "ked": 2,
+        "rel": 70,
+        "rcs": 1
+    },
+    "environment": {
+        "elevation": 2,
+        "landcover": 1,
+        "buildings": 1,
+        "obstacles": 0,
+        "clt": "Minimal.clt"
+    },
+    "output": {
+        "units": "m",
+        "col": "LORA1.dBm",
+        "out": 2,
+        "ber": 12,
+        "mod": 11,
+        "nf": -134,
+        "res": 5,
+        "rad": 2
+    }
+}
