@@ -100,7 +100,7 @@ var template = {
         "obstacles": 0
     },
     "output": {
-        "units": "metric",
+        "units": "m",
         "col": "RAINBOW.dBm",
         "out": 2,
         "ber": 0,
