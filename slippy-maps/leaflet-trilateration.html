@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>CloudRF Trilateration Leaflet Demo</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <link 
+        rel="stylesheet" 
+        href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" 
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="CloudRF.css">
+</head>
+
+<body class="p-2">
+    <h1>CloudRF Trilateration Leaflet Demo</h1>
+
+    <div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Key</span>
+        <input id="apiKey" type="password" class="form-control" placeholder="Your API Key for service defined below.">
+    </div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Service Base URL</span>
+        <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
+    </div>
+
+    <p>The trilateration API requires existing layers. In this example, three areas calculations are used.</p>
+    <p>1) Enter your API key above and then click "Calculate coverage" to prepare coverage via the CloudRF API.<br>
+        2) Next use the receiver sliders, to perform rapid trilateration. RF settings are taken from the <code>CloudRF.js</code> file.<br>
+        3) To geo-locate a signal set the sliders or click the shortcut links</p>
+    <p><a href="index.html">Click here</a> to see reference documentation and other demos.</p>
+
+    <div>
+        <button onclick="setupSites()">Calculate coverage</button>
+    </div>
+
+    <div>
+        <label for="slider-A">Receiver A</label>
+        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-A" oninput="onSliderUpdated('A')" onchange="sendTriReq()"/>
+        <label for="slider-A" id="slider-A-value">-90</label>
+    </div>
+    <div>
+        <label for="slider-B">Receiver B</label>
+        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-B" oninput="onSliderUpdated('B')" onchange="sendTriReq()"/>
+        <label for="slider-B" id="slider-B-value">-90</label>
+    </div>
+    <div>
+        <label for="slider-C">Receiver C</label>
+        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-C" oninput="onSliderUpdated('C')" onchange="sendTriReq()"/>
+        <label for="slider-C" id="slider-C-value">-90</label>
+    </div>
+    <div>
+        <a href="#" onclick="demo(-62,-100,-100)">Road near A (~0.1km2 search area)</a><br>
+        <a href="#" onclick="demo(-74,-92,-77)">Road midway (~4.7km2 search area)</a><br>
+        <a href="#" onclick="demo(-102,-67,-74)">Road near B (~1.9km2 search area)</a>
+    </div>
+
+    <div id="mapTrilateration" class="map"></div>
+
+    <div class="d-flex justify-content-between">
+        <div class="w-50 mx-4">
+            <h2>Request</h2>
+
+            <pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+        <div class="w-50 mx-4">
+            <h2>Response</h2>
+
+            <pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+    </div>
+
+    <script 
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" 
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" 
+        crossorigin="anonymous"></script>
+    <script
+        src="https://code.jquery.com/jquery-3.6.3.min.js"
+        integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <script src="CloudRF.js"></script>
+
+    <script>
+        var map = L.map('mapTrilateration').setView([35.329895,-116.22496], 12);
+        var site_markers = [];
+        var site_names = new Map();
+
+        const area_request_delay_ms = 4000;
+
+        const errordB = 10;
+       
+        addSite("A", 35.286213,-116.28073); 
+        addSite("B", 35.329895,-116.22496); 
+        addSite("C", 35.348316,-116.25884); 
+
+        var site_template = {
+            "network": "Trilateration-demo",
+            "engine": 2,
+            "transmitter": {
+                "alt": 15,
+                "frq": 800,
+                "txw": 0.5,
+                "bwi": 0.1
+            },
+            "receiver": {
+                "lat": 0,
+                "lon": 0,
+                "alt": 1,
+                "rxg": 0,
+                "rxs": -99
+            },
+            "antenna": {
+                "txg": 2.15,
+                "txl": 0,
+                "ant": 1,
+                "azi": 0,
+                "tlt": 0,
+                "hbw": 0,
+                "vbw": 0,
+                "pol": "v",
+                "fbr": 0
+            },
+            "model": {
+                "pm": 1,
+                "pe": 2,
+                "ked": 1,
+                "rel": 50
+            },
+            "environment": {
+                "clt": "Minimal.clt",
+                "elevation": 1,
+                "landcover": 1,
+                "buildings": 0,
+                "obstacles": 0
+            },
+            "output": {
+                "units": "m",
+                "col": "9",
+                "out": 2,
+                "ber": 0,
+                "mod": 0,
+                "nf": -114,
+                "res": 30,
+                "rad": 15
+            }
+        };
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        function addSite(id, latitude, longitude, rssi) {
+            const icon = new L.Icon({
+                iconUrl: 'images/tower.png',
+                iconSize: [40, 40],
+                iconAnchor:   [20, 20],
+                popupAnchor:  [20, 20]
+            })
+
+            var marker = new L.marker(
+                new L.LatLng(latitude, longitude), 
+                { title: `Tower ${id}`, icon}
+            );
+
+            marker.bindTooltip(id,
+            {
+                permanent: true, 
+                direction: 'right',
+                offset:L.point(10, 5)
+            })
+
+            marker.id = id;
+            
+            map.addLayer(marker);
+            site_markers.push(marker);
+        }
+
+        function setupSites(site) {
+            site_names = new Map();
+
+            var site_requests = site_markers.map((s, i) => 
+                new Promise(async function (resolve, reject) {
+                    
+                    await new Promise(res => setTimeout(res, i * area_request_delay_ms));
+
+                    setupSite(s, resolve, reject);
+                })
+            );
+
+            Promise.all(site_requests).then(_ => {
+                sendTriReq()
+            }).catch(err => {
+                console.error(err);
+                $('#responseRawOutput').html(`${err}`);
+            });
+        }
+
+        async function setupSite(site, resolve, reject) {
+            try {
+                const latitude = site._latlng.lat;
+                const longitude = site._latlng.lng;
+
+                site_template.transmitter.lat = latitude;
+                site_template.transmitter.lon = longitude;
+                site_template.site = site.id;
+
+                const request = JSON.stringify(site_template, null, 4);
+                $('#requestRawOutput').html(request);
+                $('#responseRawOutput').html("Sending "+site.id)
+
+                validateApiKey();
+                const response = await fetch(`${apiServiceBaseUrl}/area`, {
+                    method: "POST",
+                    headers: {
+                        "key": apiKey,
+                    },
+                    body: request
+                });
+
+                const responseJson = await response.json();
+                $('#responseRawOutput').html(JSON.stringify(responseJson, null, 4));
+
+                const re = new RegExp(`([0-9]+_${site_template.network}_${site.id})\\.4326\\.png`);
+
+                const re_result = re.exec(responseJson.PNG_WGS84);
+
+                if (re_result == null) {
+                    reject("Error");
+                    return;
+                }
+
+                site_names.set(site.id, re_result[1]);
+                
+                resolve();
+            } catch (e) {
+                reject(e);
+            }
+        }
+
+        function onSliderUpdated(id) {
+            const value = $(`#slider-${id}`).val();
+            $(`#slider-${id}-value`).html(value);
+        }
+
+        function sendTriReq() {
+
+            var connected = [];
+
+            site_names.forEach((name, id) => {
+                connected.push({
+                    "site": name,
+                    "rssi": $(`#slider-${id}`).val()
+                });
+            })
+
+            const request = JSON.stringify({
+                "connected": connected,
+                "disconnected": [],
+                "colourKey": "9",
+                "errordB": errordB
+            }, null, 4);
+            $('#requestRawOutput').html(request);
+
+            validateApiKey();
+            fetch(`${apiServiceBaseUrl}/trilateration`, {
+                method: "POST",
+                headers: {
+                    "key": apiKey,
+                },
+                body: request
+            }).then(async function(response) {
+                const responseJson = await response.json();
+                $('#responseRawOutput').html(JSON.stringify(responseJson, null, 4));
+                const bounds = [
+                    [responseJson.pngBounds[2], responseJson.pngBounds[3]],
+                    [responseJson.pngBounds[0], responseJson.pngBounds[1]],
+                ];
+
+                map.eachLayer(function (layer) {
+                    if (layer instanceof L.ImageOverlay) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                L.imageOverlay(
+                    responseJson.pngUrl,
+                    bounds
+                ).setOpacity(0.7).addTo(map);
+
+            }).catch(e => {
+                console.error(e);
+                $('#responseRawOutput').html(`${err}`);
+            });
+        }
+
+        function demo(RxA,RxB,RxC){
+            $("#slider-A").val(RxA);
+            $("#slider-B").val(RxB);
+            $("#slider-C").val(RxC);
+            onSliderUpdated('A');
+            onSliderUpdated('B');
+            onSliderUpdated('C');
+            sendTriReq();
+
+        }
+    </script>
+</body>
+
+</html>
