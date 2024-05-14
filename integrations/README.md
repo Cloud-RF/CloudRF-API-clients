@@ -1,0 +1,36 @@
+# Automatic Dependent Surveillance-Broadcast (ADS-B) demo
+
+## Background
+
+ADS-B is a surveillance technology for positioning aircraft that is more precise than radar. ADS-B Out broadcasts information about an aricraft's GPS, like location, altitude and speed to ground stations every second. This allowes the tracking of aircraft through apis like [ADSB.lol](https://adsb.lol).
+
+CloudRF](https://cloudrf.com) allows the simulation of radio communications. When combined, these APIs allow a live line of sight calculation of any aircraft.
+
+## Demo
+
+![DEMO](demo.jpg)
+
+Pick a plane from [ADSB.lol](https://adsb.lol) and enter it's asociated **callsign** into the python script in this demo. The script will then send a request to ADSB.lol for the plane data, send a request to CloudRF for heatmap data of where the plane can see, using a radio simulation. It will then save a pin of the planes location and the heatmap data into a kml file. This kml file can be loaded into Google Earth to view the plane, as a pin, and its line of sight, as a heatmap.
+
+### Requirements
+
+1. A CloudRF API key in a file named api-key.txt
+
+2. A KML viewer like ]Google Earth](https://earth.google.com/intl/earth/download/ge/agree.html)
+
+3. [Python3](https://www.python.org/downloads/)
+
+### Operation
+
+	python3 ADSB_demo.py
+	\[Call sign\]
+	
+## References
+
+### ADBS
+
+https://adbs.lol
+
+#CloudRF
+
+https://cloudrf.com
