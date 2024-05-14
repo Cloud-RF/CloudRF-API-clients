@@ -1,4 +1,4 @@
-import simplekml # type: ignore
+import simplekml 
 from urllib.request import Request, urlopen
 import requests
 import json
@@ -20,7 +20,7 @@ REQUEST_HEADERS = {"User-Agent": "Mozilla/5.0"} # dont look like a bot
 
 ######### FEEL FREE TO CHANGE SETTINGS #########
 
-SIMULATION_RESOLUTION = 200 # resolution in metres
+SIMULATION_RESOLUTION = 90 # resolution in metres
 SIMULATION_RADIUS = 90 # simulation radius in metres
 
 SLEEP_TIME = 2 # seconds between each update, 2 recommended
@@ -79,7 +79,7 @@ while True:
 
         while (heading < 0): heading += 360 # check for negative heading
 
-        data = {                      # parameters send to CloudRF API
+        data = {                      # parameters sent to CloudRF API
             "site": "A1",
             "engine": 1,
             "network": "Testing",
@@ -108,14 +108,14 @@ while True:
                 "txl": 1,
                 "ant": 0,
                 "azi": int(heading),
-                "tlt": 45,
+                "tlt": 45, # Downtilt towards the earth!
                 "hbw": 120,
                 "vbw": 120,
                 "pol": "v",
                 "fbr": 40
             },
             "environment": {
-                "elevation": 2,
+                "elevation": 2, # 2 = DTM
                 "landcover": 0,
                 "buildings": 0
             },
