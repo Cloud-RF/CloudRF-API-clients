@@ -8,7 +8,7 @@ CloudRF allowed the simulation of radio communications. When combined these APIs
 
 ##Demo
 
-![DEMO](demo.jpg)
+![DEMO](example.jpg)
 
 In this demo you can pick a ship from [aprs.fi](https://aprs.fi) and enter it's associated **MMSI number** into the c++ program in this demo. The program will then send a request to aprs.fi for the ships location data, send a request to CloudRF for heatmap data of where the ship can see. It will then save a pin of the ships location and the heatmap data into a kml file. This kml file can be loaded into Google Earth to view the plane and it's line of sight.
 
