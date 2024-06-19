@@ -294,7 +294,7 @@ class uploadOperator(bpy.types.Operator):
         # the file must be saved to get its filepath
         try:
             # export the current file to a glb file
-            filepath = os.path.dirname(bpy.data.filepath) + "\\crf_blender_plugin_model.glb"
+            filepath = os.path.dirname(bpy.data.filepath) + "/crf_blender_plugin_model.glb"
             bpy.ops.export_scene.gltf(
                 export_format = 'GLB',
                 use_visible = True,
