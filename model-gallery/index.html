@@ -269,7 +269,7 @@
             `;
 
             if(demos[index].requestJson) {
-                const jsonString = JSON.stringify(demos[index].requestJson, null, '\t');
+                const jsonString = JSON.stringify(demos[index].requestJson, null, 2);
 
                 descriptionHtml += `
                     <hr>
