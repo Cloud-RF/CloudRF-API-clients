@@ -376,8 +376,8 @@
         const thumbnailsContainer = document.getElementById('thumbnails');
 
         demos.forEach((demo, index) => {
-            const thumbnailContainer = document.createElement('div');
-            thumbnailContainer.className = 'd-flex flex-column rounded bg-white text-black border';
+            const thumbnailContainer = document.createElement('a');
+            thumbnailContainer.className = 'd-flex flex-column rounded bg-white text-black border text-decoration-none';
             const containerSize = '180px';
             thumbnailContainer.style.minWidth = containerSize;
             thumbnailContainer.style.maxWidth = containerSize;
@@ -385,6 +385,7 @@
             thumbnailContainer.style.maxHeight = containerSize;
             thumbnailContainer.style.cursor = 'pointer';
             thumbnailContainer.setAttribute('onclick', `loadDemo(${index})`);
+            thumbnailContainer.setAttribute('href', `#demo${index}`)
 
             const thumbnailTitle = document.createElement('p');
             thumbnailTitle.className = 'flex-grow-0 m-0 text-center';
@@ -443,8 +444,15 @@
                                                 camera-controls 
                                                 touch-action="pan-y">
                                             </model-viewer>`;
+        }
 
+        const selectedHash = window.location.hash;
+        if(selectedHash) {
+            const index = selectedHash.replace('#demo', '');
 
+            if(!isNaN(index)) {
+                loadDemo(index)
+            }
         }
     </script>
 </body>
