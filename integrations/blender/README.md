@@ -45,12 +45,13 @@ Results are loaded upon the scene as a GLB file.
 
 NOTE: This is resource intensive so your account can only run one job at a time. You will need to wait if a job is still in process.
 
-### Importing/Exporting templates
+### Importing Templates
 
-- Under the "CloudRF" panel in the dialogue window, locate the Import/Export Template tab.
-- Click the "Browse" button to locate a JSON file location for the template to be loaded from or saved to
-- Click either "Import" or "Export"
-- For export, every radio object in the scene, as well as the "Output Settings" will be imported/exported
+- Obtain a JSON template with your desired radio settings. Examples can be found (here)[https://github.com/Cloud-RF/CloudRF-API-clients/tree/master/templates].
+- Under the "CloudRF" panel in the dialogue window, locate the Import Template tab.
+- Click the "Browse" button to locate the JSON file location for the template to be loaded from.
+- Click "Import".
+- This will add a new transmitter template to the add transmitters menu.
 
 ## References
 
