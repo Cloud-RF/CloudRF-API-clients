@@ -305,20 +305,10 @@ class uploadOperator(bpy.types.Operator):
             # post the recently made glb file
             with open(filepath, "rb") as file:
                 res = requests.post(model_upload_url, headers = key_json, files = {"file": file}, verify = False)
-        except FileNotFoundError:
-            self.report({"ERROR"}, "Please save thisfile before simulating!")
+                self.report({"INFO"}, "Response: \n" + str(res.content))
+        except:
+            self.report({"ERROR"}, "An unexpected error occured!. Ensure the model is saved somewhere that it can be accessed!")
             return {"CANCELLED"}
-        except PermissionError:
-            if len(bpy.data.filepath) < 1:
-                self.report({"ERROR"}, "Please save thisfile before simulating!")
-            else: self.report({"ERROR"}, "This file is saved somewhere it can't be accessed. Please save it somewhere it can be accessed!")
-            return {"CANCELLED"}
-        except RuntimeError:
-            if len(bpy.data.filepath) < 1:
-                self.report({"ERROR"}, "Please save thisfile before simulating!")
-            else: self.report({"ERROR"}, "An unexpected error occured! Please make sure this file is saved!")
-            return {"CANCELLED"}
-        
 
         return {"FINISHED"}
 
@@ -433,7 +423,7 @@ class simulateOperator(bpy.types.Operator):
                 "transmitters": transmitters,
                 "3d": {
                     "input_file": "crf_blender_plugin_model.glb",
-                    "max_reflection_count": scene.props.max_reflections
+                    "max_reflections": scene.props.max_reflections
                 },
                 "output": {
                     "res": scene.props.res,
@@ -445,35 +435,25 @@ class simulateOperator(bpy.types.Operator):
                     "rxg": 0.0
                 }
             }
+            self.report({"INFO"}, "Request: \n" + str(request_options))
             
             # make request
-            response = requests.post(json = request_options, headers = key_json, url = calculate_url, verify = False)
+            response = requests.post(json = request_options, headers = key_json, url = calculate_url, timeout=120, verify = False)
             json = response.json() # get json from response
-            if "elapsed_s" in json:
-                last_calc_time = float(json["elapsed_s"]) 
-                file_url = json["model_file"] # find the url to the glb file result
-            else: self.report({"ERROR"}, "Error: " + str(json["error"]))
-        except requests.exceptions.RequestException as e: # for example no API key
+            self.report({"INFO"}, "Response: \n" + str(response.content))
+            last_calc_time = float(json["elapsed_s"]) 
+            file_url = json["model_file"] # find the url to the glb file result
+        except: # for example no API key
             
-            if "error" in json:
-                self.report({"ERROR"}, "Error: " + json["error"])
-            else: self.report({"ERROR"}, "An unexpected error occured!")
-            
-            return {"CANCELLED"}
-        
-        if not file_url: # for example if an error is returned
-            if "error" in json:
-                self.report({"ERROR"}, "Error: " + str(json["error"]))
-            else: self.report({"ERROR"}, "An unexpected error occured!")
+            self.report({"ERROR"}, "An unexpected error occured!")
             return {"CANCELLED"}
         
         try:
             response = requests.get(file_url, headers = key_json, verify = False) # make request to URL with file
             response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            if "error" in json:
-                self.report({"ERROR"}, json["error"])
-            else: self.report({"ERROR"}, "An unexpected error occured!")
+        except:
+            self.report({"INFO"}, "Response: \n" + str(response.content))
+            self.report({"ERROR"}, "An unexpected error occured!")
             return {"CANCELLED"}
         
         
@@ -486,7 +466,7 @@ class simulateOperator(bpy.types.Operator):
 
         if not os.path.exists(file_path): # for example invalid permissions
             self.report({"ERROR"}, "There was an unexpected error saving the result!")
-            return {"CALCELLED"}
+            return {"CANCELLED"}
 
         old_objs = set(context.scene.objects)
 
