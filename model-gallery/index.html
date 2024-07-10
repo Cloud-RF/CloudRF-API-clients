@@ -173,11 +173,11 @@
         }
 
         const demos = [
-            new BasicDemo('Horses', 'This is the horses description.', 'horses.png', 'horses.glb'),
-            new RequestDemo('Subway (Small)', 'This is the description for the small subway model.', 'subway_small.png', 'subway_small.glb', 
+            new BasicDemo('Horses', 'A 5G eNodeB low to the ground meets Horses in an urban canyon. This used 8 reflections and 10cm resolution.', 'horses.png', 'horses.glb'),
+            new RequestDemo('Subway (Small)', 'An S-Band radio on the platform reaches into nearby stairs and tunnels using multipath. 5 reflections at 20cm resolution.', 'subway_small.png', 'subway_small.glb', 
                 {"transmitters":[{"frq":2432,"txw":0.1,"pos":{"x":3.36256,"y":3.91899,"z":-0.801091},"antenna":{"ant":1,"azi":0,"tlt":0,"pol":"v","hbw":120,"vbw":120,"txg":0,"fbr":9,"txl":0}}],"receiver":{"rxg":0,"rxs":-112},"3d":{"input_file":"subway.glb","max_reflections":5},"output":{"res":0.2,"col":"RAINBOW.dBm","out":2},"default_material":{"reflection_loss":9,"transmission_loss":15,"diffusion":1},"materials":[{"keys":["Wood","Gravel"],"reflection_loss":9,"transmission_loss":15,"diffusion":2},{"keys":["Black Concrete","White Brick","Blue Brick","Tiles","Yellow Brick"],"reflection_loss":1,"transmission_loss":90,"diffusion":1},{"keys":["Rails","Brushed Metal"],"reflection_loss":1,"transmission_loss":90,"diffusion":0.05}]
             }),
-            new RequestDemo('Cube', 'Output from a transmitter placed inside a cube, showing multipath.', 'cube.png', 'cube.glb',
+            new RequestDemo('Cube', 'A transmitter inside a cube with dimensions matched to a multiple of the wavelength. Multipath effects are visible including a uniform pattern caused by out-of-phase signals colliding.', 'cube.png', 'cube.glb',
                 {'transmitters': [{'frq': 150.0, 'txw': 0.0010000000474974513, 'pos': {'x': 7.44585657119751, 'y': -6.479242324829102, 'z': -7.178826332092285}, 'up': {'x': 0.2759787440299988, 'y': 0.918653130531311, 'z': -0.28268733620643616}, 'fwd': {'x': -0.6417392492294312, 'y': 0.395065039396286, 'z': 0.6573388576507568}, 'antenna': {'ant': 1, 'txg': -3.0, 'txl': 0.0}}], '3d': {'input_file': 'cube.glb', 'max_reflections': 5}, 'output': {'res': 0.11999999731779099, 'col': 'LTE.dBm', 'out': 2}, 'receiver': {'rxs': -112.0, 'rxg': 0.0}, 'default_material': {'reflection_loss': 9.0, 'transmission_loss': 90.0, 'diffusion': 0.0}}
             ),
             new BasicDemo('Dipole', 'This is a 3D model of a dipole antenna pattern.', 'dipole.png', 'dipole.glb'),
