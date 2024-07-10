@@ -173,6 +173,7 @@
         }
 
         const demos = [
+            new BasicDemo('Hello World', 'The result of the <a href="https://github.com/Cloud-RF/CloudRF-API-clients/tree/master/bash/3d">Hello World 3D API Demo</a>. ', 'hello_world.png', 'hello_world.glb'),
             new RequestDemo('Horses', 'A 5G eNodeB low to the ground meets Horses in an urban canyon. This used 8 reflections and 10cm resolution. Download the model and import to your viewer to see inside the buildings.', 'horses.png', 'horses.glb',
             {"transmitters":[{"frq":3700,"txw":0.5,"pos":{"x":-16,"y":2.5,"z":1.2},"antenna":{"ant":1,"azi":0,"tlt":0,"pol":"v","hbw":0,"vbw":0,"txg":0,"fbr":0,"txl":0}}],"receiver":{"rxg":0,"rxs":-110},"3d":{"input_file":"horses.glb","max_reflections":8},"output":{"res":0.1,"col":"RAINBOW.dBm","out":2},"default_material":{"reflection_loss":9,"transmission_loss":15,"diffusion":1},"materials":[{"keys":["Horse"],"reflection_loss":9,"transmission_loss":15,"diffusion":2},{"keys":["Black Concrete","White Brick","Blue Brick","Tiles","Yellow Brick"],"reflection_loss":1,"transmission_loss":90,"diffusion":1},{"keys":["Rails","Brushed Metal"],"reflection_loss":1,"transmission_loss":90,"diffusion":0.05}]
             }),
