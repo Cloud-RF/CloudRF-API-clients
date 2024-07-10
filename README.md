@@ -19,12 +19,11 @@ Below are the list of available examples which can be used. You are encouraged t
 
 - The [python](python/) directory contains a parent Python 3 script which allows interaction with all of the primary CloudRF API endpoints. This script is quite comprehensive and so for usage you are recommended to consult the [README](python/README.md) for more information.
 - The [bash](bash/) directory contains some Bash scripts which make use of cURL to to CloudRF API.
-
 - The [slippy-maps](slippy-maps/) directory contains examples of various slippy map libraries which interface with the CloudRF API to present layers of RF coverage and results.
-
+  - You can view a live hosted version of the [slippy map](slippy-map) examples at [https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/index.html](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/index.html)
 - The [templates](templates/) directory contains a list of example JSON templates which can be used to interface with the CloudRF API. For a more comprehensive list of templates you should consult the [CloudRF UI](https://cloudrf.com/ui).
-
-You can view a live hosted version of the [slippy map](slippy-map) examples at [https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/index.html](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/index.html)
+- The [model-gallery](model-gallery/) directory contains a HTML demonstration of 3D models.
+  - You can view a live hosted version of the [model gallery](model-gallery) at [https://cloud-rf.github.io/CloudRF-API-clients/model-gallery/index.html](https://cloud-rf.github.io/CloudRF-API-clients/model-gallery/index.html)
 
 ## Commercial Use
 

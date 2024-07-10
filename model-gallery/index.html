@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CloudRF 3D Model Gallery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+
+    <style>
+        body, html {
+            height: 100%;
+        }
+
+        .full-height {
+            height: 100vh;
+            max-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .bg-brand {
+            background-color: #e39b0c;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid d-flex flex-column full-height">
+        <header class="bg-brand text-black text-center p-1 fs-3">
+            <img src="images/CloudRF_logo.png">CloudRF 3D model gallery</a><br>
+        </header>
+        <main class="flex-fill d-flex flex-column">
+            <aside class="bg-secondary text-white d-flex overflow-y-auto gap-3 p-2" id="thumbnails"></aside>
+            
+            <div class="bg-light flex-fill p-3">
+                <div class="d-flex justify-content-between flex-sm-row flex-column-reverse">
+                    <div id="demoDescription">Please select a model.</div>
+                    <div id="demoViewer" class="w-100" style="min-height: 400px;"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-dark text-white text-center p-3">
+            Copyright 2024 <a href="https://cloudrf.com/" target="_blank" class="text-white">CloudRF.com</a>&nbsp;|&nbsp;
+            Created using the <a href="https://cloudrf.com/documentation/developer/">3D API</a>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+
+    <script>
+        class Demo {
+            constructor(name, description, thumbnail) {
+                this.name = name;
+                this.description = description;
+                this.thumbnail = thumbnail;
+            }
+        }
+
+        class BasicDemo extends Demo {
+            constructor(name, description, thumbnail, model) {
+                super(name, description, thumbnail)
+                this.model = model;
+            }
+
+            showModel() {
+                return `
+                <model-viewer 
+                    src="glbs/${this.model}" 
+                    ar 
+                    style="width: 100%; height: 100%"
+                    camera-controls 
+                    touch-action="pan-y"
+                ></model-viewer>`;
+            }
+
+            showDescription() {
+                return `
+                <h1>${this.name}</h1>
+                <a type="button" class="btn btn-sm btn-secondary" href="glbs/${this.model}">Download Model</a>
+                <hr>
+                <p>${this.description}</p>
+                `;
+            }
+        }
+
+        class RequestDemo extends Demo {
+            constructor(name, description, thumbnail, model, requestJson) {
+                super(name, description, thumbnail)
+                this.model = model;
+                this.requestJson = JSON.stringify(requestJson, null, 2);
+            }
+
+            showModel() {
+                return `
+                <model-viewer 
+                    src="glbs/${this.model}" 
+                    ar 
+                    style="width: 100%; height: 100%"
+                    camera-controls 
+                    touch-action="pan-y"
+                ></model-viewer>`;
+            }
+
+            showDescription() {
+                return `
+                <h1>${this.name}</h1>
+                <a type="button" class="btn btn-sm btn-secondary" href="glbs/${this.model}">Download Model</a>
+                <hr>
+                <p>${this.description}</p>
+                <hr>
+                <h2>Request JSON</h2>
+                <p>The following request JSON can be used with the CloudRF 3D Calculation API to produce a similar result.</p>
+                <pre>${this.requestJson}</pre>
+                `;
+            }
+        }
+
+        class MultipleRequestDemo extends Demo {
+            constructor(name, description, thumbnail, options) {
+                super(name, description, thumbnail)
+                this.options = options;
+                this.currentOption = 0;
+            }
+
+            showModel() {
+                var modelHtml =  `
+                <model-viewer 
+                    src="glbs/${this.model}" 
+                    ar 
+                    style="width: 100%; height: 100%"
+                    camera-controls 
+                    touch-action="pan-y"
+                >`;
+
+                modelHtml += `
+                <div id="controls" class="dim">
+                    <label for="opt">Model:</label>
+                    <select id="opt">
+                `
+
+                this.options.forEach((option, index) => {
+                    modelHtml += `
+                        <option value="${index}">${option.text}</option>
+                    `
+                });
+
+                modelHtml += `
+                    </select>
+                </div>
+                `;
+                
+                modelHtml += `
+                </model-viewer>
+                `;
+
+                return modelHtml;
+            }
+
+            showDescription() {
+                return `
+                <h1>${this.name}</h1>
+                <a type="button" class="btn btn-sm btn-secondary" href="glbs/${this.model}">Download Model</a>
+                <hr>
+                <p>${this.description}</p>
+                `;
+            }
+        }
+
+        const demos = [
+            new RequestDemo('Horses', 'A 5G eNodeB low to the ground meets Horses in an urban canyon. This used 8 reflections and 10cm resolution. Download the model and import to your viewer to see inside the buildings.', 'horses.png', 'horses.glb',
+            {"transmitters":[{"frq":3700,"txw":0.5,"pos":{"x":-16,"y":2.5,"z":1.2},"antenna":{"ant":1,"azi":0,"tlt":0,"pol":"v","hbw":0,"vbw":0,"txg":0,"fbr":0,"txl":0}}],"receiver":{"rxg":0,"rxs":-110},"3d":{"input_file":"horses.glb","max_reflections":8},"output":{"res":0.1,"col":"RAINBOW.dBm","out":2},"default_material":{"reflection_loss":9,"transmission_loss":15,"diffusion":1},"materials":[{"keys":["Horse"],"reflection_loss":9,"transmission_loss":15,"diffusion":2},{"keys":["Black Concrete","White Brick","Blue Brick","Tiles","Yellow Brick"],"reflection_loss":1,"transmission_loss":90,"diffusion":1},{"keys":["Rails","Brushed Metal"],"reflection_loss":1,"transmission_loss":90,"diffusion":0.05}]
+            }),
+            new RequestDemo('Subway (Small)', 'An S-Band radio on the platform reaches into nearby stairs and tunnels using multipath. 5 reflections at 20cm resolution. Download the model and import to your viewer to enter the tunnel.', 'subway_small.png', 'subway_small.glb', 
+                {"transmitters":[{"frq":2432,"txw":1.0,"pos":{"x":3.36256,"y":3.91899,"z":-0.801091},"antenna":{"ant":1,"azi":0,"tlt":0,"pol":"v","hbw":0,"vbw":0,"txg":2.15,"fbr":0,"txl":0}}],"receiver":{"rxg":0,"rxs":-105},"3d":{"input_file":"subway.glb","max_reflections":5},"output":{"res":0.2,"col":"RAINBOW.dBm","out":2},"default_material":{"reflection_loss":9,"transmission_loss":15,"diffusion":1},"materials":[{"keys":["Wood","Gravel"],"reflection_loss":9,"transmission_loss":15,"diffusion":2},{"keys":["Black Concrete","White Brick","Blue Brick","Tiles","Yellow Brick"],"reflection_loss":1,"transmission_loss":90,"diffusion":1},{"keys":["Rails","Brushed Metal"],"reflection_loss":1,"transmission_loss":90,"diffusion":0.05}]}
+            ),
+            new RequestDemo('Subway (Big)', 'Multiple 5G C-Band radios in a subway. 10 reflections at 20cm resolution. Download the model and import to your viewer to go inside the tunnels', 'subway_big.png', 'subway_big.glb', 
+            {'transmitters': [{'frq': 3500.0, 'txw': 1.0, 'pos': {'x': 35.80134963989258, 'y': 2.8054418563842773, 'z': 12.954263687133789}, 'up': {'x': 0.0, 'y': 1.0, 'z': -0.0}, 'fwd': {'x': -1.0, 'y': 0.0, 'z': 1.1924880638503055e-08}, 'antenna': {'ant': 0, 'hbw': 120.0, 'vbw': 90.0, 'txg': 12.0, 'txl': 0.0, 'fbr': 12.0}}, {'frq': 3500.0, 'txw': 1.0, 'pos': {'x': 42.32621765136719, 'y': 13.689976692199707, 'z': -27.94268035888672}, 'up': {'x': 0.0, 'y': 1.0, 'z': -0.0}, 'fwd': {'x': 0.0, 'y': 0.0, 'z': 1.0}, 'antenna': {'ant': 0, 'hbw': 120.0, 'vbw': 90.0, 'txg': 12.0, 'txl': 0.0, 'fbr': 12.0}}, {'frq': 3500.0, 'txw': 1.0, 'pos': {'x': -31.15582275390625, 'y': -3.3229753971099854, 'z': 11.854499816894531}, 'up': {'x': 0.0, 'y': 1.0, 'z': -0.0}, 'fwd': {'x': 0.0, 'y': 0.0, 'z': 1.0}, 'antenna': {'ant': 0, 'hbw': 120.0, 'vbw': 90.0, 'txg': 12.0, 'txl': 0.0, 'fbr': 12.0}}, {'frq': 3500.0, 'txw': 1.0, 'pos': {'x': -69.01393127441406, 'y': -8.820343017578125, 'z': 30.63321876525879}, 'up': {'x': 0.0, 'y': 1.0, 'z': -0.0}, 'fwd': {'x': 0.0, 'y': 0.0, 'z': 1.0}, 'antenna': {'ant': 0, 'hbw': 120.0, 'vbw': 90.0, 'txg': 12.0, 'txl': 0.0, 'fbr': 12.0}}, {'frq': 3500.0, 'txw': 1.0, 'pos': {'x': -74.74160766601562, 'y': -8.551408767700195, 'z': 103.3661880493164}, 'up': {'x': 0.0, 'y': 1.0, 'z': -0.0}, 'fwd': {'x': 0.0, 'y': 0.0, 'z': 1.0}, 'antenna': {'ant': 0, 'hbw': 120.0, 'vbw': 90.0, 'txg': 12.0, 'txl': 0.0, 'fbr': 12.0}}], '3d': {'input_file': 'subway_big.glb', 'max_reflections': 10}, 'output': {'res': 0.20000000298023224, 'col': 'RAINBOW.dBm', 'out': 2}, 'receiver': {'rxs': -112.0, 'rxg': 0.0}, 'default_material': {'reflection_loss': 9.0, 'transmission_loss': 90.0, 'diffusion': 0.0}}
+            ),
+            new RequestDemo('Microwave', 'A transmitter inside a metal box. Multipath effects are visible including a uniform pattern caused by out-of-phase signals colliding.  Download the model and import to your viewer to enter the microwave.', 'cube.png', 'cube.glb',
+                {'transmitters': [{'frq': 2450.0, 'txw': 100, 'pos': {'x': 7.44585657119751, 'y': -6.479242324829102, 'z': -7.178826332092285}, 'up': {'x': 0.2759787440299988, 'y': 0.918653130531311, 'z': -0.28268733620643616}, 'fwd': {'x': -0.6417392492294312, 'y': 0.395065039396286, 'z': 0.6573388576507568}, 'antenna': {'ant': 1, 'txg': -3.0, 'txl': 0.0}}], '3d': {'input_file': 'cube.glb', 'max_reflections': 5}, 'output': {'res': 0.11999999731779099, 'col': 'LTE.dBm', 'out': 2}, 'receiver': {'rxs': -112.0, 'rxg': 0.0}, 'default_material': {'reflection_loss': 9.0, 'transmission_loss': 90.0, 'diffusion': 0.0}}
+            ),
+            new BasicDemo('Dipole', 'This is a 3D model of a dipole antenna pattern.', 'dipole.png', 'dipole.glb'),
+            new BasicDemo('AIR-ANT2513P4M-NS_EDCS-22050602-2.4GHz', 'This is a 3D model of the AIR-ANT2513P4M-NS_EDCS-22050602-2.4GHz antenna pattern.', 'AIR-ANT2513P4M-NS_EDCS-22050602-2.4GHz.png', 'AIR-ANT2513P4M-NS_EDCS-22050602-2.4GHz.glb'),
+            new BasicDemo('AIR-ANT2588P4M-NS-2.4Ghz', 'This is a 3D model of the AIR-ANT2588P4M-NS-2.4Ghz antenna pattern.', 'AIR-ANT2588P4M-NS-2.4Ghz.png', 'AIR-ANT2588P4M-NS-2.4Ghz.glb'),
+            new BasicDemo('FM-PANEL-19-5.2Ghz', 'This is a 3D model of the FM-PANEL-19-5.2Ghz antenna pattern.', 'FM-PANEL-19-5.2Ghz.png', 'FM-PANEL-19-5.2Ghz.glb'),
+            new BasicDemo('IW-ANT-SKD-513-Q-5GHz', 'This is a 3D model of the IW-ANT-SKD-513-Q-5GHz antenna pattern.', 'IW-ANT-SKD-513-Q-5GHz.png', 'IW-ANT-SKD-513-Q-5GHz.glb'),
+            new BasicDemo('Materials', '<p>This model is used in the input for the other "Materials" demos.</p> <p>The White walls are set to have very high reflection and transmission losses.</p> <p>Properties of the blue planes (the "Test" material in the requests) are different in the different demos.</p> <p>The transmitter is placed between the two planes.</p>', 'test_chamber.png', 'test_chamber.glb'),
+            new RequestDemo('Materials - Black body', 'This is example output for a material with a high reflection and transmission loss.', 'test_chamber_hard.png', 'test_chamber_spec_hard.glb',
+                {'transmitters': [{'frq': 2232.0, 'txw': 2.0, 'pos': {'x': 0.0, 'y': 1.10512, 'z': 0.0}, 'up': {'x': 0.0, 'y': 1.0, 'z': 0.0}, 'fwd': {'x': 0.0, 'y': 0.0, 'z': 1.0}, 'antenna': {'ant': 1, 'txg': 2.15, 'txl': 0.0}}], '3d': {'input_file': 'test_chamber.glb', 'max_reflections': 5}, 'output': {'res': 0.1, 'col': 'PLASMA.dBm', 'out': 2}, 'receiver': {'rxs': -112.0, 'rxg': 0.0}, 'default_material': {'reflection_loss': 90.0, 'transmission_loss': 90.0, 'diffusion': 0.0}, 'materials': [{'keys': ['Test'], 'reflection_loss': 90.0, 'transmission_loss': 90.0, 'diffusion': 0.0}]}
+            ),
+            new RequestDemo('Materials - Reflective', 'This is example output for a material with a high transmission loss and almost no reflection loss.', 'test_chamber_soft_refl.png', 'test_chamber_spec_soft_refl.glb',
+                {'transmitters': [{'frq': 2232.0, 'txw': 2.0, 'pos': {'x': 0.0, 'y': 1.10512, 'z': 0.0}, 'up': {'x': 0.0, 'y': 1.0, 'z': 0.0}, 'fwd': {'x': 0.0, 'y': 0.0, 'z': 1.0}, 'antenna': {'ant': 1, 'txg': 2.15, 'txl': 0.0}}], '3d': {'input_file': 'test_chamber.glb', 'max_reflections': 5}, 'output': {'res': 0.1, 'col': 'PLASMA.dBm', 'out': 2}, 'receiver': {'rxs': -112.0, 'rxg': 0.0}, 'default_material': {'reflection_loss': 90.0, 'transmission_loss': 90.0, 'diffusion': 0.0}, 'materials': [{'keys': ['Test'], 'reflection_loss': 1.0, 'transmission_loss': 90.0, 'diffusion': 0.0}]}
+            ),
+            new RequestDemo('Materials - Partially Reflective', 'This is example output for a material with a high transmission loss and a medium reflection loss.', 'test_chamber_med_refl.png', 'test_chamber_spec_med_refl.glb',
+                {'transmitters': [{'frq': 2232.0, 'txw': 2.0, 'pos': {'x': 0.0, 'y': 1.10512, 'z': 0.0}, 'up': {'x': 0.0, 'y': 1.0, 'z': 0.0}, 'fwd': {'x': 0.0, 'y': 0.0, 'z': 1.0}, 'antenna': {'ant': 1, 'txg': 2.15, 'txl': 0.0}}], '3d': {'input_file': 'test_chamber.glb', 'max_reflections': 5}, 'output': {'res': 0.1, 'col': 'PLASMA.dBm', 'out': 2}, 'receiver': {'rxs': -112.0, 'rxg': 0.0}, 'default_material': {'reflection_loss': 90.0, 'transmission_loss': 90.0, 'diffusion': 0.0}, 'materials': [{'keys': ['Test'], 'reflection_loss': 30.0, 'transmission_loss': 90.0, 'diffusion': 0.0}]}
+            ),
+            new RequestDemo('Materials - Transmissive', 'This is example output for a material with almost no transmission loss and a high reflection loss.', 'test_chamber_soft_refr.png', 'test_chamber_spec_soft_refr.glb',
+                {'transmitters': [{'frq': 2232.0, 'txw': 2.0, 'pos': {'x': 0.0, 'y': 1.10512, 'z': 0.0}, 'up': {'x': 0.0, 'y': 1.0, 'z': -.0}, 'fwd': {'x': 0.0, 'y': 0.0, 'z': 1.0}, 'antenna': {'ant': 1, 'txg': 2.15, 'txl': 0.0}}], '3d': {'input_file': 'test_chamber.glb', 'max_reflections': 5}, 'output': {'res': 0.1, 'col': 'PLASMA.dBm', 'out': 2}, 'receiver': {'rxs': -112.0, 'rxg': 0.0}, 'default_material': {'reflection_loss': 90.0, 'transmission_loss': 90.0, 'diffusion': 0.0}, 'materials': [{'keys': ['Test'], 'reflection_loss': 90.0, 'transmission_loss': 1.0, 'diffusion': 0.0}]}
+            ),
+            new RequestDemo('Materials - Partially Transmissive', 'This is example output for a material with a medium transmission loss and a high reflection loss.', 'test_chamber_med_refr.png', 'test_chamber_spec_med_refr.glb',
+                {'transmitters': [{'frq': 2232.0, 'txw': 2.0, 'pos': {'x': 0.0, 'y': 1.10512, 'z': 0.0}, 'up': {'x': 0.0, 'y': 1.0, 'z': 0.0}, 'fwd': {'x': 0.0, 'y': 0.0, 'z': 1.0}, 'antenna': {'ant': 1, 'txg': 2.15, 'txl': 0.0}}], '3d': {'input_file': 'test_chamber.glb', 'max_reflections': 5}, 'output': {'res': 0.1, 'col': 'PLASMA.dBm', 'out': 2}, 'receiver': {'rxs': -112.0, 'rxg': 0.0}, 'default_material': {'reflection_loss': 90.0, 'transmission_loss': 90.0, 'diffusion': 0.0}, 'materials': [{'keys': ['Test'], 'reflection_loss': 90.0, 'transmission_loss': 30.0, 'diffusion': 0.0}]}
+            ),
+        ];
+
+        const thumbnailsContainer = document.getElementById('thumbnails');
+
+        demos.forEach((demo, index) => {
+            const thumbnailContainer = document.createElement('a');
+            thumbnailContainer.className = 'd-flex flex-column rounded bg-white text-black border text-decoration-none';
+            const containerSize = '180px';
+            thumbnailContainer.style.minWidth = containerSize;
+            thumbnailContainer.style.maxWidth = containerSize;
+            thumbnailContainer.style.minHeight = containerSize;
+            thumbnailContainer.style.maxHeight = containerSize;
+            thumbnailContainer.style.cursor = 'pointer';
+            thumbnailContainer.setAttribute('onclick', `loadDemo(${index})`);
+            thumbnailContainer.setAttribute('href', `#demo${index}`)
+
+            const thumbnailTitle = document.createElement('p');
+            thumbnailTitle.className = 'flex-grow-0 m-0 text-center';
+            thumbnailTitle.innerHTML = demo.name;
+
+            const thumbnailImage = document.createElement('div');
+            thumbnailImage.className = 'flex-grow-1 rounded-bottom';
+            thumbnailImage.style.backgroundSize = 'cover';
+            thumbnailImage.style.backgroundPosition = 'center';
+            thumbnailImage.style.backgroundImage = `url(images/${demo.thumbnail})`;
+
+            thumbnailContainer.appendChild(thumbnailTitle);
+            thumbnailContainer.appendChild(thumbnailImage);
+            thumbnailsContainer.appendChild(thumbnailContainer);
+        });
+
+        thumbnailsContainer.addEventListener('wheel', (event) => {
+            event.preventDefault();
+            thumbnailsContainer.scrollLeft += event.deltaY;
+        });
+
+        function loadDemo(index) {
+            const demoDescriptionContainer = document.getElementById('demoDescription');
+            const demoViewerContainer = document.getElementById('demoViewer');
+
+            demoDescriptionContainer.innerHTML = '';
+            demoViewerContainer.innerHTML = '';
+
+            demoViewerContainer.style.height = '40vw';
+            demoViewerContainer.style.width = '40vw';
+
+            demoDescriptionContainer.innerHTML = demos[index].showDescription();
+            demoViewerContainer.innerHTML = demos[index].showModel();
+        }
+
+        const selectedHash = window.location.hash;
+        if(selectedHash) {
+            const index = selectedHash.replace('#demo', '');
+
+            if(!isNaN(index)) {
+                loadDemo(index)
+            }
+        }
+    </script>
+</body>
+
+</html>
