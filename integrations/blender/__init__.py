@@ -13,8 +13,8 @@ bl_info = {
     "name": "CloudRF 3D",
     "description": "Simulate RF propagation using the CloudRF 3D API",
     "author": "CloudRF.com",
-    "version": (1, 0),
-    "blender": (3, 0, 0),
+    "version": (1, 0, 1),
+    "blender": (3, 6, 0),
     "category": "Import-Export"
 }
 
