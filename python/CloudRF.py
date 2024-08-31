@@ -323,6 +323,12 @@ class CloudRF:
                 pngPath4326 = saveBasePath + '.4326.png'
                 self.__streamUrlToFile(responseJson['PNG_WGS84'], pngPath4326)
                 self.__verboseLog('4326 projected PNG saved to %s' % pngPath4326)
+            elif fileType == 'url':
+                txtPath = saveBasePath + '.url'
+                with open(txtPath, 'a') as txtOutputFile:
+                    txtOutputFile.write(self.__arguments.base_url.rstrip('/') + '/archive/calc?id=' + responseJson['sid'])
+                txtOutputFile.close()
+                self.__verboseLog('URL saved to %s' % txtPath)
             else:
                 # Anything else we just pull out of the archive
                 savePath = saveBasePath + '.' + fileType
@@ -534,7 +540,7 @@ class CloudRF:
             self.__verboseLog('Valid request type of %s being used.' % self.requestType)
 
             if self.requestType == 'area':
-                self.allowedOutputTypes = ['kmz', 'png', 'shp', 'tiff']
+                self.allowedOutputTypes = ['kmz', 'png', 'shp', 'tiff', 'url']
                 self.description = '''
                     CloudRF Area API
 

@@ -32,19 +32,55 @@ The above example will initialise the `CloudRF.py` script in `area` mode and wil
 
 For each of the request types you can use the `-h` or `--help` flag to output in full a description of what the request type is along with all required and optional parameters.
 
+
+```bash
+usage: CloudRF.py [-h] -t INPUT_TEMPLATE [-i INPUT_CSV] -k API_KEY [-u BASE_URL] [--no-strict-ssl] [-srq] [-r] [-o OUTPUT_DIRECTORY] [-s {all,kmz,png,shp,tiff,url}] [-v] [-w WAIT]
+
+CloudRF Area API
+
+Area coverage performs a circular sweep around a transmitter out to a user defined radius.
+It factors in system parameters, antenna patterns, environmental characteristics and terrain data to show a heatmap in customisable colours and units.
+
+options:
+  -h, --help            show this help message and exit
+  -t INPUT_TEMPLATE, --input-template INPUT_TEMPLATE
+                        Absolute path to input JSON template used as part of the calculation. (default: None)
+  -i INPUT_CSV, --input-csv INPUT_CSV
+                        Absolute path to input CSV, used in combination with --input-template to customise your template to a specific usecase. The CSV header row must be included.
+                        Header row values must be defined in dot notation format of the template key that they are to override in the template, for example transmitter latitude will
+                        be named as "transmitter.lat". (default: None)
+  -k API_KEY, --api-key API_KEY
+                        Your API key to the CloudRF API service. (default: None)
+  -u BASE_URL, --base-url BASE_URL
+                        The base URL for the CloudRF API service. (default: https://api.cloudrf.com/)
+  --no-strict-ssl       Do not verify the SSL certificate to the CloudRF API service. (default: True)
+  -srq, --save-raw-request
+                        Save the raw request made to the CloudRF API service. This is saved to the --output-directory value. (default: False)
+  -r, --save-raw-response
+                        Save the raw response from the CloudRF API service. This is saved to the --output-directory value. (default: False)
+  -o OUTPUT_DIRECTORY, --output-directory OUTPUT_DIRECTORY
+                        Absolute directory path of where outputs are saved. (default: /home/alex/CloudRF-API-clients/python/output)
+  -s {all,kmz,png,shp,tiff,url}, --output-file-type {all,kmz,png,shp,tiff,url}
+                        Type of file to be downloaded. (default: kmz)
+  -v, --verbose         Output more information on screen. This is often useful when debugging. (default: False)
+  -w WAIT, --wait WAIT  Time in seconds to wait before running the next calculation. (default: 3)
+
+For more details about this script please consult the GitHub documentation at https://github.com/Cloud-RF/CloudRF-API-clients.
+
+```
 ## Hello World!
 
-The below example will do a single `area` request based upon the values in the `5G-CBand-sector.json` template.
+The below example will do a single `area` request based upon the values in the `5G-CBand-sector.json` template and save a KMZ file
 
 ```bash
 python3 CloudRF.py area \
     --api-key MY-API-KEY \
-    --input-template ../templates/5G-CBand-sector.json
+    --input-template ../templates/5G-CBand-sector.json -s kmz
 ```
 
-## Customise Your Request/Response
+## Options
 
-The script has a number of flags which can be passed in which can be used to customise your request and/or response. Full details of each flag can be viewed by passing in the `-h`/`--help` flag, but below details some of the more important flags:
+The script has a number of parameters which can be passed in to adjust the request and response.
 
 ### API Key
 
@@ -56,12 +92,12 @@ python3 CloudRF.py area --api-key YOUR-API-KEY-HERE
 
 ### Base URL
 
-The `-u` or `--base-url` flag can be used to define a different endpoint for the CloudRF API service.
+The `-u` or `--base-url` flag can be used to define a different endpoint for the CloudRF API service which could be a private SOOTHSAYER server.
 
 By default the script is set to use `https://api.cloudrf.com`.
 
 ```bash
-python3 CloudRF.py area --base-url https://soothsayer
+python3 CloudRF.py area --base-url https://soothsayer.local
 ```
 
 ### Disable Strict SSL
@@ -146,12 +182,12 @@ Please note that for more verbose instructions on each of the request types then
 
 #### Basic Area Request
 
-The below example will do a single `area` request based upon the values in the `5G-CBand-sector.json` template.
+The below example will do a single `area` request based upon the values in the `5G-CBand-sector.json` template and fetch the KMZ afterwards.
 
 ```bash
 python3 CloudRF.py area \
     --api-key MY-API-KEY \
-    --input-template ../templates/5G-CBand-sector.json
+    --input-template ../templates/5G-CBand-sector.json -s kmz
 ```
 
 #### Fully Customised Area Request

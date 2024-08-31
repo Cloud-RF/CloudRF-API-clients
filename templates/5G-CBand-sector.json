@@ -22,16 +22,11 @@
         "powerUnit": "W"
     },
     "receiver": {
-        "lat": 50.82268843604003,
-        "lon": -0.9229323688511875,
+        "lat": 0,
+        "lon": 0,
         "alt": 1,
         "rxg": 1,
-        "rxs": -105
-    },
-    "feeder": {
-        "flt": "1",
-        "fll": 0,
-        "fcc": 0
+        "rxs": -100
     },
     "antenna": {
         "mode": "custom",
@@ -46,9 +41,9 @@
         "pol": "v"
     },
     "model": {
-        "pm": 1,
+        "pm": 10,
         "pe": 2,
-        "ked": 1,
+        "ked": 4,
         "rel": 50
     },
     "environment": {
@@ -61,11 +56,11 @@
     "output": {
         "units": "m",
         "col": "LTE.dBm",
-        "out": 6,
-        "ber": 1,
+        "out": 2,
+        "ber": 0,
         "mod": 0,
         "nf": -104,
-        "res": 5,
+        "res": 10,
         "rad": 2
     }
 }
