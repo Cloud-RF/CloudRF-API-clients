@@ -16,9 +16,59 @@
     <script>
         let apiEndpoint = "https://api.cloudrf.com/noise/create";
 
+        let requestData = [
+            {'latitude': 50.1234, 'longitude': -2.1234, 'frequency': 446, 'noise': -99},
+        ]
+
         $(document).ready(() => {
             $('#apiEndpoint').text(apiEndpoint);
+
+            buildExampleCurlCommand();
+            buildRequestTable();
         });
+
+        function buildExampleCurlCommand() {
+            let curlCommand = 'curl -d \'' + JSON.stringify(requestData) + '\' -H "Content-Type: application/json" -X POST ' + apiEndpoint;
+
+            $('#curlExampleCommand').text(curlCommand);
+        }
+
+        function buildRequestTable() {
+            let html = '';
+
+            requestData.forEach((data, index) => {
+                html += `<tr id="requestTableRow${index}" oninput="updateRequestData(${index})">`;
+                html += `<td><input class="form-control" value="${data.latitude}"></td>`;
+                html += `<td><input class="form-control" value="${data.longitude}"></td>`;
+                html += `<td><input class="form-control" value="${data.frequency}"></td>`;
+                html += `<td><input class="form-control" value="${data.noise}"></td>`;
+                html += `<td><button type="button" class="btn btn-danger" onclick="removeRequestDataRow(${index})">Remove</button></td>`;
+                html += '</tr>';
+            });
+
+            $('#requestTable').html(html);
+        }
+
+        function updateRequestData(index) {
+            requestData[index].latitude = parseFloat($(`#requestTableRow${index} input`)[0].value);
+            requestData[index].longitude = parseFloat($(`#requestTableRow${index} input`)[1].value);
+            requestData[index].frequency = parseFloat($(`#requestTableRow${index} input`)[2].value);
+            requestData[index].noise = parseFloat($(`#requestTableRow${index} input`)[3].value);
+
+            buildExampleCurlCommand();
+        }
+
+        function addRequestDataRow() {
+            requestData.push({'latitude': 0, 'longitude': 0, 'frequency': 0, 'noise': 0});
+            buildRequestTable();
+            buildExampleCurlCommand();
+        }
+
+        function removeRequestDataRow(index) {
+            requestData.splice(index, 1);
+            buildRequestTable();
+            buildExampleCurlCommand();
+        }
 
         function bringTheNoise() {
             var noiseArray = $("#noiseValues").val().split("\n");
@@ -63,10 +113,10 @@
 </head>
 
 <body>
-    <div class="container pt-4">
+    <div class="p-4">
         <h1>Noise Import Client</h1>
         <div class="d-flex justify-content-between align-items-center">
-            <div class="w-100">
+            <div class="w-100 p-2">
                 <h2>API Endpoint</h2>
                 <p><code id="apiEndpoint"></code></p>
 
@@ -103,24 +153,40 @@
                 </table>
             </div>
 
-            <div class="w-100">
-                API key: <input type="password" id="apiKey" value=""></input>
+            <div class="w-100 p-2">
+                API Key: 
+                <input class="form-control" type="password" id="apiKey" placeholder="Enter your CloudRF API key here"></input>
+                <hr>
 
                 <h2>Request</h2>
-                <textarea id="noiseValues" rows="5" class="w-100"></textarea>
-                <input type="submit" value="Bring the noise" onclick="bringTheNoise()" />
+                <p>Enter details for noise values you wish to submit to CloudRF here.</p>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Latitude</th>
+                            <th>Longitude</th>
+                            <th>Frequency</th>
+                            <th>Noise</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requestTable"></tbody>
+                </table>
+
+                <button type="button" class="btn btn-success" onclick="addRequestDataRow()"">Add Row</button>
+                <button type="button" class="btn btn-primary" onclick="bringTheNoise()">Bring the Noise</button>
                 
                 <hr>
 
                 <h2>Response</h2>
-                <div class="terminal" id="status"></div>
+                <div class="terminal" id="status">Make a request first...</div>
             </div>
         </div>
-        
+
         <h2>cURL Example</h2>
-        <div class="terminal">
-            curl -d '{"latitude":"50.1234", "longitude":-2.1234, "frequency": 446, "noise": -99}' -H "Content-Type: application/json" -X POST https://api.cloudrf.com/noise/create
-        </div>
+        <p>The below cURL command is an example of a request to the <code>/noise/create</code> API endpoint. As you create data to insert this will be automatically updated.</p>
+
+        <div class="terminal" id="curlExampleCommand"></div>
 
         <hr>
 
