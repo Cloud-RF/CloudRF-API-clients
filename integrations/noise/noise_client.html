@@ -28,7 +28,7 @@
         });
 
         function buildExampleCurlCommand() {
-            let curlCommand = 'curl -d \'' + JSON.stringify(requestData) + '\' -H "Content-Type: application/json" -H "Key: <YOUR_API_KEY_HERE>" -X POST ' + apiEndpoint;
+            let curlCommand = 'curl -d \'' + JSON.stringify(requestData) + '\' -H "Content-Type: application/json" -H "key: <YOUR_API_KEY_HERE>" -X POST ' + apiEndpoint;
 
             $('#curlExampleCommand').text(curlCommand);
         }
@@ -71,33 +71,26 @@
         }
 
         function bringTheNoise() {
-            var noiseArray = $("#noiseValues").val().split("\n");
-            var status = "";
+            let apiKey = $("#apiKey").val();
 
-            for (i = 0; i < noiseArray.length; i++) {
-                var parts = noiseArray[i].split(",");
-                var lat = parts[0];
-                var lon = parts[1];
-                var frequency = parts[2];
-                var noise = parts[3];
-                var apikey = $("#apiKey").val();
-                var requestBody = JSON.stringify({ "latitude": lat, "longitude": lon, "frequency": frequency, "noise": noise });
-                $.ajax({
-                    type: "POST",
-                    url: "https://api.cloudrf.com/noise/create",
-                    headers: { "key": apikey },
-                    data: requestBody,
-                    dataType: "json",
-                    success: function (xhr, requestBody) {
-                        status += requestBody + "\n";
-                        $("#status").html(status);
-                    },
-                    error: function (xhr, msg) {
-                        status += "FAIL" + ": " + xhr.responseText + "\n";
-                        $("#status").html(status);
-                    }
-                });
+            if(apiKey === '') {
+                $('#responseBox').text('Please enter your API key.');
+                return;
             }
+
+            $.ajax({
+                type: "POST",
+                url: apiEndpoint,
+                headers: { "key": apiKey },
+                data: JSON.stringify(requestData),
+                dataType: "json",
+                success: function (xhr, requestBody) {
+                    $("#responseBox").html("Success: " + JSON.stringify(xhr));
+                },
+                error: function (xhr, msg) {
+                    $("#responseBox").html("FAIL: " + xhr.responseText);
+                }
+            });
         }
     </script>
 
@@ -155,7 +148,7 @@
 
             <div class="w-100 p-2">
                 API Key: 
-                <input class="form-control" type="password" id="apiKey" placeholder="Enter your CloudRF API key here"></input>
+                <input class="form-control" type="password" id="apiKey" placeholder="Enter your CloudRF API key here" value=""></input>
                 <hr>
 
                 <h2>Request</h2>
@@ -179,7 +172,7 @@
                 <hr>
 
                 <h2>Response</h2>
-                <div class="terminal" id="status">Make a request first...</div>
+                <div class="terminal" id="responseBox">Make a request first...</div>
             </div>
         </div>
 
