@@ -28,7 +28,7 @@
         });
 
         function buildExampleCurlCommand() {
-            let curlCommand = 'curl -d \'' + JSON.stringify(requestData) + '\' -H "Content-Type: application/json" -X POST ' + apiEndpoint;
+            let curlCommand = 'curl -d \'' + JSON.stringify(requestData) + '\' -H "Content-Type: application/json" -H "Key: <YOUR_API_KEY_HERE>" -X POST ' + apiEndpoint;
 
             $('#curlExampleCommand').text(curlCommand);
         }
@@ -184,7 +184,7 @@
         </div>
 
         <h2>cURL Example</h2>
-        <p>The below cURL command is an example of a request to the <code>/noise/create</code> API endpoint. As you create data to insert this will be automatically updated.</p>
+        <p>The below cURL command is an example of a request to the <code>/noise/create</code> API endpoint using the data you have added. As you create data to insert this will be automatically updated.</p>
 
         <div class="terminal" id="curlExampleCommand"></div>
 
