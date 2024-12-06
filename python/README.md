@@ -274,3 +274,25 @@ python3 CloudRF.py points \
     --input-template ../templates/5G-CBand-sector.json \
     --input-csv points.csv
 ```
+
+### Auto Points
+
+The below example shows a more advanced use of the `points` API which tests a spreadsheet of sites to a single receiver defined on the CLI. The output is then written to a new spreadsheet.
+
+```bash
+python3 autopoints.py --lat 38.91 --lon 1.43 --alt 12 \
+    -k xxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+    -t ../templates/LoRa-GW-EU.json \
+    -i points.csv -o output.csv
+```
+
+The output looks like this:
+
+```
+Result:
+   server       lat       lon  alt  distance  path_loss  received_power
+0       1  38.91338  1.438680   10     0.841      124.2          -104.2
+1       2  38.91116  1.438119   10     0.715      129.4          -109.4
+2       3  38.91073  1.442764   10     1.109      127.7          -107.7
+3       4  38.91020  1.448539   10     1.606      141.1          -121.1
+```
