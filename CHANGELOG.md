@@ -1,5 +1,9 @@
 # CloudRF API Clients Changelog
 
+## 2024-10-16
+
+- Noise import client improved.
+
 ## 2024-01-22
 
 - Templates updated to use newer `elevation`, `landcover`, `buildings` and `obstacles` values.
