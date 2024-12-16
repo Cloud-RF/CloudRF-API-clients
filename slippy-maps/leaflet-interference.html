@@ -17,7 +17,7 @@
 </head>
 
 <body class="p-2">
-    <h1>CloudRF Interference Leaflet Demo</h1>
+    <h1>Interference API Demo</h1>
 
     <div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
 
@@ -28,11 +28,11 @@
 
     <div class="input-group input-group-sm mb-3">
         <span class="input-group-text">API Service Base URL</span>
-        <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://localhost" placeholder="The base URL of where your API requests will be made to.">
+        <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
     </div>
 
-    <p>Enter your API key above and then move one of the cars to add an RF Interference coverage layer to the Leaflet map calculated by the CloudRF API.</p>
-    <p>Please note that this demo makes use of the multiste endpoint so you are required to have a plan with GPU support.</p>
+    <p>Enter your API key above and then move the cars to model PMR446 interference against the blue car network.</p>
+    <p><i>This demo also uses the multiste API so you need to have a plan with GPU support.</i></p>
     <p><a href="index.html">Click here</a> to see reference documentation and other demos.</p>
 
     <div id="mapInterference" class="map"></div>
@@ -80,10 +80,10 @@
             "network": "QRM-demo",
             "engine": 2,
             "transmitter": {
-                "alt": 3,
-                "frq": 466,
-                "txw": 10.0,
-                "bwi": 5
+                "alt": 2,
+                "frq": 446,
+                "txw": 2.0,
+                "bwi": 0.012
             },
             "receiver": {
                 "alt": 1,
@@ -105,7 +105,7 @@
                 "pm": 10,
                 "pe": 1,
                 "ked": 2,
-                "rel": 50
+                "rel": 60
             },
             "environment": {
                 "clt": "Temperate.clt",
@@ -120,9 +120,9 @@
                 "out": 2,
                 "ber": 0,
                 "mod": 0,
-                "nf": -114,
-                "res": 5,
-                "rad": 2
+                "nf": -105,
+                "res": 10,
+                "rad": 3
             }
         };
 
