@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>CloudRF Interference Leaflet Demo</title>
+    <link 
+        rel="stylesheet" 
+        href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" 
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="CloudRF.css">
+</head>
+
+<body class="p-2">
+    <h1>Interference API Demo</h1>
+
+    <div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Key</span>
+        <input id="apiKey" type="password" class="form-control" placeholder="Your API Key for service defined below.">
+    </div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Service Base URL</span>
+        <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
+    </div>
+
+    <p>Enter your API key above and then move the cars to model PMR446 interference against the blue car network.</p>
+    <p><i>This demo also uses the multiste API so you need to have a plan with GPU support.</i></p>
+    <p><a href="index.html">Click here</a> to see reference documentation and other demos.</p>
+
+    <div id="mapInterference" class="map"></div>
+
+    <div class="d-flex justify-content-between">
+        <div class="w-50 mx-4">
+            <h2>Request</h2>
+
+            <pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+        <div class="w-50 mx-4">
+            <h2>Response</h2>
+
+            <pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+    </div>
+
+    <script 
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" 
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" 
+        crossorigin="anonymous"></script>
+    <script
+        src="https://code.jquery.com/jquery-3.6.3.min.js"
+        integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <script src="CloudRF.js"></script>
+
+    <script>
+        var map = L.map('mapInterference').setView([50.333, 6.941], 14);
+        var signal_radios = [];
+        var noise_radios = [];
+
+        var signal_radios_changed = false;
+        var noise_radios_changed = false;
+
+        var signal_calc_name = null;
+        var noise_calc_name = null;
+
+        const multsite_request_delay_ms = 2000;
+
+        const radio_template = {
+            "network": "QRM-demo",
+            "engine": 2,
+            "transmitter": {
+                "alt": 2,
+                "frq": 446,
+                "txw": 2.0,
+                "bwi": 0.012
+            },
+            "receiver": {
+                "alt": 1,
+                "rxg": 0,
+                "rxs": -100
+            },
+            "antenna": {
+                "txg": 2.15,
+                "txl": 0,
+                "ant": 1,
+                "azi": 0,
+                "tlt": 0,
+                "hbw": 0,
+                "vbw": 0,
+                "pol": "v",
+                "fbr": 0
+            },
+            "model": {
+                "pm": 10,
+                "pe": 1,
+                "ked": 2,
+                "rel": 60
+            },
+            "environment": {
+                "clt": "Temperate.clt",
+                "elevation": 2,
+                "landcover": 1,
+                "buildings": 1,
+                "obstacles": 0
+            },
+            "output": {
+                "units": "m",
+                "col": "9",
+                "out": 2,
+                "ber": 0,
+                "mod": 0,
+                "nf": -105,
+                "res": 10,
+                "rad": 3
+            }
+        };
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var LeafIcon = L.Icon.extend({
+            options: {
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, 0]
+            }
+        });
+
+        function addSignalRadio(latitude, longitude) {
+            signal_radio = new L.marker([latitude, longitude], { title: `Signal Radio${signal_radios.length + 1}`, draggable: 'true', icon: new LeafIcon({iconUrl: 'images/car_blue.png'}) });
+            map.addLayer(signal_radio);
+            signal_radio.on('dragend', function (event) {
+                var marker = event.target;
+                var position = marker.getLatLng();
+                marker.setLatLng(new L.LatLng(position.lat, position.lng), { draggable: 'true' });
+                signal_radios_changed = true;
+                calculateInterference(signal_radios);
+            });
+            signal_radios_changed = true;
+            signal_radios.push(signal_radio);
+        }
+
+        function addNoiseRadio(latitude, longitude) {
+            noise_radio = new L.marker([latitude, longitude], { title: `Noise Radio${noise_radios.length + 1}`, draggable: 'true', icon: new LeafIcon({iconUrl: 'images/car_red.png'}) });
+            map.addLayer(noise_radio);
+            noise_radio.on('dragend', function (event) {
+                var marker = event.target;
+                var position = marker.getLatLng();
+                marker.setLatLng(new L.LatLng(position.lat, position.lng), { draggable: 'true' });
+                noise_radios_changed = true;
+                calculateInterference(noise_radios);
+            });
+            noise_radios_changed = true;
+            noise_radios.push(noise_radio);
+        }
+
+        function calculateInterference() {
+            calcs = [];
+
+            if (signal_radios_changed) {
+                let calc_signal = new Promise(async function (resolve, reject) {
+                    await new Promise(res => setTimeout(res, calcs.length * multsite_request_delay_ms));
+
+                    sendMultsiteRequest(signal_radios).then((calc_name) => {
+                        signal_calc_name = calc_name;
+                        signal_radios_changed = false;
+                        resolve();
+                    });
+                });
+
+                calcs.push(calc_signal);
+            }
+
+            if(noise_radios_changed) {
+                let calc_noise = new Promise(async function (resolve, reject) {
+                    await new Promise(res => setTimeout(res, calcs.length * multsite_request_delay_ms));
+
+                    sendMultsiteRequest(noise_radios).then((calc_name) => {
+                        noise_calc_name = calc_name;
+                        noise_radios_changed = false;
+                        resolve();
+                    });
+                });
+
+                calcs.push(calc_noise);
+            }
+
+            if (calcs.length == 0) return;
+
+            Promise.all(calcs).then(_ => {
+                sendInterferenceRequest().then(response => {
+                    console.log(response);
+
+                    const bounds = [
+                        [response.bounds[2], response.bounds[3]],
+                        [response.bounds[0], response.bounds[1]],
+                    ];
+
+                    map.eachLayer(function (layer) {
+                        if (layer instanceof L.ImageOverlay) {
+                            map.removeLayer(layer);
+                        }
+                    });
+
+                    L.imageOverlay(
+                        response.PNG_Mercator,
+                        bounds
+                    ).setOpacity(0.7).addTo(map);
+                });
+            });
+        }
+
+        function sendMultsiteRequest(sites) {
+
+            let request = {...radio_template};
+            delete request.transmitter;
+            delete request.antenna;
+            request.site = name;
+            request.transmitters = [];
+
+            sites.forEach((site) => {
+                let transmitter = {...radio_template.transmitter};  
+                transmitter.lat = site._latlng.lat;
+                transmitter.lon = site._latlng.lng;
+                transmitter.antenna = radio_template.antenna;
+
+                request.transmitters.push(transmitter);
+            });
+
+            let requestJson = JSON.stringify(request, null, 4);
+
+            const re = new RegExp(`([0-9]+_${radio_template.network}_MULTISITE)\\.4326\\.png`);
+
+            $('#requestRawOutput').html(requestJson);
+
+            return new Promise(async function(resolve, reject) {
+                validateApiKey();
+                fetch(`${apiServiceBaseUrl}/multisite`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'key': apiKey
+                    },
+                    body: requestJson
+                }).then(async function(response) {
+                    const responseJson = await response.json();
+                    $('#responseRawOutput').html(JSON.stringify(responseJson, null, 4));
+                    console.log(responseJson);
+
+                    const re_result = re.exec(responseJson.PNG_WGS84);
+
+                    if (re_result == null) {
+                        reject('Error: Could not find site name in response.');
+                    } else {
+                        resolve(re_result[1]);
+                    }
+                }).catch(e => {
+                    $('#responseRawOutput').html(`${e}`);
+                    reject(e);
+                })
+            });
+        }
+
+        function sendInterferenceRequest() {
+            let request = {
+                s_sites: [signal_calc_name],
+                j_sites: [noise_calc_name],
+                name: "QRM-demo",
+                colour_key: "JS.dB",
+            };
+
+            let requestJson = JSON.stringify(request, null, 4);
+
+            $('#requestRawOutput').html(requestJson);
+
+            return new Promise(async function(resolve, reject) {
+                validateApiKey();
+                fetch(`${apiServiceBaseUrl}/interference`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'key': apiKey
+                    },
+                    body: requestJson
+                }).then(async function(response) {
+                    const responseJson = await response.json();
+                    $('#responseRawOutput').html(JSON.stringify(responseJson, null, 4));
+                    console.log(responseJson);
+
+                    resolve(responseJson);
+                }).catch(e => {
+                    $('#responseRawOutput').html(`${e}`);
+                    reject(e);
+                })
+            });
+        }
+
+        addSignalRadio(50.33508780839669, 6.946938369950825);
+        addSignalRadio(50.33630126946575, 6.943714563675718);
+        addNoiseRadio(50.33094332349924, 6.938598138059326);
+        addNoiseRadio(50.32554681914269, 6.93672434416994);
+    </script>
+</body>
+
+</html>
