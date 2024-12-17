@@ -1,0 +1,10 @@
+[package]
+name = "openssrf_xml_merger"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.79"
+openssrf = {path = "../openssrf"}
+quick-xml = { version = "0.31.0", features = ["serde", "serialize"] }
+serde = { version = "1.0.196", features = ["derive"] }

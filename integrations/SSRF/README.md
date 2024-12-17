@@ -8,18 +8,32 @@ SSRF-XML is used to share spectrum information including transmitters, receivers
 
     apt-get install cargo
 
-To use it you will need an API like https://api.cloudrf.com and an API key.
-Define both as environment variables so the gen_kmz.sh script can find them.
-
-    cargo run -q -p openssrf_multisite_pipeline -- -k $API_KEY --url $API_URL -i ./xml -o ./kmz -ncv
-
 
 ## Generate test data
 
 A test script to generate SSRF XML exists called gen_xml.sh.
 Within this you can set a center point, maximum number of transmitters and a random distance error measured in degrees. The demo below will generate up to 512 transmitters in Switzerland.
 
-    cargo run -q -p openssrf_test_xml_generator -- --lat 47 --lon 8  -m 512 --std 0.2 -o ./xml
+    `cargo run -p openssrf_test_xml_generator -- --lat 47 --lon 8  -m 512 --std 0.2 -o ./xml`
+
+## Run multisite pipeline
+
+To use it you will need an API like https://api.cloudrf.com and an API key.
+Define both as environment variables so the gen_kmz.sh script can find them.
+
+    `cargo run -p openssrf_multisite_pipeline -- -k $API_KEY --url $API_URL -i ./xml -o`
+
+## Merge test data
+
+To combine multiple SSRF XML files into one, use the openssrf_xml_merger like so:
+
+    `cargo run -p openssrf_xml_merger -- -i xml/rnd-ssrf-016.xml -i xml/rnd-ssrf-032.xml -i xml/rnd-ssrf-064.xml -o ssrf-interference-data.xml`
+
+## Run interference analysis
+
+To run interference analysis between the assignments in an SSRF XML document, run the following:
+
+    `cargo run -p openssrf_interference_analysis -- -k $API_KEY --url $API_URL -i ssrf-interference-data.xml -o kmz_interference/`
 
 
 ## Further reading
