@@ -26,8 +26,7 @@ fn run_multsitite_calculations(
         println!("Performing multisite calculation");
 
         let mut req = ssrf_to_multisite_req(&ssrf, &assignment.serial)?;
-        req.output.res = 60.0;
-        req.output.col = "9".to_owned();
+        req.output.col = "LTE.dBm".to_owned();
 
         let res = send_multisite_req(&req, api_url, api_key, validate_certs)?;
 

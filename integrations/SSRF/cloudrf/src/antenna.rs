@@ -16,14 +16,14 @@ pub struct Antenna {
 impl Default for Antenna {
     fn default() -> Self {
         Self {
-            txg: 21.0,
+            txg: 2.0,
             txl: 0.0,
-            ant: 0,
+            ant: 1,
             azi: 0.0,
             tlt: 0.0,
-            hbw: 120.0,
-            vbw: 60.0,
-            fbr: 30.0,
+            hbw: 0.0,
+            vbw: 0.0,
+            fbr: 0.0,
             pol: Polarisation::Vertical,
         }
     }

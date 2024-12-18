@@ -12,10 +12,10 @@ pub struct Model {
 impl Default for Model {
     fn default() -> Self {
         Self {
-            pm: PropagationModel::EGLI,
+            pm: PropagationModel::GP,
             pe: Propagationenvironment::Average,
-            ked: DiffractionModel::Bullington,
-            rel: 50,
+            ked: DiffractionModel::Deygout,
+            rel: 90,
         }
     }
 }
@@ -24,6 +24,7 @@ impl Default for Model {
 #[repr(u8)]
 pub enum PropagationModel {
     ITM = 1,
+    GP = 10,
     EGLI = 11,
 }
 

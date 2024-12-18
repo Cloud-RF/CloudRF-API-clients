@@ -24,7 +24,7 @@ pub struct MultisiteReq {
 impl Default for MultisiteReq {
     fn default() -> Self {
         Self {
-            site: "My_Multiite".to_owned(),
+            site: "My_Multisite".to_owned(),
             network: "My_Network".to_owned(),
             transmitters: Vec::new(),
             receiver: Default::default(),
