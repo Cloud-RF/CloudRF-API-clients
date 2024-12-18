@@ -1,30 +1,12 @@
 use std::{
-    collections::HashMap, fs::{read_dir, File}, io::BufWriter, path::{Path, PathBuf}, thread::sleep, time::{Duration, SystemTime}
+    collections::HashMap, fs::read_dir, path::{Path, PathBuf}, thread::sleep, time::{Duration, SystemTime}
 };
 
 use anyhow::anyhow;
 use chrono::{DateTime, Utc};
-use cloudrf::{multisite::MultisiteRes, send_multisite_req};
+use cloudrf::{download_file, multisite::MultisiteRes, send_multisite_req};
 use openssrf::io::read_ssrf_xml;
-
-use crate::convert::ssrf_to_multisite_req;
-
-pub mod convert;
-
-fn download_file(url: String, save_path: &Path, validate_certs: bool) -> anyhow::Result<u64> {
-    let client = reqwest::blocking::Client::builder()
-        .danger_accept_invalid_certs(!validate_certs)
-        .build()?;
-
-    let mut res = client.get(url).send()?;
-
-    let file = File::create(save_path)?;
-    let mut writer = BufWriter::new(file);
-
-    let size = res.copy_to(&mut writer)?;
-
-    Ok(size)
-}
+use openssrf_to_cloudrf::ssrf_to_multisite_req;
 
 fn run_calculation(
     ssrf_file: &Path,

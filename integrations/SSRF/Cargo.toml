@@ -1,3 +1,3 @@
 [workspace]
 resolver = "2"
-members = [ "cloudrf","openssrf", "openssrf_multisite_pipeline", "openssrf_test_xml_generator"]
+members = [ "cloudrf","openssrf", "openssrf_to_cloudrf", "openssrf_interference_analysis", "openssrf_multisite_pipeline", "openssrf_test_xml_generator", "openssrf_xml_merger"]

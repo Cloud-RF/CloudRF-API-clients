@@ -26,8 +26,8 @@ impl Default for Environment {
     fn default() -> Self {
         Self {
             clt: "Temperate.clt".to_owned(),
-            elevation: Elevation::Terrain,
-            landcover: true,
+            elevation: Elevation::Surface,
+            landcover: false,
             buildings: false,
             obstacles: false,
         }

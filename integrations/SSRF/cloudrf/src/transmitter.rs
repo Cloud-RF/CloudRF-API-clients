@@ -15,9 +15,9 @@ impl Default for Transmitter {
         Self {
             lat: 38.916,
             lon: 1.448,
-            alt: 20.0,
-            frq: 800.0,
-            txw: 10.0,
+            alt: 2.0,
+            frq: 2200.0,
+            txw: 2.0,
             bwi: 1.0,
         }
     }

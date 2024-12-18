@@ -1,0 +1,9 @@
+[package]
+name = "openssrf_to_cloudrf"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+openssrf = {path = "../openssrf"}
+cloudrf = {path = "../cloudrf"}
+thiserror = "1.0.57"

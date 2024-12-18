@@ -1,10 +1,19 @@
 use cloudrf::{area::AreaReq, multisite::{MultisiteReq, MultisiteTransmitter}};
 use openssrf::{serial::Serial, SSRF};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum SsrfToCloudRFrr {
+    #[error("Cloudrf error `{0}`")]
+    CloudRfError(#[from] cloudrf::CloudRfErr),
+    #[error("Openssrf error `{0}`")]
+    OpenssrfError(#[from] openssrf::OpenssrfErr),
+}
 
 pub fn ssrf_to_multisite_req(
     ssrf: &SSRF,
     assignment_serial: &Serial,
-) -> anyhow::Result<MultisiteReq> {
+) -> Result<MultisiteReq, SsrfToCloudRFrr> {
     let assignment = ssrf.get_assignment(assignment_serial)?;
 
     let mut req = MultisiteReq::default();
@@ -43,7 +52,7 @@ pub fn ssrf_to_multisite_req(
     Ok(req)
 }
 
-pub fn ssrf_to_area_req(ssrf: &SSRF, assignment_serial: &Serial, link_id: &str) -> anyhow::Result<AreaReq> {
+pub fn ssrf_to_area_req(ssrf: &SSRF, assignment_serial: &Serial, link_id: &str) -> Result<AreaReq, SsrfToCloudRFrr> {
     let assignment = ssrf.get_assignment(assignment_serial)?;
 
     let link = assignment.get_link(link_id)?;

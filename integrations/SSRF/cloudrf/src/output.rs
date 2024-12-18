@@ -16,9 +16,9 @@ impl Default for Output {
             units: Units::MetersAGL,
             col: "LTE.dBm".to_owned(),
             out: 2,
-            nf: -110.0,
-            res: 30.0,
-            rad: 30.0,
+            nf: -100.0,
+            res: 4.0,
+            rad: 2.0,
         }
     }
 }

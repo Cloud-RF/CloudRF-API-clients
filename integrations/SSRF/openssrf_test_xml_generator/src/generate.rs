@@ -12,8 +12,8 @@ use rand_distr::Distribution;
 pub fn generate_random_openssrf(sites_count: u64, lat: f64, lon: f64, std: f64) -> anyhow::Result<SSRF> {
     let mut rng = thread_rng();
    
-    let name = format!("RandomSSRF-{}", sites_count);
-    let short_name = format!("RND{}", sites_count);
+    let name = format!("SSRF-{}", sites_count);
+    let short_name = format!("B{}", sites_count);
 
     let configurations = build_configurations();
     let locations = generate_random_locations(&mut rng, sites_count, lat, lon, std)?;
@@ -25,10 +25,10 @@ pub fn generate_random_openssrf(sites_count: u64, lat: f64, lon: f64, std: f64) 
         let station = Station {
             station_id: loc.name.clone(),
             station_name: Some(loc.name.clone()),
-            ant_structure_height: rng.gen_range(5..=15),
+            ant_structure_height: 2,
             station_loc: StationLoc {
                 loc_sat_ref: loc.serial.clone(),
-                location_radius: 15.0,
+                location_radius: 2.0,
             },
         };
 
@@ -74,26 +74,18 @@ fn build_configurations() -> Vec<Configuration> {
         Configuration {
             config_id: "A".to_owned(),
             config_emission: ConfigEmission {
-                necessary_bw_min: 10.0,
+                necessary_bw_min: 2.0,
             },
-            config_freq: ConfigFreq { freq_min: 100.0 },
-            eirp_min: 1.0,
+            config_freq: ConfigFreq { freq_min: 2200.0 },
+            eirp_min: 2.0,
         },
         Configuration {
             config_id: "B".to_owned(),
             config_emission: ConfigEmission {
-                necessary_bw_min: 10.0,
+                necessary_bw_min: 2.0,
             },
-            config_freq: ConfigFreq { freq_min: 80.0 },
-            eirp_min: 0.5,
-        },
-        Configuration {
-            config_id: "C".to_owned(),
-            config_emission: ConfigEmission {
-                necessary_bw_min: 10.0,
-            },
-            config_freq: ConfigFreq { freq_min: 120.0 },
-            eirp_min: 1.5,
+            config_freq: ConfigFreq { freq_min: 2200.0 },
+            eirp_min: 2.0,
         },
     ]
 }
@@ -115,7 +107,7 @@ fn generate_random_locations(
         let lat = lat_dist.sample(rng);
         let lon = lon_dist.sample(rng);
 
-        let name = format!("RND{}", i);
+        let name = format!("B{}", i);
 
         let loc = Location {
             name: name.clone(),
