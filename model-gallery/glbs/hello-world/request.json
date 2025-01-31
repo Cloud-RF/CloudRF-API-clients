@@ -1,0 +1,31 @@
+{
+    "transmitters": [
+        {
+            "frq": 1000.0,
+            "txw": 5.0,
+            "pos": {
+                "x": 0.0,
+                "y": 1.5,
+                "z": 0.0
+            },
+            "antenna": {
+                "ant": 1,
+                "txg": 2.15,
+                "txl": 0.0
+            }
+        }
+    ],
+    "3d": {
+        "input_file": "hello_world_in.glb",
+        "max_reflections": 25
+    },
+    "output": {
+        "res": 0.2,
+        "col": "RAINBOW.dBm",
+        "out": 2
+    },
+    "receiver": {
+        "rxs": -110,
+        "rxg": 0.0
+    }
+}
