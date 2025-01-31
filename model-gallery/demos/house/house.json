@@ -1,0 +1,31 @@
+{
+    "transmitters": [
+        {
+            "frq": 1000.0,
+            "txw": 5.0,
+            "pos": {
+                "x": -1.86,
+                "y": 4.45,
+                "z": 0.44
+            },
+            "antenna": {
+                "ant": 1,
+                "txg": 2.15,
+                "txl": 0.0
+            }
+        }
+    ],
+    "3d": {
+        "input_file": "house_in.glb",
+        "max_reflections": 25
+    },
+    "output": {
+        "res": 0.1,
+        "col": "RAINBOW.dBm",
+        "out": 2
+    },
+    "receiver": {
+        "rxs": -110,
+        "rxg": 0.0
+    }
+}

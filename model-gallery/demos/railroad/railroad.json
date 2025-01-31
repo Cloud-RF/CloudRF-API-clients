@@ -1,0 +1,41 @@
+{
+    "transmitters": [
+        {
+            "frq": 1000.0,
+            "txw": 5.0,
+            "pos": {
+                "x": 5,
+                "y": 10,
+                "z": -47
+            },
+            "antenna": {
+                "ant": 27297,
+                "txg": 17.65,
+                "txl": 0
+            },
+            "up": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "fwd": {
+                "x": 0,
+                "y": -0.05,
+                "z": 0.95
+            }
+        }
+    ],
+    "3d": {
+        "input_file": "railroad_in.glb",
+        "max_reflections": 25
+    },
+    "output": {
+        "res": 0.2,
+        "col": "RAINBOW.dBm",
+        "out": 2
+    },
+    "receiver": {
+        "rxs": -110,
+        "rxg": 0.0
+    }
+}
