@@ -1,0 +1,61 @@
+{
+  "transmitters": [
+      {
+          "frq": 1000.0,
+          "txw": 5.0,
+          "pos": {
+              "x": 0,
+              "y": 8,
+              "z": 60.0
+          },
+          "antenna": {
+              "ant": 27297,
+              "txg": 17.65,
+              "txl": 0
+          },
+          "up": {
+              "x": 1,
+              "y": 0,
+              "z": 0
+          },
+          "fwd": {
+              "x": 0.0,
+              "y": 0.3,
+              "z": -0.9
+          }
+      }
+  ],
+  "3d": {
+      "input_file": "tower_blocks_in.glb",
+      "max_reflections": 25
+  },
+  "output": {
+      "res": 0.3,
+      "col": "RAINBOW.dBm",
+      "out": 2
+  },
+  "receiver": {
+      "rxs": -110,
+      "rxg": 0.0
+  },
+"default_material": {
+  "reflection_loss": 9,
+  "transmission_loss": 9
+},
+"materials": [
+  {
+    "keys": [
+      "Ground"
+    ],
+  "reflection_loss": 9,
+    "transmission_loss": 90
+  },
+  {
+    "keys": [
+      "Glass"
+    ],
+    "reflection_loss": 27,
+    "transmission_loss": 1
+  }
+]
+}
