@@ -140,12 +140,6 @@ class CloudRFAPI:
 
         filepath = Path(self.download_dir) / filename
 
-        # kmzppa files have the same filename as kmz file.
-        # This complements the filename
-        if fmt == 'kmzppa':
-            bare_name = filepath.with_suffix('')
-            filepath = bare_name.with_name(f'{bare_name.name}_ppa').with_suffix('.kmz')
-
         print(f'saving {str(filepath)}')
         with open(filepath, 'wb') as fp:
             fp.write(req.content)
