@@ -1,5 +1,9 @@
 # CloudRF API Clients Changelog
 
+## 2025-03-10
+
+- Removed `kmzppa` as an option when running `area` requests.
+
 ## 2024-10-16
 
 - Noise import client improved.
