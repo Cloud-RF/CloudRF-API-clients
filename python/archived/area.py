@@ -16,7 +16,7 @@ class CloudRFArea(CloudRFAPITemplated):
 
     endpoint = '/area/'
     api_id = 'area'
-    file_types = ['kmz', 'kml', 'kmzppa', 'shp', 'tiff', 'url', 'html']
+    file_types = ['kmz', 'kml', 'shp', 'tiff', 'url', 'html']
 
     def download(self, select=None):
         select = self.file_types if select is None else select
