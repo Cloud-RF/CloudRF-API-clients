@@ -1,0 +1,72 @@
+{
+    "version": "CloudRF-API-v3.8.10",
+    "reference": "https://cloudrf.com/documentation/developer/swagger-ui/",
+    "custom_icon": "data:image/png;base64,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",      
+    "template": {
+        "name": "DTC_LB_6161",
+        "service": "CloudRF https://api.cloudrf.com",
+        "created_at": "2023-09-05T20:40:56+00:00",
+        "owner": 1,
+        "bom_value": 0
+    },
+    "site": "Site",
+    "network": "DTC",
+    "engine": 1,
+    "coordinates": 1,
+    "transmitter": {
+        "lat": 51.674609,
+        "lon": -2.480428,
+        "alt": 2,
+        "frq": 1250,
+        "txw": 2,
+        "bwi": 2,
+        "powerUnit": "W"
+    },
+    "receiver": {
+        "lat": 51.53874497567418,
+        "lon": -2.5900211090812704,
+        "alt": 2,
+        "rxg": 2,
+        "rxs": 0
+    },
+    "feeder": {
+        "flt": 1,
+        "fll": 0,
+        "fcc": 0
+    },
+    "antenna": {
+        "mode": "template",
+        "txg": 2.15,
+        "txl": 0,
+        "ant": 1,
+        "azi": 0,
+        "tlt": 0,
+        "hbw": 1,
+        "vbw": 1,
+        "fbr": 17,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 10,
+        "pe": 2,
+        "ked": 4,
+        "rel": 70
+    },
+    "environment": {
+        "elevation": 2,
+        "landcover": 1,
+        "buildings": 1,
+        "obstacles": 0,
+        "clt": "FOREST.clt"
+    },
+    "output": {
+        "units": "m",
+        "col": "SNR1.dB",
+        "out": 4,
+        "ber": 1,
+        "mod": 0,
+        "nf": -100,
+        "res": 4,
+        "rad": 4
+    }
+}
