@@ -442,7 +442,7 @@ class simulateOperator(bpy.types.Operator):
             json = response.json() # get json from response
             self.report({"INFO"}, "Response: \n" + str(response.content))
             last_calc_time = float(json["elapsed_s"]) 
-            file_url = json["model_file"] # find the url to the glb file result
+            file_url = json["model_file_uncompressed"] # find the url to the glb file result
         except: # for example no API key
             
             self.report({"ERROR"}, "An unexpected error occured!")
