@@ -4,6 +4,9 @@
 
 This integration demo uses the legacy [CCDI protocol](https://manuals.repeater-builder.com/2006/TM8000/TM8000%20CCDI%20Protocol%20Manual%20v3.01/MMA-00038-01%20TM8000%20CCDI%20Protocol%20Manual%20May%202006.pdf) to fetch GPS data from portable DMR radios for use with the CloudRF simulation API. 
 
+
+![TP9300 DMR integrated with ATAK](tp9300_atak.jpg)
+
 To use it, you will need Tait radios and a 9-pin FTDI programming cable. 
 *Some new models have a Bluetooth serial interfaces which can be configured for this instead of a cable.*
 
@@ -24,10 +27,13 @@ Prepare your radio and API settings within the script:
 | --- | --- | --- |
 | local_radio  | Radio ID for the connected radio   | "101" |
 | radios | JSON array of radios and templates | {"102": {"callsign": "alice", "lat": 0, "lon": 0, "alt": 0, "template": "TP9300.json"}} |
-| api_endpoint | CloudRF / SOOTHSAYER API | https://api.cloudrf.com |
-| api_key | CloudRF / SOOTHSAYER API key | 1234-9238479823748937423984239847234 |
 | interval | Delay between location requests | 10
 | ser | Serial Port | serial.Serial('/dev/ttyUSB0', baudrate=19200) |
+
+Place your API settings in a .env file
+
+    api_endpoint=https://api.cloudrf.com
+    api_key=123-46e7c8796b2b7b6e0d77259d1ce5502d415ee94c
 
 Create templates for your radios using appropriate settings. A 450M TP9300 DMR template is provided as an example. These will contain the radio and environment settings (eg. City) and the locations within them will be updated with live GPS data.
 
@@ -49,7 +55,7 @@ The KML file contains a marker for each radio/callsign and a composite coverage 
 
 ## Viewing the KML in Google Earth (Local)
 
-Add a Network KML in Google earth and set the URL to the tait-coverage.kml file on your computer eg. /home/me/CloudRF/integrations/Tait/tait-coverage.kml. 
+Add a Network KML in Google earth and set the URL to the tait-dmr.kml file on your computer eg. /home/me/CloudRF/integrations/Tait/tait-dmr.kml. 
 
 Set the refresh to time based with a redraw time to match the interval defined in the script eg. 10s.
 
@@ -57,13 +63,13 @@ The radio marker pins and coverage.kmz heatmap will automatically update as the 
 
 ## Viewing the KML in ATAK (Remote)
 
-To share the KML on the network, you can launch a web server in the folder containing the KML, for example:
+To share a KML on the network, you can launch a web server in the folder containing the KML, for example:
 
     python3 -m http.server
 
 Add a network KML using the ATAK "Import" utility and the following URL:
 
-    http://{computer ip}:8000/tait-coverage.kml
+    http://{computer ip}:8000/tait-dmr.kml
 
 Set the refresh to 10s (minimum on ATAK).
 
