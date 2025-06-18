@@ -1,0 +1,59 @@
+{
+    "version": "CloudRF-API-v3.18.0",
+    "reference": "https://cloudrf.com/documentation/developer/",
+    "site": "TP9300",
+    "network": "DMR",
+    "engine": 1,
+    "coordinates": 1,
+    "transmitter": {
+        "lat": 51.88,
+        "lon": -2.2,
+        "alt": 1,
+        "frq": 449.4,
+        "txw": 1,
+        "bwi": 0.012,
+        "powerUnit": "W"
+    },
+    "receiver": {
+        "lat": 50.82268843,
+        "lon": -0.92293236,
+        "alt": 1,
+        "rxg": 0,
+        "rxs": -102
+    },
+    "antenna": {
+        "mode": "template",
+        "txg": 0,
+        "txl": 0,
+        "ant": 1,
+        "azi": 0,
+        "tlt": 0,
+        "hbw": 0,
+        "vbw": 0,
+        "fbr": 0,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 10,
+        "pe": 2,
+        "ked": 4,
+        "rel": 90
+    },
+    "environment": {
+        "elevation": 1,
+        "landcover": 1,
+        "buildings": 1,
+        "obstacles": 0,
+        "clt": "GLOUCESTER.clt"
+    },
+    "output": {
+        "units": "m",
+        "col": "LTE.dBm",
+        "out": 2,
+        "ber": 1,
+        "mod": 0,
+        "nf": -114,
+        "res": 2,
+        "rad": 1
+    }
+}
