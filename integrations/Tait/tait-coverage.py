@@ -133,7 +133,7 @@ while True:
     try:
         netlink = kml.newnetworklink(name="DMR Coverage")
         netlink.link.refreshmode = simplekml.RefreshMode.oninterval
-        networklink.link.refreshinterval = interval
+        netlink.link.refreshinterval = interval
         netlink.link.href = multisiteRequest()
     except:
         pass
