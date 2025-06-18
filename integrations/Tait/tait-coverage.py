@@ -8,15 +8,27 @@ import requests
 import os
 from dotenv import load_dotenv
 
+# Tait DMR coverage script
+#
+# Sends location requests using CCDI packets to connected portables to model their coverage with CloudRF
+# Requires either a Silver CloudRF account or a SOOTHSAYER server to make the coverage or you can 
+# comment multisiteRequest() out to just put pins on a KML
+
+# DWYW License
+# This program is free software. It comes without warranty, to the
+# extent permitted by applicable law. You may redistribute and/or
+# modify it under the terms of the Do Whatever You Want (DWYW) license.
+# See https://jmthornton.net/dwyw for more details.
+
 load_dotenv()
 local_radio = "104" # Local radio ID eg. 103
 radios = {
 "101":{"callsign": "1","lat":0,"lon":0,"alt":0,"template":"TP9300.json"},
 "102":{"callsign": "2","lat":0,"lon":0,"alt":0,"template":"TP9300.json"},
-"104":{"callsign": "4","lat":0,"lon":0,"alt":0,"template":"TP9300.json"}}
+"104":{"callsign": "4","lat":51.8662,"lon":-2.2045,"alt":10,"template":"TP9300.json"}}
 api_endpoint = os.getenv("api_endpoint")
 api_key = os.getenv("api_key")
-interval = 8 # seconds
+interval = 10 # Recommended range 10 to 60. Don't go too low or you will piss people off (and it won't work)
 ser = serial.Serial('/dev/ttyUSB0', baudrate=19200)
 web_service = "http://10.0.0.10:8000/"
 
@@ -120,10 +132,12 @@ while True:
                     count+=1
     try:
         netlink = kml.newnetworklink(name="DMR Coverage")
+        netlink.link.refreshmode = simplekml.RefreshMode.oninterval
+        networklink.link.refreshinterval = interval
         netlink.link.href = multisiteRequest()
     except:
         pass
     kml.save("tait-dmr.kml")
-    time.sleep(5)
+    time.sleep(interval)
 
 ser.close()

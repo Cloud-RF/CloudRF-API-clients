@@ -29,6 +29,7 @@ Prepare your radio and API settings within the script:
 | radios | JSON array of radios and templates | {"102": {"callsign": "alice", "lat": 0, "lon": 0, "alt": 0, "template": "TP9300.json"}} |
 | interval | Delay between location requests | 10
 | ser | Serial Port | serial.Serial('/dev/ttyUSB0', baudrate=19200) |
+| web_service | URL for the network KML | http://10.0.0.10:8000/ | 
 
 Place your API settings in a .env file
 
