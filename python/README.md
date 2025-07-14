@@ -296,3 +296,14 @@ Result:
 2       3  38.91073  1.442764   10     1.109      127.7          -107.7
 3       4  38.91020  1.448539   10     1.606      141.1          -121.1
 ```
+
+### Automated frequency selection
+
+This short example runs path calls for a pool of frequencies and then displays them in a table along with a computed path reliability in %.
+A perfect link will score 100% and a link which drops below the target threshold will be less.
+This type of fast API call is useful for rapid decision making for robots etc
+
+
+```bash
+python3 automated_frequency_selection.py
+```
