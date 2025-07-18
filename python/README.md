@@ -231,12 +231,17 @@ python3 CloudRF.py area \
 
 ### Interference
 
-The below example shows a basic `interference` request for the network name of `MY-NETWORK`. This assumes that you have already created `area` calculations with the network name of `MY-NETWORK` to be used to build the interference layer.
+The below example shows a basic `interference` request for the network name of `MY-NETWORK`. 
+
+Please note that `interference` assumes that you have two independent networks to work with. One is your source network, the other is a jammer network where the interference will be computed against the source.
+
+This assumes that you have already created `area` calculations with the network name of `MY-NETWORK` and `MY-JAMMER-NETWORK` to be used to build the interference layer. 
 
 ```bash
 python3 CloudRF.py interference \
     --api-key MY-API-KEY \
-    --network-name MY-NETWORK
+    --network-name MY-NETWORK \
+    --jammer-network-name MY-JAMMER-NETWORK
 ```
 
 ### Mesh
