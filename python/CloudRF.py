@@ -390,13 +390,6 @@ class CloudRF:
         
         elif self.requestType == 'network':
             # Network returns an array of responses
-            if fileType == 'png':
-                count = 1
-                for row in responseJson:
-                    pngPath = saveBasePath + '_' + str(count) + '.png'
-                    self.__streamUrlToFile(row['Chart image'], pngPath)
-                    self.__verboseLog('Path profile PNG saved to %s' % pngPath)
-                    count += 1
             if fileType == 'txt':
                 txtPath = saveBasePath + '.txt'
                 count = 1
@@ -591,7 +584,7 @@ class CloudRF:
                     It uses multiple transmitter locations to produce one response which factors in each transmitter.
                 '''
             elif self.requestType == 'network':
-                self.allowedOutputTypes = ['png', 'txt']
+                self.allowedOutputTypes = ['txt']
                 self.description = '''
                     CloudRF Network API
 
