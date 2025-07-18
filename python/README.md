@@ -14,6 +14,7 @@ python -m pip --version
 
 These scripts have been written to execute with minimal issues, but basic knowledge of the command line and file types is necessary. The following resources may be useful:
 
+- [Linux command line for beginners](https://ubuntu.com/tutorials/command-line-for-beginners)
 - [Beginner's Guide to Python](https://wiki.python.org/moin/BeginnersGuide)
 - [Python pip Official Documentation](https://pip.pypa.io/en/stable/)
 - [JSON Introduction](https://www.w3schools.com/js/js_json.asp)
