@@ -1,5 +1,9 @@
 # CloudRF API Clients Changelog
 
+## Upcoming Changes
+
+- Fixed issue with `interference` Slippy Map demo hitting rate limit when working against CloudRF production API.
+
 ## 2025-03-10
 
 - Removed `kmzppa` as an option when running `area` requests.
