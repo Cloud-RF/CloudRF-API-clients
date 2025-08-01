@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import pandas as pd
 import random
 import requests
@@ -6,7 +8,6 @@ import math
 from io import BytesIO
 import rasterio
 import sys
-
 
 # This script fits calibration data against CLoudRF area calculations, and uses a genetic algorithm 
 # to calibrate the settings.
@@ -31,7 +32,6 @@ REQUEST_DELAY_S = 0.1
 DISABLE_SSL_VERIFICATION=False
 
 CLUTTER_PROFILE = 'AreaCalibPy'
-
 
 if DISABLE_SSL_VERIFICATION:
     import urllib3
