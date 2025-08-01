@@ -102,16 +102,15 @@ def print_message(message):
     sys.stdout.write('\n')
     sys.stdout.flush()
 
-def create_clutter_profile(config):
-
+def create_clutter_profile(config):    
     headers = {
         'key': API_KEY
     }
 
     lines = [
-        f'99:3:{config['clutter.building.attenuation']}',
+        f"99:3:{config['clutter.building.attenuation']}",
         '1:1:0.0',
-        f'2:{config['clutter.trees.height']}:{config['clutter.trees.attenuation']}',
+        f"2:{config['clutter.trees.height']}:{config['clutter.trees.attenuation']}",
         '3:1:0.0',
         '4:1:0.0',
         '5:1:0.0',
@@ -288,14 +287,14 @@ def mutate_config(config):
     return mutant
 
 def print_config(config):
-    print_message(f'    Min Error : {config['min_error']:>8}')
-    print_message(f'   Mean Error : {config['mean_error']:>8.2g}')
-    print_message(f'    Max Error : {config['max_error']:>8}')
-    print_message(f'   Prop Model : {config['model.pe']:>8}')
-    print_message(f'  Reliability : {config['model.rel']:>8.2g}')
-    print_message(f'Building Attn : {config['clutter.building.attenuation']:>8.6g}')
-    print_message(f'    Tree Attn : {config['clutter.trees.attenuation']:>8.6g}')
-    print_message(f'  Tree Height : {config['clutter.trees.height']:>8.2g}')
+    print_message(f"    Min Error : {config['min_error']:>8}")
+    print_message(f"   Mean Error : {config['mean_error']:>8.2g}")
+    print_message(f"    Max Error : {config['max_error']:>8}")
+    print_message(f"   Prop Model : {config['model.pe']:>8}")
+    print_message(f"  Reliability : {config['model.rel']:>8.2g}")
+    print_message(f"Building Attn : {config['clutter.building.attenuation']:>8.6g}")
+    print_message(f"    Tree Attn : {config['clutter.trees.attenuation']:>8.6g}")
+    print_message(f"  Tree Height : {config['clutter.trees.height']:>8.2g}")
 
 
 def load_csv(path):
@@ -327,9 +326,7 @@ if __name__ == '__main__':
         print_status_message(f'Calculating error for config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT}')
         config['min_error'], config['mean_error'], config['max_error'] = calculate_config_error(config, dataset)
         config['fitness'] = calculate_config_fitness(config)
-        print_message(f'Config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT} error:    min {config['min_error']:>4}    mean {config['mean_error']:>4.2g}    max {config['max_error']:>4}')
-
-
+        print_message(f"Config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT} error:    min {config['min_error']:>4}    mean {config['mean_error']:>4.2g}    max {config['max_error']:>4}")
 
     for generation in range(0, MAX_GENERATION):
 
@@ -362,7 +359,7 @@ if __name__ == '__main__':
             print_status_message(f'Calculating error for config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT}')
             config['min_error'], config['mean_error'], config['max_error'] = calculate_config_error(config, dataset)
             config['fitness'] = calculate_config_fitness(config)
-            print_message(f'Config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT} error:    min {config['min_error']:>4}    mean {config['mean_error']:>4.2g}    max {config['max_error']:>4}')
+            print_message(f"Config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT} error:    min {config['min_error']:>4}    mean {config['mean_error']:>4.2g}    max {config['max_error']:>4}")
 
         children = sorted(children, key=lambda config: config['fitness'])
 
