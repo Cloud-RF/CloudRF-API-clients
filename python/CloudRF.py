@@ -105,6 +105,9 @@ class CloudRF:
         if self.requestType in ['interference', 'mesh', 'network']:
             self.__parser.add_argument('-nn', '--network-name', dest = 'network_name', required = True, help = 'The name of the network which you wish to run the analysis on.')
 
+            if self.requestType == 'interference':
+                self.__parser.add_argument('-jnn', '--jammer-network-name', dest = 'jammer_network_name', required = True, help = 'The name of the jammer network which is interferring with your "--network-name" network argument.')
+
         # Network only has specific requirements
         if self.requestType == 'network':
             self.__parser.add_argument('-lat', '--latitude', dest = 'latitude', required = True, help = 'The latitude of the receiver in decimal degrees.')
@@ -167,7 +170,23 @@ class CloudRF:
                     with open(saveJsonRequestPath, 'w') as rawRequestFile:
                         rawRequestFile.write(json.dumps(fixedJsonData, indent = 4))
                     print('Raw request saved at %s' % saveJsonRequestPath)
-            elif self.requestType in ['interference', 'network', 'mesh']:
+            elif self.requestType == 'interference':
+                fixedJsonData = {
+                    'name': requestName,
+                    's_network': self.__arguments.network_name,
+                    'j_network': self.__arguments.jammer_network_name,
+                    'colour_key': 'JS.dB'
+                }
+
+                response = requests.post(
+                    url = str(self.__arguments.base_url).rstrip('/') + '/' + self.requestType,
+                    headers = {
+                        'key': self.__arguments.api_key
+                    },
+                    json = fixedJsonData,
+                    verify = self.__arguments.strict_ssl
+                )
+            elif self.requestType in ['network', 'mesh']:
                 # Other requests use params rather than a JSON body
                 requestParams = {}
 
@@ -176,7 +195,7 @@ class CloudRF:
                     requestParams['lat'] = self.__arguments.latitude
                     requestParams['lon'] = self.__arguments.longitude
                     requestParams['rxh'] = self.__arguments.altitude
-                elif self.requestType in ['interference', 'mesh']:
+                elif self.requestType in ['mesh']:
                     requestParams['network'] = self.__arguments.network_name
 
                 response = requests.post(
@@ -194,11 +213,11 @@ class CloudRF:
                     rawRequestFile.write(response.request.url)
                 print('Raw request saved at %s' % saveRequestPath)
 
-            self.__checkHttpResponse(httpStatusCode = response.status_code, httpRawResponse = response.text)
-            self.__saveOutputFileTypes(httpRawResponse = response.text, saveBasePath = saveBasePath)
-
             self.__verboseLog('Raw response:')
             self.__verboseLog(response.text)
+
+            self.__checkHttpResponse(httpStatusCode = response.status_code, httpRawResponse = response.text)
+            self.__saveOutputFileTypes(httpRawResponse = response.text, saveBasePath = saveBasePath)
 
             if self.__arguments.save_raw_response:
                 saveJsonResponsePath = saveBasePath + '.response.json'
@@ -342,10 +361,10 @@ class CloudRF:
             if fileType == 'png':
                 # PNG links exist already in the response JSON so we can just grab them from there
                 pngPath3857 = saveBasePath + '.3857.png'
-                self.__streamUrlToFile(responseJson['png_mercator'], pngPath3857)
+                self.__streamUrlToFile(responseJson['PNG_Mercator'], pngPath3857)
                 self.__verboseLog('3857 projected PNG saved to %s' % pngPath3857)
                 pngPath4326 = saveBasePath + '.4326.png'
-                self.__streamUrlToFile(responseJson['png_wgs84'], pngPath4326)
+                self.__streamUrlToFile(responseJson['PNG_WGS84'], pngPath4326)
                 self.__verboseLog('4326 projected PNG saved to %s' % pngPath4326)
         
         elif self.requestType == 'mesh':
@@ -371,13 +390,6 @@ class CloudRF:
         
         elif self.requestType == 'network':
             # Network returns an array of responses
-            if fileType == 'png':
-                count = 1
-                for row in responseJson:
-                    pngPath = saveBasePath + '_' + str(count) + '.png'
-                    self.__streamUrlToFile(row['Chart image'], pngPath)
-                    self.__verboseLog('Path profile PNG saved to %s' % pngPath)
-                    count += 1
             if fileType == 'txt':
                 txtPath = saveBasePath + '.txt'
                 count = 1
@@ -572,7 +584,7 @@ class CloudRF:
                     It uses multiple transmitter locations to produce one response which factors in each transmitter.
                 '''
             elif self.requestType == 'network':
-                self.allowedOutputTypes = ['png', 'txt']
+                self.allowedOutputTypes = ['txt']
                 self.description = '''
                     CloudRF Network API
 

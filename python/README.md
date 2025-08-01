@@ -2,6 +2,25 @@
 
 In this directory contains a Python client which can be used to interface with the CloudRF API.
 
+## Pre-Requisites
+
+This script is intended to run on a system which has Python already installed, along with the Python `pip` module. You can test that you have both Python and `pip` installed with the following:
+
+```bash
+python3 -m pip --version
+# or
+python -m pip --version
+```
+
+These scripts have been written to execute with minimal issues, but basic knowledge of the command line and file types is necessary. The following resources may be useful:
+
+- [Linux command line for beginners](https://ubuntu.com/tutorials/command-line-for-beginners)
+- [Beginner's Guide to Python](https://wiki.python.org/moin/BeginnersGuide)
+- [Python pip Official Documentation](https://pip.pypa.io/en/stable/)
+- [JSON Introduction](https://www.w3schools.com/js/js_json.asp)
+- [Official JSON Standard](https://www.json.org/json-en.html)
+- [CSV Wikipedia](https://en.wikipedia.org/wiki/Comma-separated_values)
+
 ## Installation
 
 To get started quickly with this example, you should ensure that you have Python installed on your machine, then you should `pip` install the libraries in the [requirements.txt](requirements.txt) file:
@@ -212,12 +231,17 @@ python3 CloudRF.py area \
 
 ### Interference
 
-The below example shows a basic `interference` request for the network name of `MY-NETWORK`. This assumes that you have already created `area` calculations with the network name of `MY-NETWORK` to be used to build the interference layer.
+The below example shows a basic `interference` request for the network name of `MY-NETWORK`. 
+
+Please note that `interference` assumes that you have two independent networks to work with. One is your source network, the other is a jammer network where the interference will be computed against the source.
+
+This assumes that you have already created `area` calculations with the network name of `MY-NETWORK` and `MY-JAMMER-NETWORK` to be used to build the interference layer. 
 
 ```bash
 python3 CloudRF.py interference \
     --api-key MY-API-KEY \
-    --network-name MY-NETWORK
+    --network-name MY-NETWORK \
+    --jammer-network-name MY-JAMMER-NETWORK
 ```
 
 ### Mesh
