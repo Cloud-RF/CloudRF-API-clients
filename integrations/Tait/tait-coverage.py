@@ -1,5 +1,5 @@
 import serial
-from datetime import datetime
+from datetime import datetime, timedelta
 import math
 import simplekml
 import time
@@ -7,6 +7,7 @@ import json
 import requests
 import os
 from dotenv import load_dotenv
+import socket
 
 # Tait DMR coverage script
 #
@@ -21,16 +22,28 @@ from dotenv import load_dotenv
 # See https://jmthornton.net/dwyw for more details.
 
 load_dotenv()
-local_radio = "104" # Local radio ID eg. 103
+local_radio = "102" # Local radio ID eg. 103
+
+# UDP broadcast for CoT messages for ATAK
+server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
 radios = {
-"101":{"callsign": "1","lat":0,"lon":0,"alt":0,"template":"TP9300.json"},
-"102":{"callsign": "2","lat":0,"lon":0,"alt":0,"template":"TP9300.json"},
-"104":{"callsign": "4","lat":51.8662,"lon":-2.2045,"alt":10,"template":"TP9300.json"}}
+"101":{"callsign": "One","lat":0,"lon":0,"alt":0,"template":"TP9300.json"},
+"102":{"callsign": "Two","lat":0,"lon":0,"alt":0,"template":"TP9300.json"},
+"103":{"callsign": "Three","lat":0,"lon":0,"alt":0,"template":"TP9300.json"},
+"104":{"callsign": "Four","lat":0,"lon":0,"alt":0,"template":"TP9300.json"}}
+
 api_endpoint = os.getenv("api_endpoint")
 api_key = os.getenv("api_key")
-interval = 10 # Recommended range 10 to 60. Don't go too low or you will piss people off (and it won't work)
-ser = serial.Serial('/dev/ttyUSB0', baudrate=19200)
-web_service = "http://10.0.0.10:8000/"
+interval = 5 # Recommended range 5 to 60. Don't go too low or you will piss people off (and it won't work)
+
+# A 5s timeout has been added to handle offline radios
+ser = serial.Serial('/dev/ttyUSB0', baudrate=19200, timeout=5)
+
+# You can serve up the .kml on TCP 8000 with: python3 -m http.server
+web_service = "http://10.0.0.10:8000/" 
 
 
 def download(url,file_name):
@@ -101,6 +114,21 @@ def multisiteRequest():
     download(response["kmz"],"coverage.kmz")
     return(web_service+"coverage.kmz")
 
+# https://github.com/Cloud-RF/cotroutesim/blob/main/simulate.py
+# bot = {"uid": name,"cs": name, "lat": lat, "lon": lon}
+def cot_bot(bot):
+    ts=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+    tots=(datetime.now()+timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    msg='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\
+    <event version="2.0" uid="'+bot["uid"]+'" type="a-f-G-U-C" time="'+ts+'" start="'+ts+'" stale="'+tots+'" how="h-e">\
+    <point lat="'+str(bot["lat"])+'" lon="'+str(bot["lon"])+'" hae="2" ce="9999999" le="9999999"/>\
+    <detail><takv os="0" version="1.1" device="" platform="Tait plugin"/>\
+    <contact callsign="'+bot["cs"]+'" endpoint="*:-1:stcp"/><uid Droid="'+bot["uid"]+'"/>\
+    <precisionlocation altsrc="" geopointsrc="USER"/><__group role="Radio demo" name="Orange"/>\
+    <status battery="100"/><track course="0.0" speed="0.0"/></detail></event>'
+
+    server.sendto(msg.encode("utf-8"), ('<broadcast>', 4242))
+    return msg.encode("utf-8")
 
 while True:
     kml = simplekml.Kml()
@@ -112,23 +140,33 @@ while True:
             print("Requesting location for radio %s..." % radio)
             send(msg)
             count=0
-            while count < interval:
-                send("q011")  # get result
-                data = ser.read_until(b'\r').decode("utf-8")
-                print(data)
+            while count < 5: # try 5 times only 
+                data = ser.read_until(b'\r').decode("utf-8") # times out after 5s
+                #print("%s" % data)
+
                 # Listen for loc reports
                 if "r0A54" in data:
-                    radio = data.split("FF")[1][:-3] # trim checksum and CR
-                    print("GPS report from %s" % radio)
+                    rxd_radio = data.split("FF")[1][:-3] # trim checksum and CR
+                    print("GPS report from %s (%ds)" % (rxd_radio,count))
+                    if rxd_radio != radio:
+                        print("Not our radio!: %s" % rxd_radio)
 
-                if "$GPGGA" in data:
+                if "$GPGGA" in data and rxd_radio == radio:
                     nmea = parseNMEA(str(radio),data)
                     if nmea[2]:
                         kml.newpoint(name=radios[radio]["callsign"], coords=[(nmea[2],nmea[1])],description=datetime.now().isoformat()+"\n"+"Radio ID: "+radio)
-                        print("Updated KML with radio %s at %s,%s" % (radio,nmea[1],nmea[2]))
+                        print("Updated KML with radio %s at %s,%s (%ds)" % (radio,nmea[1],nmea[2],count))
+
+                        # Send CoT
+                        bot = {"uid": "Tait"+str(radio),"cs": str(radios[radio]["callsign"]), "lat": nmea[1], "lon": nmea[2]}
+                        try:
+                            cot_bot(bot)
+                        except:
+                            print("Error sending CoT")
+
+                    time.sleep(1) # breathe in between Tx requests
                     break
                 else:
-                    time.sleep(1)
                     count+=1
     try:
         netlink = kml.newnetworklink(name="DMR Coverage")
@@ -137,6 +175,7 @@ while True:
         netlink.link.href = multisiteRequest()
     except:
         pass
+
     kml.save("tait-dmr.kml")
     time.sleep(interval)
 
