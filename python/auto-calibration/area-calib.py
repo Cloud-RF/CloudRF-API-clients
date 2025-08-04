@@ -10,11 +10,6 @@ from io import BytesIO
 import rasterio
 import sys
 
-# This script fits calibration data against CLoudRF area calculations, and uses a genetic algorithm 
-# to calibrate the settings.
-
-# The number of area calls required will be POPULATION_COUNT X (MAX_GENERATION + 1)
-
 POPULATION_COUNT = 10 # The number of configs in a generation
 
 MAX_GENERATION = 10 # The number of generations to run for
@@ -324,7 +319,18 @@ def load_csv(path):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(formatter_class = ArgparseCustomFormatter)
+    description = [
+        'CloudRF Area Calibration',
+        '',
+        'This script attempts to fit calibration data against CloudRF area calculations, and then uses a genetic algorithm to calibrate the settings.',
+        '',
+        'The number of area calls required will be POPULATION_COUNT X (MAX_GENERATION + 1)',
+    ]
+
+    parser = argparse.ArgumentParser(
+        description='\n'.join(description),
+        formatter_class = ArgparseCustomFormatter
+    )
     parser.add_argument('-i', '--input-csv', dest = 'input_csv', default = 'data.csv', help = 'Absolute path to input CSV reference data to be used in calibration. The CSV header row must be included.')
     parser.add_argument('-u', '--base-url', dest = 'base_url', default = 'https://api.cloudrf.com/', help = 'The base URL for the CloudRF API service.')
     parser.add_argument('-k', '--api-key', dest = 'api_key', required = True, help = 'Your API key to the CloudRF API service.')
