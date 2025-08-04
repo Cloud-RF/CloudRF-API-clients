@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import pandas as pd
 import random
 import requests
@@ -14,8 +15,6 @@ import sys
 
 # The number of area calls required will be POPULATION_COUNT X (MAX_GENERATION + 1)
 
-DATA_CSV = 'data.csv'
-
 POPULATION_COUNT = 10 # The number of configs in a generation
 
 MAX_GENERATION = 10 # The number of generations to run for
@@ -23,11 +22,6 @@ ELITE_COUNT = 3 # The number of configs carry over to the next generation, choos
 
 DISCRETE_MUTATION_RATE = 0.1
 CONTINUOUS_MUTATION_VARIABILITY = 0.2
-
-API_KEY = ''
-API = ''
-
-REQUEST_DELAY_S = 0.1
 
 DISABLE_SSL_VERIFICATION=False
 
@@ -79,6 +73,14 @@ config_spec = {
 
 status_message_depth = 0
 
+class ArgparseCustomFormatter(
+        # Don't do any line wrapping on descriptions
+        argparse.RawDescriptionHelpFormatter, 
+        # Include default values when running --help
+        argparse.ArgumentDefaultsHelpFormatter
+    ):
+    pass
+
 def clear_status_message(depth=0):
     global status_message_depth
     while status_message_depth > depth:
@@ -105,7 +107,7 @@ def print_message(message):
 def create_clutter_profile(config):
 
     headers = {
-        'key': API_KEY
+        'key': args.api_key,
     }
 
     lines = [
@@ -136,7 +138,9 @@ def create_clutter_profile(config):
         'values': '\n'.join(lines)
     }
 
-    response = requests.post(f"{API}/API/clutter/index2.php", data=data, headers=headers, verify=not DISABLE_SSL_VERIFICATION)
+    apiUrl = args.base_url.rstrip('/') + '/API/clutter/index2.php'
+
+    response = requests.post(f"{apiUrl}", data=data, headers=headers, verify=not DISABLE_SSL_VERIFICATION)
     response.raise_for_status()
 
     response = response.json()
@@ -174,12 +178,14 @@ def build_area_request(config):
 
 def send_area_request(request):
     headers = {
-        'key': API_KEY
+        'key': args.api_key,
     }
 
-    time.sleep(REQUEST_DELAY_S)
+    time.sleep(args.wait)
 
-    response = requests.post(f"{API}/area", json=request, headers=headers, verify=not DISABLE_SSL_VERIFICATION)
+    apiUrl = args.base_url.rstrip('/') + '/area'
+
+    response = requests.post(f"{apiUrl}", json=request, headers=headers, verify=not DISABLE_SSL_VERIFICATION)
     response.raise_for_status()
 
     return response.json()
@@ -317,7 +323,15 @@ def load_csv(path):
     return df
 
 if __name__ == '__main__':
-    dataset = load_csv(DATA_CSV)
+
+    parser = argparse.ArgumentParser(formatter_class = ArgparseCustomFormatter)
+    parser.add_argument('-i', '--input-csv', dest = 'input_csv', default = 'data.csv', help = 'Absolute path to input CSV reference data to be used in calibration. The CSV header row must be included.')
+    parser.add_argument('-u', '--base-url', dest = 'base_url', default = 'https://api.cloudrf.com/', help = 'The base URL for the CloudRF API service.')
+    parser.add_argument('-k', '--api-key', dest = 'api_key', required = True, help = 'Your API key to the CloudRF API service.')
+    parser.add_argument('-w', '--wait', dest = 'wait', default = 0.1, help = 'Time in seconds to wait before running the next calculation.')
+    args = parser.parse_args()
+
+    dataset = load_csv(args.input_csv)
 
     print_message(f"loaded dataset with {len(dataset)} rows")
 
@@ -328,8 +342,6 @@ if __name__ == '__main__':
         config['min_error'], config['mean_error'], config['max_error'] = calculate_config_error(config, dataset)
         config['fitness'] = calculate_config_fitness(config)
         print_message(f'Config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT} error:    min {config['min_error']:>4}    mean {config['mean_error']:>4.2g}    max {config['max_error']:>4}')
-
-
 
     for generation in range(0, MAX_GENERATION):
 
