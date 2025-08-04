@@ -15,14 +15,15 @@ import shapefile  # pyshp
 import shutil
 
 API = "https://api.cloudrf.com"
-API_KEY = "INSERT_YOUR_API_KEY_HERE"
-
-NETWORK = "INSERT_YOUR_NETWORK_NAME_HERE"
+API_KEY = "YOUR API KEY HERE"
+NETWORK = "BDCDEMO" # Your Network from CloudRF
 
 DISABLE_SSL_VERIFICATION = False
 
-MAX_DBM = -50
-MIN_DBM = -120
+MAX_DBM = -60
+MIN_DBM = -105
+
+# Edit these fields to match your data/network and add your own
 
 CONSTANT_DATA_FIELDS = {
     "providerid": {
@@ -31,7 +32,7 @@ CONSTANT_DATA_FIELDS = {
     },
     "brandname": {
         "type": "text",
-        "value": "T-Mobile",
+        "value": "Tarana",
     },
     "technology": {
         "type": "number",
@@ -86,6 +87,7 @@ if __name__ == "__main__":
     for entry in mesh_response["key"]:
         assert entry["l"].endswith("dBm")
         color_key[entry["r"]] = float(entry["l"][:-3])
+        print(entry)
 
     with shapefile.Reader(shp_file_in) as r, shapefile.Writer(shp_file_out) as w:
 
