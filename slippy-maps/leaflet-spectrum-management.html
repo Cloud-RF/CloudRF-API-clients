@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>CloudRF Interference Leaflet Demo</title>
+    <title>Spectrum Management API Demo</title>
     <link 
         rel="stylesheet" 
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -32,9 +32,8 @@
     </div>
 
     <p>Enter your API key above and then move the cars to model interference against the other cars. </p>
-    <p>The table shows shows the percentage of the viewshed with a JS  higher than 0.</p>
-    <p>To change a car's frequency, click on the table. The current frequency is underlined, the best frequency is in bold.</p>
-    <p><a href="index.html">Click here</a> to see reference documentation and other demos.</p>
+    <p>The table shows shows percentage of interference where the ideal amount is 0</p>
+ 
 
     <div class="d-flex justify-content-between">
         <div class="fst-italic" id="status-message"></div>
@@ -46,6 +45,7 @@
     <div class="w-50 mx-auto">
         <table class="table" id="spectrum-table">
         </table>
+        <p>To reassign a frequency, click on the table. The <u>current frequency is underlined</u> and the best frequency is in <b> bold.</b></p>
     </div>
 
 
@@ -81,22 +81,18 @@
                 "freq": 466,
                 "color": [44, 160, 44],
             }, 
-            {
-                "freq": 468,
-                "color": [214, 39, 40],
-            }, 
         ]
 
         const radio_template = {
             "network": "QRM-demo",
-            "engine": 2,
+            "engine": 1,
             "transmitter": {
-                "alt": 2,
+                "alt": 1.5,
                 "txw": 2.0,
                 "bwi": 0.012
             },
             "receiver": {
-                "alt": 1,
+                "alt": 1.5,
                 "rxg": 0,
                 "rxs": -100
             },
@@ -114,8 +110,8 @@
             "model": {
                 "pm": 10,
                 "pe": 1,
-                "ked": 2,
-                "rel": 60
+                "ked": 4,
+                "rel": 50
             },
             "environment": {
                 "clt": "Temperate.clt",
@@ -131,7 +127,7 @@
                 "mod": 0,
                 "nf": -105,
                 "res": 10,
-                "rad": 3
+                "rad": 2
             }
         };
 
@@ -204,7 +200,7 @@
         }
 
         async function areaDelay() {
-            const ms = apiServiceBaseUrl.includes('api.cloudrf.com') ? 1500 : 1050;
+            const ms = apiServiceBaseUrl.includes('api.cloudrf.com') ? 1500 : 500;
             await new Promise(resolve => setTimeout(resolve, ms));
         }
 
@@ -375,15 +371,24 @@
                         cell = $(`<td style="text-align: right; font-family: monospace;">-</td>`);
                     } else {
                         let fontWeight =  percentage.toFixed(2) == best.toFixed(2) ? 'bold' : 'normal';
+                        let tdStyle = "bg-success"
+
+                        if (percentage > 25){
+                            tdStyle = "bg-warning"
+                        }
+                        if (percentage > 50){
+                            tdStyle = "bg-danger"
+                        }        
+
                         if (radio.mode_idx == mode_idx) {
-                            cell = $(`<td style="text-align: right; font-family: monospace; font-weight: ${fontWeight}; text-decoration: underline;">`);
+                            cell = $(`<td class="${tdStyle}" style="text-align: right; font-family: monospace; font-weight: ${fontWeight}; text-decoration: underline;">`);
                         } else {
-                            cell = $(`<td style="text-align: right; font-family: monospace; font-weight: ${fontWeight}; cursor: pointer;">`);
+                            cell = $(`<td class="${tdStyle}" style="text-align: right; font-family: monospace; font-weight: ${fontWeight}; cursor: pointer;">`);
                             cell.on('click', () => {
                                 setRadioMode(radio, mode_idx);
                             })
                         }
-                        cell.text(percentage.toFixed(2));
+                        cell.text(percentage.toFixed(0));
                     }
                     row.append(cell);
                 });
@@ -467,10 +472,9 @@
             });
         }
 
-        await addRadio(50.33508780839669, 6.946938369950825, 'Car 1', 0);
-        await addRadio(50.33630126946575, 6.943714563675718, 'Car 2', 1);
-        await addRadio(50.33094332349924, 6.938598138059326, 'Car 3', 2);
-        await addRadio(50.32554681914269, 6.93672434416994, 'Car 4', 1);
+        await addRadio(50.33508780839669, 6.92, 'Car 1', 0);
+        await addRadio(50.33630126946575, 6.9437, 'Car 2', 1);
+        await addRadio(50.33094332349924, 6.96, 'Car 3', 2);
         buildTable();
     </script>
 </body>
