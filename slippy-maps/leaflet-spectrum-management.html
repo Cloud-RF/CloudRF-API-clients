@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Spectrum Management API Demo</title>
+    <link 
+        rel="stylesheet" 
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="" />
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" 
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="CloudRF.css">
+</head>
+
+<body class="p-2">
+    <h1>Spectrum Management API Demo</h1>
+
+    <div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Key</span>
+        <input id="apiKey" value="" type="text" class="form-control" placeholder="Your API Key for service defined below.">
+    </div>
+
+    <div class="input-group input-group-sm mb-3">
+        <span class="input-group-text">API Service Base URL</span>
+        <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
+    </div>
+
+    <p>Enter your API key above and then move the cars to model interference against the other cars. </p>
+    <p>The table shows shows percentage of interference where the ideal amount is 0</p>
+ 
+
+    <div class="d-flex justify-content-between">
+        <div class="fst-italic" id="status-message"></div>
+        <div class="fw-bold fst-italic text-danger" hidden id="cannot-drag-message">Markers cannot be dragged while a calculation is on-going</div>
+    </div>
+
+    <div id="mapInterference" class="map"></div>
+
+    <div class="w-50 mx-auto">
+        <table class="table" id="spectrum-table">
+        </table>
+        <p>To reassign a frequency, click on the table. The <u>current frequency is underlined</u> and the best frequency is in <b> bold.</b></p>
+    </div>
+
+
+    <script 
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" 
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" 
+        crossorigin="anonymous"></script>
+    <script
+        src="https://code.jquery.com/jquery-3.6.3.min.js"
+        integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+    <script src="CloudRF.js"></script>
+
+    <script type="module">
+        var map = L.map('mapInterference').setView([50.333, 6.941], 14);
+        var radios = [];
+
+        const table_js_threshold = 0;
+
+        const modes = [
+            {
+                "freq": 462,
+                "color": [31, 119, 180],
+            },
+            {
+                "freq": 464,
+                "color": [255, 127, 14],
+            }, 
+            {
+                "freq": 466,
+                "color": [44, 160, 44],
+            }, 
+        ]
+
+        const radio_template = {
+            "network": "QRM-demo",
+            "engine": 1,
+            "transmitter": {
+                "alt": 1.5,
+                "txw": 2.0,
+                "bwi": 0.012
+            },
+            "receiver": {
+                "alt": 1.5,
+                "rxg": 0,
+                "rxs": -100
+            },
+            "antenna": {
+                "txg": 2.15,
+                "txl": 0,
+                "ant": 1,
+                "azi": 0,
+                "tlt": 0,
+                "hbw": 0,
+                "vbw": 0,
+                "pol": "v",
+                "fbr": 0
+            },
+            "model": {
+                "pm": 10,
+                "pe": 1,
+                "ked": 4,
+                "rel": 50
+            },
+            "environment": {
+                "clt": "Temperate.clt",
+                "elevation": 2,
+                "landcover": 1,
+                "buildings": 1,
+                "obstacles": 0
+            },
+            "output": {
+                "units": "m",
+                "out": 2,
+                "ber": 0,
+                "mod": 0,
+                "nf": -105,
+                "res": 10,
+                "rad": 2
+            }
+        };
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        function clearStatusMessage() {
+            $('#status-message').text('')
+        }
+
+        function setStatusMessage(message) {
+            $('#status-message').text(message)
+        }
+
+        function lockRadios() {
+            $('#cannot-drag-message').removeAttr('hidden');
+            radios.forEach(radio => {
+                radio.dragging.disable();
+            })
+        }
+
+        function unlockRadios() {
+            $('#cannot-drag-message').attr('hidden', true);
+            radios.forEach(radio => {
+                radio.dragging.enable();
+            })
+        }
+
+        async function createRadioIcon(name, mode_idx) {
+            const mode = modes[mode_idx];
+
+            return new L.DivIcon({
+                className: '',
+                html: `<div style="font-size:12px;display: flex; align-items: center; flex-direction: column;">
+                        <img src="${await colorImageUrl('images/car.png', mode.color)}" width="20" height="20"></i>${name}
+                    </div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+            });
+        }
+
+        async function addRadio(latitude, longitude, name, mode_idx) {
+            const icon = await createRadioIcon(name, mode_idx);
+            const radio = new L.marker([latitude, longitude], { title: name, draggable: 'true', icon: icon});
+            radio.name = name;
+            radio.changed = true;
+            radio.mode_idx = mode_idx;
+            radio.calc_name = [];
+            radio.png_url = [];
+            radio.bounds = [];
+            radio.percentage_above_js_threshold = [];
+            map.addLayer(radio);
+            radio.on('dragend', async (event) => {
+                var radio = event.target;
+                var position = radio.getLatLng();
+                radio.setLatLng(new L.LatLng(position.lat, position.lng), { draggable: 'true' });
+                radio.changed = true;
+                await calculate();
+            });
+            radios.push(radio);
+        }
+
+        function removeRadioLayer(radio) {
+            map.eachLayer(function (layer) {
+                if (layer.radio_name === radio.name) {
+                    map.removeLayer(layer);
+                }
+            })
+        }
+
+        async function areaDelay() {
+            const ms = apiServiceBaseUrl.includes('api.cloudrf.com') ? 1500 : 500;
+            await new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function interferenceDelay() {
+            const ms = apiServiceBaseUrl.includes('api.cloudrf.com') ? 1000 : 100;
+            await new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function areaResponseCalcName(radio, response) {
+            const regex = new RegExp(`([0-9]+_${radio_template.network}_${radio.name.replace(' ', '_')})\\.4326\\.png`);
+            const result = regex.exec(response.PNG_WGS84);
+            if (result == null) {
+                throw new Error('Could not parse area calculation name.');
+            }
+            return result[1];
+        }
+
+        async function runRadioModeAreaCalculation(radio, mode_idx) {
+            const mode = modes[mode_idx];
+            setStatusMessage(`Performing area calculation for radio "${radio.name}" frequency "${mode.freq}"...`);
+            const response = await sendAreaRequest(radio, mode);
+            console.log(response);
+            radio.calc_name[mode_idx] = areaResponseCalcName(radio, response);
+            radio.png_url[mode_idx] = response.PNG_WGS84;
+            radio.bounds[mode_idx] = [[response.bounds[2], response.bounds[3]], [response.bounds[0], response.bounds[1]]];
+        }
+
+        async function colorImageUrl(image_url, color) {
+            return await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.src = image_url;
+
+                img.onerror = reject;
+
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    const ctx = canvas.getContext('2d');
+
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    for (let i = 0; i < data.length; i += 4) {
+                        data[i + 0] = (255 - data[i + 0]) * color[0] / 255;
+                        data[i + 1] = (255 - data[i + 1]) * color[1] / 255;
+                        data[i + 2] = (255 - data[i + 2]) * color[2] / 255;
+                    }
+                    ctx.putImageData(imageData, 0 ,0);
+                    resolve(canvas.toDataURL());
+                }
+            });
+        }
+
+        async function updateRadioLayer(radio) {
+            const layer = L.imageOverlay (
+                await colorImageUrl(radio.png_url[radio.mode_idx], modes[radio.mode_idx].color),
+                radio.bounds[radio.mode_idx],
+                { opacity: 0.7 },
+            ).addTo(map);
+            layer.radio_name = radio.name;
+            radio.current_png_url = radio.png_url[radio.mode_idx];
+        }
+
+        async function runRadioModeinterferenceCalculation(radio, mode_idx) {
+            const jammers = radios.filter(other_radio => other_radio.name != radio.name).map(other_radio => other_radio.calc_name[other_radio.mode_idx]);
+            const mode = modes[mode_idx];
+            setStatusMessage(`Performing interference calculation for radio "${radio.name}" frequency "${mode.freq}"...`);
+            const response = await sendInterferenceRequest(radio.calc_name[mode_idx], jammers);
+            console.log(response);
+            radio.percentage_above_js_threshold[mode_idx] = response.percentages_above_js.find(entry => entry.js == table_js_threshold).percentage;
+        }
+
+        async function setRadioMode(radio, mode_idx) {
+            if (radio.mode_idx == mode_idx) return;
+
+            radio.mode_idx = mode_idx;
+            radio.setIcon(await createRadioIcon(radio.name, mode_idx));
+            await updateRadioLayer(radio); // We should already have the required calculation so can just switch to it
+            await calculate(); // interference calculations will need to re-run
+        }
+
+        async function calculate() {
+            lockRadios();
+            clearTable();
+
+            try {
+                // Remove the out of date layers
+                radios.forEach(radio => {
+                    if(radio.changed) {
+                        removeRadioLayer(radio); 
+                    }
+                });
+
+                // Tun all the area calcs that should be added to the map
+                // so that new layers appear as quickly as possible
+                for (const radio of radios) {
+                    if (radio.changed) {
+                        await runRadioModeAreaCalculation(radio, radio.mode_idx);
+                        updateRadioLayer(radio);
+                        await areaDelay();
+                    }
+                }
+
+                // Run all of the other area calcs
+                for (const radio of radios) {
+                    if (radio.changed) {
+                        for (let mode_idx = 0; mode_idx < modes.length; mode_idx++) {
+                            if (mode_idx == radio.mode_idx) continue;
+                            await runRadioModeAreaCalculation(radio, mode_idx);
+                            await areaDelay();
+                        }
+                    }
+                }
+
+                // Only mark radios as not-changed if all the area calcs succeeded
+                radios.forEach(radio => { radio.changed = false; })
+
+                // Run interference calculations
+                for (const radio of radios) {
+                    for (let mode_idx = 0; mode_idx < modes.length; mode_idx++) {
+                        await runRadioModeinterferenceCalculation(radio, mode_idx);
+                        buildTable();
+                        await interferenceDelay();
+                    }
+                }
+
+            } catch (e) {
+                console.error(e);
+            }
+
+            unlockRadios();
+            clearStatusMessage();
+        }
+
+        function clearTable() {
+            radios.forEach(radio => {
+                radio.percentage_above_js_threshold = [];
+            });
+            buildTable();
+        }
+
+        function buildTable() {
+            const table = $('#spectrum-table');
+            table.empty();
+
+            let thead = $('<thead>');
+            let headerRow = $('<tr>');
+            headerRow.append('<th>Radio</th>');
+            modes.forEach(mode => {
+                headerRow.append(`<th style="text-align: right; color: rgb(${mode.color[0]}, ${mode.color[1]}, ${mode.color[2]});">${mode.freq}</th>`);
+            });
+            thead.append(headerRow);
+            table.append(thead);
+
+            let tbody = $('<tbody>');
+            radios.forEach(radio => {
+                let best = Math.min(...modes.map((_, mode_idx) => radio.percentage_above_js_threshold[mode_idx]));
+                let row = $('<tr>');
+                row.append(`<td>${radio.name}</td>`);
+                modes.forEach((_, mode_idx) => {
+                    let percentage = radio.percentage_above_js_threshold[mode_idx];
+                    let cell;
+                    if (percentage === undefined) {
+                        cell = $(`<td style="text-align: right; font-family: monospace;">-</td>`);
+                    } else {
+                        let fontWeight =  percentage.toFixed(2) == best.toFixed(2) ? 'bold' : 'normal';
+                        let tdStyle = "bg-success"
+
+                        if (percentage > 25){
+                            tdStyle = "bg-warning"
+                        }
+                        if (percentage > 50){
+                            tdStyle = "bg-danger"
+                        }        
+
+                        if (radio.mode_idx == mode_idx) {
+                            cell = $(`<td class="${tdStyle}" style="text-align: right; font-family: monospace; font-weight: ${fontWeight}; text-decoration: underline;">`);
+                        } else {
+                            cell = $(`<td class="${tdStyle}" style="text-align: right; font-family: monospace; font-weight: ${fontWeight}; cursor: pointer;">`);
+                            cell.on('click', () => {
+                                setRadioMode(radio, mode_idx);
+                            })
+                        }
+                        cell.text(percentage.toFixed(0));
+                    }
+                    row.append(cell);
+                });
+                tbody.append(row);
+            });
+            table.append(tbody);
+        }
+
+        function sendAreaRequest(radio, mode) {
+
+            let request = {...radio_template};
+            request.site = radio.name;
+            request.transmitter.frq = mode.freq;
+            request.output.col = 9;
+
+            request.transmitter.lat = radio._latlng.lat;
+            request.transmitter.lon = radio._latlng.lng;
+
+            console.log(request);
+
+            let requestJson = JSON.stringify(request, null, 4);
+
+            return new Promise(async function(resolve, reject) {
+                validateApiKey();
+                fetch(`${apiServiceBaseUrl}/area`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'key': apiKey
+                    },
+                    body: requestJson
+                }).then(async function(response) {
+                    const responseJson = await response.json();
+                    resolve(responseJson);
+                }).catch(e => {
+                    $('#responseRawOutput').html(`${e}`);
+                    reject(e);
+                })
+            });
+        }
+
+
+        function sendInterferenceRequest(signal, jammers) {
+            let request = {
+                s_sites: [signal],
+                j_sites: jammers,
+                name: "QRM-demo",
+                colour_key: "JS.dB",
+            };
+
+            console.log(request);
+
+            let requestJson = JSON.stringify(request, null, 4);
+
+            $('#requestRawOutput').html(requestJson);
+
+            return new Promise(async function(resolve, reject) {
+                validateApiKey();
+
+                // On production we can hit rate limits
+                if (apiServiceBaseUrl.includes('api.cloudrf.com')) {
+                    await new Promise(res => setTimeout(res, 1050));
+                }
+
+                fetch(`${apiServiceBaseUrl}/interference`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'key': apiKey
+                    },
+                    body: requestJson
+                }).then(async function(response) {
+                    const responseJson = await response.json();
+                    $('#responseRawOutput').html(JSON.stringify(responseJson, null, 4));
+
+                    resolve(responseJson);
+                }).catch(e => {
+                    $('#responseRawOutput').html(`${e}`);
+                    reject(e);
+                })
+            });
+        }
+
+        await addRadio(50.33508780839669, 6.92, 'Car 1', 0);
+        await addRadio(50.33630126946575, 6.9437, 'Car 2', 1);
+        await addRadio(50.33094332349924, 6.96, 'Car 3', 2);
+        buildTable();
+    </script>
+</body>
+
+</html>
