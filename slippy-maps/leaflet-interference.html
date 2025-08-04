@@ -287,6 +287,12 @@
 
             return new Promise(async function(resolve, reject) {
                 validateApiKey();
+
+                // On production we can hit rate limits
+                if (apiServiceBaseUrl.includes('api.cloudrf.com')) {
+                    await new Promise(res => setTimeout(res, 1050));
+                }
+
                 fetch(`${apiServiceBaseUrl}/interference`, {
                     method: 'POST',
                     headers: {
