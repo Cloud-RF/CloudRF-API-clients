@@ -10,28 +10,32 @@ from io import BytesIO
 import rasterio
 import sys
 import urllib3
+import json
 
 CLUTTER_PROFILE = 'AreaCalibPy'
 
 config_spec = {
     'network': {'kind': 'fixed', 'value': 'CALIBRATION'},
 
-    'transmitter.lat': {'kind': 'fixed', 'value': 53.394753},
-    'transmitter.lon': {'kind': 'fixed', 'value': -1.755654},
-    'transmitter.alt': {'kind': 'fixed', 'value': 15},
-    'transmitter.frq': {'kind': 'fixed', 'value': 700},
-    'transmitter.txw': {'kind': 'fixed', 'value': 3.0},
+    # Transmitter values come from the template file
+    'transmitter.lat': {'kind': 'fixed'},
+    'transmitter.lon': {'kind': 'fixed'},
+    'transmitter.alt': {'kind': 'fixed'},
+    'transmitter.frq': {'kind': 'fixed'},
+    'transmitter.txw': {'kind': 'fixed'},
 
-    'antenna.txg': {'kind': 'fixed', 'value': 2.15},
-    'antenna.txl': {'kind': 'fixed', 'value': 0},
-    'antenna.ant': {'kind': 'fixed', 'value': 1},
-    'antenna.azi': {'kind': 'fixed', 'value': 285},
-    'antenna.tlt': {'kind': 'fixed', 'value': 0},
-    'antenna.pol': {'kind': 'fixed', 'value': 'v'},
+    # Antenna values come from the template file
+    'antenna.txg': {'kind': 'fixed'},
+    'antenna.txl': {'kind': 'fixed'},
+    'antenna.ant': {'kind': 'fixed'},
+    'antenna.azi': {'kind': 'fixed'},
+    'antenna.tlt': {'kind': 'fixed'},
+    'antenna.pol': {'kind': 'fixed'},
 
-    'receiver.alt': {'kind': 'fixed', 'value': 1},
-    'receiver.rxg': {'kind': 'fixed', 'value': 1},
-    'receiver.rxs': {'kind': 'fixed', 'value': -140},
+    # Receiver values come from the template file
+    'receiver.alt': {'kind': 'fixed'},
+    'receiver.rxg': {'kind': 'fixed'},
+    'receiver.rxs': {'kind': 'fixed'},
 
     'model.pm': {'kind': 'fixed', 'value': 10},
     'model.pe': {'kind': 'discrete', 'options': [1, 2, 3]},
@@ -129,6 +133,42 @@ def create_clutter_profile(config):
 
     if response['status'] != 200:
         raise RuntimeError(response['message'])
+
+def get_nested_value(data, path):
+    keys = path.split('.')
+    for key in keys:
+        if isinstance(data, dict) and key in data:
+            data = data[key]
+        else:
+            raise ValueError(f"Missing key in template: '{path}'")
+    return data
+
+def populate_config_from_template():
+    # These values come in from the template file
+    global config_spec
+    replaceWithTemplate = [
+        'transmitter.lat',
+        'transmitter.lon',
+        'transmitter.alt',
+        'transmitter.frq',
+        'transmitter.txw',
+        'antenna.txg',
+        'antenna.txl',
+        'antenna.ant',
+        'antenna.azi',
+        'antenna.tlt',
+        'antenna.pol',
+        'receiver.alt',
+        'receiver.rxg',
+        'receiver.rxs',
+    ]
+
+    with open(args.input_template, 'r') as template_file:
+        template_file = json.load(template_file)
+
+    for path in replaceWithTemplate:
+        value = get_nested_value(template_file, path)
+        config_spec[path]['value'] = value
 
 def build_area_request(config):
     request = {}
@@ -319,6 +359,7 @@ if __name__ == '__main__':
         formatter_class = ArgparseCustomFormatter
     )
     parser.add_argument('-i', '--input-csv', dest = 'input_csv', default = 'data.csv', help = 'Absolute path to input CSV reference data to be used in calibration. The CSV header row must be included.')
+    parser.add_argument('-t', '--input-template', dest = 'input_template', default = 'CloudRF_template.json', help = 'Absolute path to input CloudRF JSON template used as part of the calculation to calibrate against.')
     parser.add_argument('-u', '--base-url', dest = 'base_url', default = 'https://api.cloudrf.com/', help = 'The base URL for the CloudRF API service.')
     parser.add_argument('--no-strict-ssl', dest = 'strict_ssl', action="store_false", default = True, help = 'Do not verify the SSL certificate to the CloudRF API service.')
     parser.add_argument('-k', '--api-key', dest = 'api_key', required = True, help = 'Your API key to the CloudRF API service.')
@@ -335,6 +376,7 @@ if __name__ == '__main__':
     if args.strict_ssl == False:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+    populate_config_from_template()
     dataset = load_csv(args.input_csv)
 
     print_message(f"loaded dataset with {len(dataset)} rows")
