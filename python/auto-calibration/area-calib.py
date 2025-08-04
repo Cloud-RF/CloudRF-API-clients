@@ -9,22 +9,9 @@ import math
 from io import BytesIO
 import rasterio
 import sys
-
-POPULATION_COUNT = 10 # The number of configs in a generation
-
-MAX_GENERATION = 10 # The number of generations to run for
-ELITE_COUNT = 3 # The number of configs carry over to the next generation, choosen by best fit
-
-DISCRETE_MUTATION_RATE = 0.1
-CONTINUOUS_MUTATION_VARIABILITY = 0.2
-
-DISABLE_SSL_VERIFICATION=False
+import urllib3
 
 CLUTTER_PROFILE = 'AreaCalibPy'
-
-if DISABLE_SSL_VERIFICATION:
-    import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 config_spec = {
     'network': {'kind': 'fixed', 'value': 'CALIBRATION'},
@@ -135,7 +122,7 @@ def create_clutter_profile(config):
 
     apiUrl = args.base_url.rstrip('/') + '/API/clutter/index2.php'
 
-    response = requests.post(f"{apiUrl}", data=data, headers=headers, verify=not DISABLE_SSL_VERIFICATION)
+    response = requests.post(f"{apiUrl}", data=data, headers=headers, verify=args.strict_ssl)
     response.raise_for_status()
 
     response = response.json()
@@ -180,7 +167,7 @@ def send_area_request(request):
 
     apiUrl = args.base_url.rstrip('/') + '/area'
 
-    response = requests.post(f"{apiUrl}", json=request, headers=headers, verify=not DISABLE_SSL_VERIFICATION)
+    response = requests.post(f"{apiUrl}", json=request, headers=headers, verify=args.strict_ssl)
     response.raise_for_status()
 
     return response.json()
@@ -202,7 +189,7 @@ def calculate_config_error(config, batch):
     tiff_url = response['kmz'][:-3] + 'tiff'
 
     print_status_message('Downloading area output tiff', depth=1)
-    response = requests.get(tiff_url, verify=not DISABLE_SSL_VERIFICATION)
+    response = requests.get(tiff_url, verify=args.strict_ssl)
     response.raise_for_status()
 
     with rasterio.open(BytesIO(response.content)) as tiff:
@@ -237,7 +224,7 @@ def calculate_config_fitness(config):
     return math.exp(-config['mean_error'])
 
 def select_parent_configs(population):
-    count = 2 * POPULATION_COUNT
+    count = 2 * args.population_count
     total_fitness = sum([config['fitness'] for config in population])
     step = total_fitness / count
     start_point = random.uniform(0, step)
@@ -279,10 +266,10 @@ def mutate_config(config):
     mutant = {}
     for key, value_spec in config_spec.items():
         if value_spec['kind'] == 'continuous':
-            mutant[key] = config[key] + random.normalvariate(0, CONTINUOUS_MUTATION_VARIABILITY * (value_spec['max'] - value_spec['min']))
+            mutant[key] = config[key] + random.normalvariate(0, args.continuous_mutation_variability * (value_spec['max'] - value_spec['min']))
             mutant[key] = max(value_spec['min'], min(mutant[key], value_spec['max']))
         elif value_spec['kind'] == 'discrete':
-            if random.uniform(0, 1) < DISCRETE_MUTATION_RATE:
+            if random.uniform(0, 1) < args.discrete_mutation_rate:
                 mutant[key] = random.choice(value_spec['options'])
             else:
                 mutant[key] = config[key]
@@ -333,30 +320,40 @@ if __name__ == '__main__':
     )
     parser.add_argument('-i', '--input-csv', dest = 'input_csv', default = 'data.csv', help = 'Absolute path to input CSV reference data to be used in calibration. The CSV header row must be included.')
     parser.add_argument('-u', '--base-url', dest = 'base_url', default = 'https://api.cloudrf.com/', help = 'The base URL for the CloudRF API service.')
+    parser.add_argument('--no-strict-ssl', dest = 'strict_ssl', action="store_false", default = True, help = 'Do not verify the SSL certificate to the CloudRF API service.')
     parser.add_argument('-k', '--api-key', dest = 'api_key', required = True, help = 'Your API key to the CloudRF API service.')
-    parser.add_argument('-w', '--wait', dest = 'wait', default = 0.1, help = 'Time in seconds to wait before running the next calculation.')
+    parser.add_argument('-w', '--wait', dest = 'wait', type = float, default = 0.1, help = 'Time in seconds to wait before running the next calculation.')
+
+    parser.add_argument('--population-count', dest = 'population_count', type = int, default = 10, help = 'The number of configs in a generation.')
+    parser.add_argument('--max-generation', dest = 'max_generation', type = int, default = 10, help = 'The maximum number of generations to run.')
+    parser.add_argument('--elite-count', dest = 'elite_count', type = int, default = 3, help = 'The number of elite configs to retain for the next generation, chosen by best fit.')
+    parser.add_argument('--discrete-mutation-rate', dest = 'discrete_mutation_rate', type = float, default = 0.1, help = 'The mutation rate for discrete parameters.')
+    parser.add_argument('--continuous-mutation-variability', dest = 'continuous_mutation_variability', type = float, default = 0.2, help = 'The variability for continuous mutations.')
+
     args = parser.parse_args()
+
+    if args.strict_ssl == False:
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     dataset = load_csv(args.input_csv)
 
     print_message(f"loaded dataset with {len(dataset)} rows")
 
-    population = [generate_random_config() for _ in range(0, POPULATION_COUNT)]
+    population = [generate_random_config() for _ in range(0, args.population_count)]
 
     for i, config in enumerate(population):
-        print_status_message(f'Calculating error for config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT}')
+        print_status_message(f'Calculating error for config {i+1:>{len(str(args.population_count))}}/{args.population_count}')
         config['min_error'], config['mean_error'], config['max_error'] = calculate_config_error(config, dataset)
         config['fitness'] = calculate_config_fitness(config)
-        print_message(f'Config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT} error:    min {config['min_error']:>4}    mean {config['mean_error']:>4.2g}    max {config['max_error']:>4}')
+        print_message(f'Config {i+1:>{len(str(args.population_count))}}/{args.population_count} error:    min {config['min_error']:>4}    mean {config['mean_error']:>4.2g}    max {config['max_error']:>4}')
 
-    for generation in range(0, MAX_GENERATION):
-
+    for generation in range(0, args.max_generation):
         print_status_message(f'Sorting config population')
         population = sorted(population, key=lambda config: config['fitness'])
         worst = population[0]
         best = population[-1]
         print_message(f"")
-        print_message(f"Generation {generation:>{len(str(MAX_GENERATION))}}/{MAX_GENERATION}")
+        print_message(f"Generation {generation:>{len(str(args.max_generation))}}/{args.max_generation}")
         print_message(f"")
         print_message(f"  Worst Config")
         print_config(worst)
@@ -369,7 +366,7 @@ if __name__ == '__main__':
         parent_indices = select_parent_configs(population)
         random.shuffle(parent_indices)
 
-        parent_index_pairs = [(parent_indices[2 * i], parent_indices[2 * i + 1])  for i in range(0, POPULATION_COUNT)]
+        parent_index_pairs = [(parent_indices[2 * i], parent_indices[2 * i + 1])  for i in range(0, args.population_count)]
 
         print_status_message(f'Creating child configs')
         children = [crossover_configs(population[a], population[b]) for (a, b) in parent_index_pairs]
@@ -377,22 +374,22 @@ if __name__ == '__main__':
         children = [mutate_config(config) for config in children]
 
         for i, config in enumerate(children):
-            print_status_message(f'Calculating error for config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT}')
+            print_status_message(f'Calculating error for config {i+1:>{len(str(args.population_count))}}/{args.population_count}')
             config['min_error'], config['mean_error'], config['max_error'] = calculate_config_error(config, dataset)
             config['fitness'] = calculate_config_fitness(config)
-            print_message(f'Config {i+1:>{len(str(POPULATION_COUNT))}}/{POPULATION_COUNT} error:    min {config['min_error']:>4}    mean {config['mean_error']:>4.2g}    max {config['max_error']:>4}')
+            print_message(f'Config {i+1:>{len(str(args.population_count))}}/{args.population_count} error:    min {config['min_error']:>4}    mean {config['mean_error']:>4.2g}    max {config['max_error']:>4}')
 
         children = sorted(children, key=lambda config: config['fitness'])
 
-        population = population[-ELITE_COUNT:]
-        children = children[-(POPULATION_COUNT-ELITE_COUNT):]
+        population = population[-args.elite_count:]
+        children = children[-(args.population_count - args.elite_count):]
         population.extend(children)
 
     population = sorted(population, key=lambda config: config['fitness'])
     worst = population[0]
     best = population[-1]
     print_message(f"")
-    print_message(f"Generation {MAX_GENERATION}/{MAX_GENERATION}")
+    print_message(f"Generation {args.max_generation}/{args.max_generation}")
     print_message(f"")
     print_message(f"  Worst Config")
     print_config(worst)
