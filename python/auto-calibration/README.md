@@ -85,8 +85,8 @@ Taking the example data provided in [CloudRF_template.json](CloudRF_template.jso
 - Population count - `20`.
 - Max generation - `10`.
 - Elite count - `15`.
-- Discrete mutation rate - `0.2`.
-- Continuous mutation variability - `0.25`.
+- Discrete mutation rate - `0.1`.
+- Continuous mutation variability - `0.1`.
 
 Initially a baseline is checked which produces the following example output:
 
@@ -94,24 +94,24 @@ Initially a baseline is checked which produces the following example output:
 Generation  0/10
 
   Worst Config
-    Min Error :    -70.0
+    Min Error :    -59.0
    Mean Error :       28
-    Max Error :     11.0
+    Max Error :      8.0
    Prop Model :        1
-  Reliability :       82
-Building Attn :   4.2736
-    Tree Attn : 0.862497
-  Tree Height :       23
+  Reliability :       95
+Building Attn :   1.1542
+    Tree Attn : 0.313626
+  Tree Height :       24
 
   Best Config
     Min Error :    -55.0
-   Mean Error :       13
-    Max Error :     21.0
-   Prop Model :        2
-  Reliability :       64
-Building Attn :   7.6164
-    Tree Attn : 0.432496
-  Tree Height :      5.4
+   Mean Error :       11
+    Max Error :     17.0
+   Prop Model :        1
+  Reliability :       68
+Building Attn :  2.30246
+    Tree Attn : 0.963345
+  Tree Height :     0.87
 ```
 
 The process will run through numerous times, adjusting slightly each time and monitoring any differences. These differences then follow into the next generation.
@@ -124,20 +124,20 @@ Generation 10/10
   Worst Config
     Min Error :    -55.0
    Mean Error :      9.3
-    Max Error :     24.0
-   Prop Model :        3
-  Reliability :       92
-Building Attn :   4.1059
-    Tree Attn :  1.49954
+    Max Error :     21.0
+   Prop Model :        2
+  Reliability :       73
+Building Attn : 0.287573
+    Tree Attn :      1.5
   Tree Height :      0.5
 
   Best Config
     Min Error :    -55.0
-   Mean Error :        9
-    Max Error :     17.0
+   Mean Error :      8.8
+    Max Error :     22.0
    Prop Model :        2
-  Reliability :       99
-Building Attn : 0.244203
-    Tree Attn : 0.363218
-  Tree Height :      1.3
+  Reliability :       69
+Building Attn : 0.688226
+    Tree Attn : 0.744273
+  Tree Height :      1.1
 ```
