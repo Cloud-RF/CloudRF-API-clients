@@ -21,6 +21,10 @@ This is the script in it's most simple format. It will install required Python m
 
 You can also run this script directly on your system, but ensure that you have the correct recommended version of Python installed, along with supporting modules.
 
+## API Usage Warning
+
+>Please note, that this script will use numerous calls to the CloudRF API. This will contibute towards your API usage allowance.
+
 ## Script Arguments
 
 A number of arguments are supported, and some expected, by the Python script. You can see a full list of these by passing in the `--help` argument:
@@ -74,12 +78,66 @@ More details are provided below:
 - `--discrete-mutation-rate` - This argument configures how much discrete parameters are likely to mutate. A higher number increases the probability of mutation.
 - `--continuous-mutation-variability` - This argument configures the variability of mutation for continuous parameters. A higher number will increase the variability of mutation.
 
-## Example Outputs
+## Example Output
 
-Taking the example data provided in [CloudRF_template.json](CloudRF_template.json) and [data.csv](data.csv), below shows an example output for the default values:
+Taking the example data provided in [CloudRF_template.json](CloudRF_template.json) and [data.csv](data.csv), below shows an example output for the following values:
 
-- Population count - `10`.
+- Population count - `20`.
 - Max generation - `10`.
-- Elite count - `3`.
-- Discrete mutation rate - `0.1`.
-- Continuous mutation variability - `0.2`.
+- Elite count - `15`.
+- Discrete mutation rate - `0.2`.
+- Continuous mutation variability - `0.25`.
+
+Initially a baseline is checked which produces the following example output:
+
+```console
+Generation  0/10
+
+  Worst Config
+    Min Error :    -70.0
+   Mean Error :       28
+    Max Error :     11.0
+   Prop Model :        1
+  Reliability :       82
+Building Attn :   4.2736
+    Tree Attn : 0.862497
+  Tree Height :       23
+
+  Best Config
+    Min Error :    -55.0
+   Mean Error :       13
+    Max Error :     21.0
+   Prop Model :        2
+  Reliability :       64
+Building Attn :   7.6164
+    Tree Attn : 0.432496
+  Tree Height :      5.4
+```
+
+The process will run through numerous times, adjusting slightly each time and monitoring any differences. These differences then follow into the next generation.
+
+Taking our previous example, after 10 generations we get the following:
+
+```console
+Generation 10/10
+
+  Worst Config
+    Min Error :    -55.0
+   Mean Error :      9.3
+    Max Error :     24.0
+   Prop Model :        3
+  Reliability :       92
+Building Attn :   4.1059
+    Tree Attn :  1.49954
+  Tree Height :      0.5
+
+  Best Config
+    Min Error :    -55.0
+   Mean Error :        9
+    Max Error :     17.0
+   Prop Model :        2
+  Reliability :       99
+Building Attn : 0.244203
+    Tree Attn : 0.363218
+  Tree Height :      1.3
+```
