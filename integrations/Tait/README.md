@@ -54,6 +54,10 @@ When all radios have been polled, a CloudRF API Multisite request is generated c
 
 The KML file contains a marker for each radio/callsign and a composite coverage layer. It can be viewed locally in Google Earth as a network KML or shared on the network.
 
+## Viewing the GPS locations in ATAK
+
+The script will send a UDP broadcast on 4242 with minimal CoT XML to put a pin on the map in ATAK. The name is taken from the "callsign" within the radio object at the top of the script.
+
 ## Viewing the KML in Google Earth (Local)
 
 Add a Network KML in Google earth and set the URL to the tait-dmr.kml file on your computer eg. /home/me/CloudRF/integrations/Tait/tait-dmr.kml. 
