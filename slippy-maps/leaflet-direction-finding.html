@@ -2,7 +2,17 @@
 <html lang="en">
 
 <head>
-    <title>CloudRF Area Leaflet Demo</title>
+    <title>CloudRF DF API Demo</title>
+    <!--
+
+    This demo uses the AREA API in Path loss mode which ignores power.
+    Power is applied afterwards in the client using the RSSI and target sliders.
+    A high confidence area of probability is green.
+    Low confidence is red.
+
+    "At the end of the day...it gets dark." - Anon
+
+    -->
     <link 
         rel="stylesheet" 
         href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
@@ -43,7 +53,7 @@
 </head>
 
 <body class="p-2">
-    <h1>CloudRF Direction Finding Leaflet Demo</h1>
+    <h1>Direction Finding Demo</h1>
 
     <div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
 
@@ -57,21 +67,19 @@
         <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com" placeholder="The base URL of where your API requests will be made to.">
     </div>
 
-    <p>Enter your API key above and then click on the map to...?</p>
+    <p>Enter your API key above and then click on the map to  see a LOB. Drag the sensor to move it around.</p>
     <p><a href="index.html">Click here</a> to see reference documentation and other demos.</p>
 
-    <div class="row align-items-center">
+    <div class="row align-items-left">
         <div class="col-auto">
             <label for="slider-received-power">Received Power (dBm)</label>
-            <input type="range" min="-110" max="-60" value="-100" class="slider" id="slider-received-power"/>
+            <input type="range" min="-100" max="-60" value="-90" class="slider" id="slider-received-power"/>
             <label for ="slider-received-power" id="label-received-power-value"></label>
         </div>
 
-        <div class="col"></div>
-
         <div class="col-auto text-end">
             <label for="slider-tx-power">Tx Power (W)</label>
-            <input type="range" min="0.1" max="4" value="2" step="0.1" class="slider" id="slider-tx-power"/>
+            <input type="range" min="1" max="5" value="4" step="1" class="slider" id="slider-tx-power"/>
             <label for ="slider-tx-power" id="label-tx-power-value"></label>
         </div>
     </div>
@@ -114,9 +122,9 @@
             "site": "DF",
             "engine": 2,
             "transmitter": {
-                "alt": 15,
-                "frq": 800,
-                "txw": 0.5,
+                "alt": 10,
+                "frq": 450,
+                "txw": 1,
                 "bwi": 0.1
             },
             "receiver": {
@@ -127,7 +135,7 @@
                 "rxs": 200
             },
             "antenna": {
-                "txg": 2.15,
+                "txg": 2,
                 "txl": 0,
                 "ant": 1,
                 "azi": 0,
@@ -138,16 +146,16 @@
                 "fbr": 0
             },
             "model": {
-                "pm": 1,
+                "pm": 10,
                 "pe": 2,
-                "ked": 1,
+                "ked": 4,
                 "rel": 50
             },
             "environment": {
                 "clt": "Minimal.clt",
                 "elevation": 1,
                 "landcover": 1,
-                "buildings": 0,
+                "buildings": 1,
                 "obstacles": 0
             },
             "output": {
@@ -156,34 +164,34 @@
                 "out": 1,
                 "ber": 0,
                 "mod": 0,
-                "nf": -140,
-                "res": 30,
-                "rad": 15
+                "nf": -110,
+                "res": 20,
+                "rad": 10
             }
         };
 
         const ARC_DEG = 10;
 
-        const ARC_LINE_LENGTH = 1e5;
+        const ARC_LINE_LENGTH = 1e4;
         const ARC_LINE_OPTIONS = {
             color: '#000000',
             weight: 1,
         }
         
         const COLOR_KEY = [
-            {receivedPowerMargin: 2, red: 255, green: 0, blue: 0},
-            {receivedPowerMargin: 5, red: 255, green: 128, blue: 0},
-            {receivedPowerMargin: 10, red: 0, green: 255, blue: 0},
+            {receivedPowerMargin: 3, red: 0, green: 255, blue: 0},
+            {receivedPowerMargin: 6, red: 255, green: 200, blue: 0},
+            {receivedPowerMargin: 9, red: 255, green: 0, blue: 0},
         ];
 
-        var map = L.map('mapArea').setView([38.916, 1.448], 12);
+        var map = L.map('mapArea').setView([38.9274, 1.4686], 12);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
         var directionFinder = L.marker(
-            L.latLng(38.91823165617842, 1.452081140147925), 
+            L.latLng(38.9274, 1.4686), 
             { 
                 title: 'DF',
                 draggable: 'true', 
@@ -385,7 +393,7 @@
             legend.onAdd = function (map) {
                 var legend = $('<div class="legend"></div>');
 
-                var title = $('<div class="legend-title">Margin (dB)</div>');
+                var title = $('<div class="legend-title">Error dB</div>');
                 legend.append(title);
 
                 COLOR_KEY.forEach(entry => {
