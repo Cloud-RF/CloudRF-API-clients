@@ -1,0 +1,13 @@
+{
+    "api_server": "api.cloudrf.com",
+    "api_key": "<API KEY HERE>",
+    "lat": 51.05966,
+    "lon": -2.7462,
+    "alt": 5,
+    "freq": 415,
+    "color_key": [
+            {"receivedPowerMargin": 1, "red": 0, "green": 255, "blue": 0},
+            {"receivedPowerMargin": 2, "red": 255, "green": 200, "blue": 0},
+            {"receivedPowerMargin": 3, "red": 255, "green": 0, "blue": 0}
+        ]       
+}

@@ -1,0 +1,66 @@
+{
+    "version": "CloudRF-API-v3.29.0",
+    "reference": "https://cloudrf.com/documentation/developer/swagger-ui/",
+    "template": {
+        "name": "somerton_calib",
+        "service": "CloudRF https://api.cloudrf.com",
+        "created_at": "2025-11-19T11:31:44+00:00",
+        "owner": 34858,
+        "bom_value": 0
+    },
+    "site": "Site",
+    "network": "SOMERTON",
+    "engine": 2,
+    "coordinates": 1,
+    "transmitter": {
+        "lat": 51.059605,
+        "lon": -2.746256,
+        "alt": 5,
+        "frq": 415,
+        "txw": 2,
+        "bwi": 1.2,
+        "powerUnit": "W"
+    },
+    "receiver": {
+        "alt": 1.5,
+        "rxg": 2,
+        "rxs": 140
+    },
+    "antenna": {
+        "mode": "template",
+        "txg": 2,
+        "txl": 0,
+        "ant": 1,
+        "azi": 0,
+        "tlt": 0,
+        "hbw": 1,
+        "vbw": 1,
+        "fbr": 2,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 10,
+        "pe": 2,
+        "ked": 4,
+        "rel": 50,
+        "rcs": 1,
+        "month": 11,
+        "hour": 10,
+        "sunspots_r12": 100
+    },
+    "environment": {
+        "elevation": 2,
+        "landcover": 1,
+        "buildings": 1,
+        "obstacles": 0,
+        "clt": "Minimal.clt"
+    },
+    "output": {
+        "units": "m",
+        "col": 9,
+        "out": 1,
+        "nf": -113,
+        "res": 5,
+        "rad": 6
+    }
+}
