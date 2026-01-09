@@ -44,7 +44,7 @@ You will be responsible for your account and how it is used.
 Below are a list of resources which may aid you with writing your own clients to integrate with the CloudRF API.
 
 - CloudRF Website: [https://cloudrf.com/](https://cloudrf.com/)
-- API Swagger UI OpenAPI Reference: [https://cloudrf.com/documentation/developer/swagger-ui/](https://cloudrf.com/documentation/developer/swagger-ui/)
+- API Swagger UI OpenAPI Reference: [https://cloudrf.com/documentation/developer/](https://cloudrf.com/documentation/developer/)
 - API Postman Reference: [https://docs.cloudrf.com/](https://docs.cloudrf.com/)
 - 3D User Interface: [https://cloudrf.com/ui/](https://cloudrf.com/ui/)
 - User Documentation: [https://cloudrf.com/documentation](https://cloudrf.com/documentation)
