@@ -1,0 +1,75 @@
+{
+    "version": "CloudRF-API-v3.27.0",
+    "reference": "https://cloudrf.com/documentation/developer/swagger-ui/",
+    "template": {
+        "name": "template",
+        "service": "CloudRF https://api.cloudrf.com",
+        "created_at": "2025-08-04T14:35:25+00:00",
+        "owner": 0,
+        "bom_value": 0
+    },
+    "site": "Site",
+    "network": "Network",
+    "engine": 2,
+    "coordinates": 1,
+    "transmitter": {
+        "lat": 51.059692,
+        "lon": -2.746155,
+        "alt": 5,
+        "frq": 415,
+        "txw": 3,
+        "bwi": 1.4,
+        "powerUnit": "W"
+    },
+    "receiver": {
+        "lat": 0,
+        "lon": 0,
+        "alt": 1,
+        "rxg": 1,
+        "rxs": -140
+    },
+    "feeder": {
+        "flt": 1,
+        "fll": 0,
+        "fcc": 0
+    },
+    "antenna": {
+        "mode": "template",
+        "txg": 2.15,
+        "txl": 0,
+        "ant": 1,
+        "azi": 285,
+        "tlt": 0,
+        "hbw": 1,
+        "vbw": 1,
+        "fbr": 2.15,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 10,
+        "pe": 3,
+        "ked": 4,
+        "rel": 99,
+        "rcs": 1,
+        "month": 8,
+        "hour": 15,
+        "sunspots_r12": 100
+    },
+    "environment": {
+        "elevation": 2,
+        "landcover": 1,
+        "buildings": 1,
+        "obstacles": 0,
+        "clt": "Minimal.clt"
+    },
+    "output": {
+        "units": "m",
+        "col": "LTE.dBm",
+        "out": 2,
+        "ber": 1,
+        "mod": 7,
+        "nf": -112,
+        "res": 10,
+        "rad": 5
+    }
+}
