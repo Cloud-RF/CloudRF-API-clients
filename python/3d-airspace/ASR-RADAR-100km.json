@@ -1,0 +1,44 @@
+{
+    "site": "CARDIFF",
+    "network": "RADAR",
+    "engine": 1,
+    "transmitter": {
+        "frq": 2700,
+        "lat": 51.3987,
+        "lon": -3.3404,
+        "alt": 210,
+        "txw": 100,
+        "bwi": 0.25
+    },
+    "antenna": {
+        "txg": 27,
+        "ant": 1
+    },
+    "receiver": {
+        "alt": 10000,
+        "rxs": -130,
+        "rxg": 27
+    },
+    "model": {
+        "pm": 8, 
+        "rcs": 100,
+        "pe": 2,
+        "ked": 0,
+        "rel": 50
+    },
+    "environment": {
+        "clt": "Minimal.clt",
+        "elevation": 2,
+        "landcover": 0,
+        "buildings": 0,
+        "obstacles": 0
+    },
+    "output": {
+        "units": "f_amsl",
+        "out": 2,
+        "nf":  -110,
+        "res": 180,
+        "rad": 100,
+        "col": 9
+    }
+}
