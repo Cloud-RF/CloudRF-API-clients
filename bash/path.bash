@@ -22,8 +22,6 @@ template='
         "ant": {{ant}},
         "azi": {{azi}},
         "tlt": {{tlt}},
-        "hbw": {{hbw}},
-        "vbw": {{vbw}},
         "pol": "{{pol}}"
     },
     "receiver": {
@@ -50,8 +48,6 @@ template='
         "units": "{{units}}",
         "col": "{{col}}",
         "out": {{out}},
-        "ber": {{ber}},
-        "mod": {{mod}},
         "nf": {{nf}},
         "res": {{res}},
         "rad": {{rad}}

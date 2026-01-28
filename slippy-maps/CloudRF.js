@@ -103,8 +103,6 @@ var template = {
         "units": "m",
         "col": "RAINBOW.dBm",
         "out": 2,
-        "ber": 0,
-        "mod": 0,
         "nf": -114,
         "res": 16,
         "rad": 3
@@ -138,8 +136,6 @@ var multipointTemplate = {
         "ant": 39,
         "azi": 0,
         "tlt": 0,
-        "hbw": 0,
-        "vbw": 0,
         "pol": "v"
     },
     "model": {
@@ -157,8 +153,6 @@ var multipointTemplate = {
         "units": "metric",
         "col": "RAINBOW.dBm",
         "out": 2,
-        "ber": 0,
-        "mod": 0,
         "nf": -114,
         "res": 10,
         "rad": 2
