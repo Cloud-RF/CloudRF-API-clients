@@ -63,8 +63,6 @@
         "units": "m",
         "col": "SNR1.dB",
         "out": 4,
-        "ber": 1,
-        "mod": 0,
         "nf": -100,
         "res": 4,
         "rad": 4
