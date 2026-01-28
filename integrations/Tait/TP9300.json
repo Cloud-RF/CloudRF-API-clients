@@ -28,8 +28,6 @@
         "ant": 1,
         "azi": 0,
         "tlt": 0,
-        "hbw": 0,
-        "vbw": 0,
         "fbr": 0,
         "pol": "v"
     },
@@ -50,8 +48,6 @@
         "units": "m",
         "col": "LTE.dBm",
         "out": 2,
-        "ber": 1,
-        "mod": 0,
         "nf": -114,
         "res": 2,
         "rad": 1

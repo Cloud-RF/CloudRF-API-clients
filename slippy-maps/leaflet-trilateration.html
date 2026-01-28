@@ -44,17 +44,17 @@
 
     <div>
         <label for="slider-A">Receiver A</label>
-        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-A" oninput="onSliderUpdated('A')" onchange="sendTriReq()"/>
+        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-A" oninput="onSliderUpdated('A1')" onchange="sendTriReq()"/>
         <label for="slider-A" id="slider-A-value">-90</label>
     </div>
     <div>
         <label for="slider-B">Receiver B</label>
-        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-B" oninput="onSliderUpdated('B')" onchange="sendTriReq()"/>
+        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-B" oninput="onSliderUpdated('B1')" onchange="sendTriReq()"/>
         <label for="slider-B" id="slider-B-value">-90</label>
     </div>
     <div>
         <label for="slider-C">Receiver C</label>
-        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-C" oninput="onSliderUpdated('C')" onchange="sendTriReq()"/>
+        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-C" oninput="onSliderUpdated('C1')" onchange="sendTriReq()"/>
         <label for="slider-C" id="slider-C-value">-90</label>
     </div>
     <div>
@@ -100,9 +100,9 @@
 
         const errordB = 10;
        
-        addSite("A", 35.286213,-116.28073); 
-        addSite("B", 35.329895,-116.22496); 
-        addSite("C", 35.348316,-116.25884); 
+        addSite("A1", 35.286213,-116.28073); 
+        addSite("B1", 35.329895,-116.22496); 
+        addSite("C1", 35.348316,-116.25884); 
 
         var site_template = {
             "network": "Trilateration-demo",
@@ -304,9 +304,9 @@
             $("#slider-A").val(RxA);
             $("#slider-B").val(RxB);
             $("#slider-C").val(RxC);
-            onSliderUpdated('A');
-            onSliderUpdated('B');
-            onSliderUpdated('C');
+            onSliderUpdated('A1');
+            onSliderUpdated('B1');
+            onSliderUpdated('C1');
             sendTriReq();
 
         }
