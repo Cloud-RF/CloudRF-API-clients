@@ -25,6 +25,7 @@ var myTemplates = [
             "tlt": 0,
             "hbw": 5,
             "vbw": 5,
+            "fbr": 25,
             "pol": "v"
         },
         "model": {

@@ -42,7 +42,6 @@
         "units": "metric",
         "col": "RAINBOW.dBm",
         "out": 2,
-        "mod": 0,
         "nf": -114,
         "res": 10,
         "rad": 5
