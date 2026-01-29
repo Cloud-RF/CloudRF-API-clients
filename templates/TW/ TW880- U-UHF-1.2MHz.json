@@ -1,0 +1,71 @@
+{
+  "version": "CloudRF-API-v3.31",
+  "reference": "https://cloudrf.com/documentation/developer/",
+  "template": {
+    "name": " TW880- U-UHF-1.2MHz",
+    "service": "https://dev.cloudrf.com",
+    "created_at": "2025-01-28T12:00:00+00:35",
+    "owner": "",
+    "bom_value": ""
+  },
+  "site": "TW U-UHF-1.2MHz",
+  "network": "Motorola",
+  "engine": 2,
+  "coordinates": 1,
+  "transmitter": {
+    "lat": 38.912214,
+    "lon": 1.442478,
+    "alt": 2.0,
+    "frq": 720.0,
+    "txw": 2.0,
+    "bwi": 1.2,
+    "powerUnit": "W"
+  },
+  "receiver": {
+    "lat": 38.922118,
+    "lon": 1.472131,
+    "alt": 1.0,
+    "rxg": 2.15,
+    "rxs": 3.0
+  },
+  "feeder": {
+    "flt": "1",
+    "fll": 0.0,
+    "fcc": 0.0
+  },
+  "antenna": {
+    "mode": "template",
+    "txg": 2.15,
+    "txl": 0.0,
+    "ant": 39.0,
+    "azi": 0.0,
+    "tlt": 0.0,
+    "hbw": 34,
+    "vbw": 35,
+    "fbr": 35,
+    "pol": "v"
+  },
+  "model": {
+    "pm": 4.0,
+    "pe": 2.0,
+    "ked": 2.0,
+    "rel": 90.0
+  },
+  "environment": {
+    "elevation": 2.0,
+    "landcover": 1.0,
+    "buildings": 1.0,
+    "obstacles": 0.0,
+    "clt": "Minimal.clt"
+  },
+  "output": {
+    "units": "m",
+    "col": "LTE.db",
+    "out": 4.0,
+    "ber": 49,
+    "mod": 50,
+    "nf": -113.2081875,
+    "res": 10.0,
+    "rad": 10.0
+  }
+}

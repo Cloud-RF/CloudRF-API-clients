@@ -40,15 +40,12 @@
         "ant": 0,
         "azi": 90,
         "tlt": 0,
-        "hbw": 20,
-        "vbw": 20,
-        "fbr": 19,
         "pol": "v"
     },
     "model": {
-        "pm": 1,
+        "pm": 4,
         "pe": 2,
-        "ked": 1,
+        "ked": 2,
         "rel": 60
     },
     "environment": {
@@ -62,8 +59,6 @@
         "units": "m",
         "col": "RAINBOW.dBm",
         "out": 2,
-        "ber": 1,
-        "mod": 0,
         "nf": -101,
         "res": 20,
         "rad": 8
