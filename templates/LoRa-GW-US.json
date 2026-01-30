@@ -40,15 +40,12 @@
         "ant": 39,
         "azi": 0,
         "tlt": 0,
-        "hbw": 90,
-        "vbw": 90,
-        "fbr": 2,
         "pol": "v"
     },
     "model": {
-        "pm": 1,
+        "pm": 4,
         "pe": 2,
-        "ked": 1,
+        "ked": 2,
         "rel": 90
     },
     "environment": {
@@ -62,8 +59,6 @@
         "units": "m",
         "col": "LORA.dBm",
         "out": 2,
-        "ber": 1,
-        "mod": 0,
         "nf": -124,
         "res": 30,
         "rad": 20
