@@ -43,19 +43,19 @@
     </div>
 
     <div>
-        <label for="slider-A">Receiver A</label>
-        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-A" oninput="onSliderUpdated('A1')" onchange="sendTriReq()"/>
-        <label for="slider-A" id="slider-A-value">-90</label>
+        <label for="slider-A1">Receiver A</label>
+        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-A1" oninput="onSliderUpdated('A1')" onchange="sendTriReq()"/>
+        <label for="slider-A1" id="slider-A1-value">-90</label>
     </div>
     <div>
-        <label for="slider-B">Receiver B</label>
-        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-B" oninput="onSliderUpdated('B1')" onchange="sendTriReq()"/>
-        <label for="slider-B" id="slider-B-value">-90</label>
+        <label for="slider-B1">Receiver B</label>
+        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-B1" oninput="onSliderUpdated('B1')" onchange="sendTriReq()"/>
+        <label for="slider-B1" id="slider-B1-value">-90</label>
     </div>
     <div>
-        <label for="slider-C">Receiver C</label>
-        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-C" oninput="onSliderUpdated('C1')" onchange="sendTriReq()"/>
-        <label for="slider-C" id="slider-C-value">-90</label>
+        <label for="slider-C1">Receiver C</label>
+        <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-C1" oninput="onSliderUpdated('C1')" onchange="sendTriReq()"/>
+        <label for="slider-C1" id="slider-C1-value">-90</label>
     </div>
     <div>
         <a href="#" onclick="demo(-62,-100,-100)">Road near A (~0.1km2 search area)</a><br>
@@ -301,9 +301,9 @@
         }
 
         function demo(RxA,RxB,RxC){
-            $("#slider-A").val(RxA);
-            $("#slider-B").val(RxB);
-            $("#slider-C").val(RxC);
+            $("#slider-A1").val(RxA);
+            $("#slider-B1").val(RxB);
+            $("#slider-C1").val(RxC);
             onSliderUpdated('A1');
             onSliderUpdated('B1');
             onSliderUpdated('C1');
