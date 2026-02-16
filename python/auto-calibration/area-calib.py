@@ -207,8 +207,18 @@ def send_area_request(request):
 
     apiUrl = args.base_url.rstrip('/') + '/area'
 
-    response = requests.post(f"{apiUrl}", json=request, headers=headers, verify=args.strict_ssl)
-    response.raise_for_status()
+    try:
+        response = requests.post(f"{apiUrl}", json=request, headers=headers, verify=args.strict_ssl)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e}")
+
+        if e.response is not None:
+            print(f"Status code: {e.response.status_code}")
+            print(f"Response content: {e.response.text}")
+
+        print(f"Request payload: {json.dumps(request, indent=4)}")
+        exit(1)
 
     return response.json()
 

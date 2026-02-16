@@ -2,6 +2,7 @@
 
 ## Upcoming Changes
 
+- Improve error handling when using the auto-calibration script.
 - Fixed issue with `interference` Slippy Map demo hitting rate limit when working against CloudRF production API.
 
 ## 2025-03-10
