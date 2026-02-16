@@ -15,6 +15,7 @@ import json
 CLUTTER_PROFILE = 'AreaCalibPy'
 
 config_spec = {
+    'site': {'kind': 'fixed', 'value': 'CALIBRATIONSITE'},
     'network': {'kind': 'fixed', 'value': 'CALIBRATION'},
 
     # Transmitter values come from the template file
