@@ -35,15 +35,12 @@
         "ant": 0,
         "azi": 47,
         "tlt": 0,
-        "hbw": 120,
-        "vbw": 90,
-        "fbr": 12,
         "pol": "v"
     },
     "model": {
-        "pm": 10,
+        "pm": 4,
         "pe": 2,
-        "ked": 4,
+        "ked": 2,
         "rel": 50
     },
     "environment": {
@@ -57,8 +54,6 @@
         "units": "m",
         "col": "LTE.dBm",
         "out": 2,
-        "ber": 0,
-        "mod": 0,
         "nf": -104,
         "res": 10,
         "rad": 2
