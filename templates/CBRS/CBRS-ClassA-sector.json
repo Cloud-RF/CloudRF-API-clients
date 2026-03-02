@@ -1,0 +1,71 @@
+{
+  "version": "CloudRF-API-v3.31",
+  "reference": "https://cloudrf.com/documentation/developer/",
+  "template": {
+    "name": "CBRS-ClassA-sector",
+    "service": "https://dev.cloudrf.com",
+    "created_at": "2025-01-28T12:00:00+00:86",
+    "owner": "",
+    "bom_value": ""
+  },
+  "site": "ClassA",
+  "network": "CBRS",
+  "engine": 2,
+  "coordinates": 1,
+  "transmitter": {
+    "lat": 50,
+    "lon": 0,
+    "alt": 5,
+    "frq": 3700,
+    "txw": 0,
+    "bwi": 10,
+    "powerUnit": "W"
+  },
+  "receiver": {
+    "lat": 50,
+    "lon": 0,
+    "alt": 1,
+    "rxg": 1,
+    "rxs": -105
+  },
+  "feeder": {
+    "flt": "1",
+    "fll": 0,
+    "fcc": 0
+  },
+  "antenna": {
+    "mode": "custom",
+    "txg": 6,
+    "txl": 0,
+    "ant": 0,
+    "azi": 0,
+    "tlt": 0,
+    "hbw": 0,
+    "vbw": 0,
+    "fbr": 0,
+    "pol": "v"
+  },
+  "model": {
+    "pm": 4,
+    "pe": 2,
+    "ked": 2,
+    "rel": 50
+  },
+  "environment": {
+    "elevation": 2,
+    "landcover": 1,
+    "buildings": 1,
+    "obstacles": 0,
+    "clt": "Minimal.clt"
+  },
+  "output": {
+    "units": "m",
+    "col": "LTE.dBm",
+    "out": 6,
+    "ber": 1,
+    "mod": 1,
+    "nf": -104,
+    "res": 10,
+    "rad": 10
+  }
+}
