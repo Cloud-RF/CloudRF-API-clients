@@ -8,8 +8,8 @@
     "owner": "",
     "bom_value": ""
   },
-  "site": "Site",
-  "network": "Network",
+  "site": "ProX2",
+  "network": "GoTenna",
   "engine": 2,
   "coordinates": 1,
   "transmitter": {

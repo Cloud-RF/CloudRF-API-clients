@@ -2,31 +2,31 @@
   "version": "CloudRF-API-v3.31",
   "reference": "https://cloudrf.com/documentation/developer/",
   "template": {
-    "name": "UBNT-NBE-5AC",
+    "name": " SC44K0-UHF-1.25MHz",
     "service": "https://dev.cloudrf.com",
-    "created_at": "2025-01-28T12:00:00+00:86",
+    "created_at": "2025-01-28T12:00:00+00:71",
     "owner": "",
     "bom_value": ""
   },
-  "site": "AP",
-  "network": "WIFI",
+  "site": "SVUHF-1.25MHz",
+  "network": "SV",
   "engine": 2,
   "coordinates": 1,
   "transmitter": {
-    "lat": 50,
-    "lon": 0,
-    "alt": 8,
-    "frq": 5850,
-    "txw": 0,
-    "bwi": 20,
+    "lat": 38,
+    "lon": 1,
+    "alt": 2,
+    "frq": 420,
+    "txw": 20,
+    "bwi": 1,
     "powerUnit": "W"
   },
   "receiver": {
-    "lat": 50,
-    "lon": 0,
-    "alt": 2,
+    "lat": 38,
+    "lon": 1,
+    "alt": 1,
     "rxg": 2,
-    "rxs": -90
+    "rxs": 5
   },
   "feeder": {
     "flt": "1",
@@ -34,11 +34,11 @@
     "fcc": 0
   },
   "antenna": {
-    "mode": "custom",
-    "txg": 19,
+    "mode": "template",
+    "txg": 2,
     "txl": 0,
-    "ant": 0,
-    "azi": 90,
+    "ant": 39,
+    "azi": 0,
     "tlt": 0,
     "hbw": 0,
     "vbw": 0,
@@ -49,7 +49,7 @@
     "pm": 4,
     "pe": 2,
     "ked": 2,
-    "rel": 60
+    "rel": 90
   },
   "environment": {
     "elevation": 2,
@@ -60,11 +60,11 @@
   },
   "output": {
     "units": "m",
-    "col": "RAINBOW.dBm",
-    "out": 2,
+    "col": "SNR.dB",
+    "out": 4,
     "ber": 1,
     "mod": 1,
-    "nf": -101,
+    "nf": -113,
     "res": 10,
     "rad": 10
   }
