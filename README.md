@@ -69,4 +69,4 @@ Paste your [API key]((https://cloudrf.com/my-account)) into these demos and clic
 
 [Drone Detection](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-drone-detection.html)
 
-[Radar Interference](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-drone-detection.html)
+[Radar Interference](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/radar_interference_demo.html)
