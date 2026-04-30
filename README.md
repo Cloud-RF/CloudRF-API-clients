@@ -47,26 +47,26 @@ Below are a list of resources which may aid you with writing your own clients to
 
 Paste your [API key]((https://cloudrf.com/my-account)) into these demos and click away.
 
-[Area coverage](slippy-maps/leaflet-area.html)
+[Area coverage](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-area.html)
 
-[Multisite API](slippy-maps/leaflet-multisite.html)
+[Multisite API](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-multisite.html)
 
-[Path / Point-to-Point](slippy-maps/leaflet-path.html)
+[Path / Point-to-Point](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-path.html)
 
-[Many Points to one](slippy-maps/leaflet-points.html)
+[Many Points to one](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-points.html)
 
-[Cell-Tower sectors](slippy-maps/leaflet-celltowers.html)
+[Cell-Tower sectors](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-celltowers.html)
 
-[Trilateration / Geo-location](slippy-maps/leaflet-trilateration.html)
+[Trilateration / Geo-location](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-trilateration.html)
 
-[Interference API](slippy-maps/leaflet-interference.html)
+[Interference API](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-interference.html)
 
-[Spectrum Management](slippy-maps/leaflet-spectrum-management.html)
+[Spectrum Management](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-spectrum-management.html)
 
-[Direction Finding](slippy-maps/leaflet-direction-finding.html)
+[Direction Finding](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-direction-finding.html)
 
-[Multilink API](slippy-maps/leaflet-multilink.html)
+[Multilink API](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-multilink.html)
 
-[Drone Detection](slippy-maps/leaflet-drone-detection.html)
+[Drone Detection](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-drone-detection.html)
 
-[Radar Interference](slippy-maps/leaflet-drone-detection.html)
+[Radar Interference](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-drone-detection.html)
