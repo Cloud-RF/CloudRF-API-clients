@@ -1,12 +1,10 @@
 # Trellisware plugin
 
-A python script was created in June 2022 to interface between the Trellisware API on a TW-950 radio and the CloudRF API to enable real time planning and situational awareness. It displays radios and links, and uses the data from the radio to enable quicker, more accurate, planning.
+A python script exists to integrate live coverage mapping onto TAK and other KML viewers but can only be shared with Trellisware authorisation unfortunately. 
 
-![Dynamic network planning](dynamic_planning.jpg)
+You can watch a demo of it working with the TW-750 on youtube: 
+https://www.youtube.com/watch?v=PoSxL2CsH0U
 
-This script has not been published as it exposes details about a private API but a demonstration of this powerful capability is available at CloudRF: 
+If you would like a copy, please contact Marcus Urie at Trellisware.
 
-[Dynamic network planning with hardware APIs](https://cloudrf.com/dynamic-network-planning-with-hardware-apis/)
-
-For more information on radio integrations get in touch via cloudrf.com
-
+![DEMO](tw-api-demo.jpg)

@@ -23,8 +23,6 @@
         "ant": 1,
         "azi": 0,
         "tlt": 0,
-        "hbw": 0,
-        "vbw": 0,
         "pol": "v"
     },
     "model": {
@@ -44,8 +42,6 @@
         "units": "metric",
         "col": "RAINBOW.dBm",
         "out": 2,
-        "ber": 0,
-        "mod": 0,
         "nf": -114,
         "res": 30,
         "rad": 5
