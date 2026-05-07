@@ -6,6 +6,14 @@ A script needs a template (`-t`) and a CSV list of sites/variables (`-i`).
 * Use `-r` to save the JSON output.
 * Use `-v` for more information.
 
+# Authentication
+
+Enter your API key into the cloudrf.ini file.
+
+
+    [user]
+    key = 12345-9d1ce4802d415ee94c46e7c8796b2b7b6e0ddead
+
 # Area API Example
 
 ```

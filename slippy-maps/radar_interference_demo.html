@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<!--
+════════════════════════════════════════════════════════════════════════════════
+  HMAS Canberra – Radar / WISP DFS Interference Demo
+  ─────────────────────────────────────────────────────────────────────────────
+  Built on the CloudRF UI Template.
+
+  SCENARIO
+    HMAS Canberra (Sea Giraffe AMB, 5550 MHz) transits the NZ west coast.
+    Three WISP FWA towers on the Taranaki coast operate in the 5 GHz band.
+    When the ship's radar signal reaches −64 dBm at a WISP site, ITU-R rules
+    require the WISP to perform Dynamic Frequency Selection (DFS) and vacate
+    the channel.
+
+  DEPENDENCIES (CDN)
+    • Leaflet 1.9.4   — interactive map
+    • Bootstrap 5.3.2 — layout, buttons, tabs
+
+  LAYOUT
+    ┌─ .app-header   ─ Title + logo
+    ├─ .config-strip ─ API key · Coverage mode · Track controls · Action buttons
+    ├─ #mapArea      ─ Leaflet map (flex:1)
+    ├─ .status-bar   ─ Status text + timing badge
+    └─ .log-wrap     ─ Tabs: Activity Log | Request JSON | Response JSON
+
+  FLOATING MAP CONTROLS
+    • topright    — ship info badge (position, radar spec, distances)
+    • bottomleft  — DFS status panel (per-WISP received power + badge)
+    • bottomright — legend
+════════════════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Radar Interference Demo</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+<style>
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  CSS CUSTOM PROPERTIES
+  Change these three values to re-theme the entire tool at once.
+ ════════════════════════════════════════════════════════════════════════════
+*/
+:root {
+    --navy:      #0a1628;   /* dark background — header + floating panels   */
+    --navy2:     #112240;   /* header gradient end                          */
+    --accent:    #1a8cff;   /* highlight: borders, spinner, active states   */
+    --dfs-green: #00e676;   /* DFS threshold colour used in radar overlay   */
+    --warn:      #ffb300;   /* warning amber                                */
+}
+
+/*
+ ── Page layout ──────────────────────────────────────────────────────────────
+*/
+html, body { height: 100%; margin: 0; padding: 0; }
+body {
+    display: flex;
+    flex-direction: column;
+    background: #eef1f5;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+}
+
+/*
+ ── Header bar ───────────────────────────────────────────────────────────────
+  flex space-between keeps the title left and logo right.
+  To update: edit the <h5> and .sub text in the HTML; swap logo src.
+*/
+.app-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    color: #fff;
+    padding: 10px 16px 8px;
+    border-bottom: 3px solid var(--accent);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.app-header .header-text h5   { margin: 0; font-weight: 700; letter-spacing: .4px; font-size: 15px; }
+.app-header .header-text .sub { font-size: 11px; color: #8bacc8; margin-top: 2px; }
+.app-header .header-logo img  {
+    height: 36px; width: auto; opacity: .9;
+    filter: drop-shadow(0 0 4px rgba(26,140,255,.4));
+}
+
+/*
+ ── Config strip ─────────────────────────────────────────────────────────────
+*/
+.config-strip {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 7px 14px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.config-strip label                         { font-size: 11px; font-weight: 600; color: #495057; white-space: nowrap; }
+.config-strip .input-group-sm .form-control { font-size: 12px; }
+
+/*
+ ── Map area ─────────────────────────────────────────────────────────────────
+*/
+#mapArea { flex: 1; min-height: 480px; }
+
+/*
+ ── Status bar ───────────────────────────────────────────────────────────────
+*/
+.status-bar {
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+    padding: 5px 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.status-bar #statusText { font-weight: 600; flex: 1; }
+.status-idle    { color: #6c757d; }
+.status-running { color: var(--accent); }
+.status-done    { color: #198754; }
+.status-error   { color: #dc3545; }
+
+/*
+ ── Floating map panels ───────────────────────────────────────────────────────
+  .map-badge  — info card (top-right)
+  .map-panel  — results panel (bottom-left); .dfs-* classes add DFS rows
+  .legend-box — colour key (bottom-right)
+*/
+
+/* Generic info badge */
+.map-badge {
+    background: rgba(10,22,40,.92);
+    color: #e0eaf8;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 9px 13px;
+    font-size: 12px;
+    min-width: 180px;
+    line-height: 1.75;
+    box-shadow: 0 2px 10px rgba(0,0,0,.35);
+}
+.map-badge strong { color: #fff; font-size: 13px; }
+.map-badge .lbl   { color: #8bacc8; font-size: 11px; }
+
+/* Override width for the ship badge (wider to fit distances) */
+#shipBadge { min-width: 195px; }
+
+/* Generic results panel */
+.map-panel {
+    background: rgba(10,22,40,.95);
+    color: #e0eaf8;
+    border: 1px solid #2a4a70;
+    border-radius: 8px;
+    padding: 10px 13px;
+    font-size: 12px;
+    min-width: 220px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.4);
+}
+
+/* DFS panel child elements */
+.dfs-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8bacc8;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+    border-bottom: 1px solid #1e3a5f;
+    padding-bottom: 4px;
+}
+.dfs-row  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 6px; }
+.dfs-site { flex: 1; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dfs-dbm  { font-size: 12px; font-weight: 700; min-width: 62px; text-align: right; }
+.dfs-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 68px;
+    text-align: center;
+    white-space: nowrap;
+}
+.dfs-badge.triggered { background: #dc2626; color: #fff; }
+.dfs-badge.warning   { background: #d97706; color: #fff; }
+.dfs-badge.clear     { background: #16a34a; color: #fff; }
+.dfs-badge.loading   { background: #374151; color: #9ca3af; }
+.dfs-threshold {
+    margin-top: 6px;
+    padding-top: 5px;
+    border-top: 1px solid #1e3a5f;
+    font-size: 10px;
+    color: #6b8caa;
+}
+
+/* Legend */
+.legend-box {
+    background: rgba(255,255,255,.95);
+    padding: 9px 11px;
+    border-radius: 7px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.3);
+    font-size: 11px;
+    line-height: 1.7;
+}
+.legend-box .ltitle { font-weight: 700; font-size: 12px; margin-bottom: 3px; }
+.leg-sw {
+    display: inline-block;
+    width: 13px; height: 13px;
+    border-radius: 3px; border: 1px solid #aaa;
+    vertical-align: middle; margin-right: 5px;
+    flex-shrink: 0;
+}
+
+/*
+ ── Marker pulse animations ────────────────────────────────────────────────────
+  .marker-alert / .wisp-triggered — red pulse for DFS-triggered WISP sites
+  .marker-warning / .wisp-warning — amber pulse for sites close to threshold
+*/
+@keyframes pulse-red {
+    0%   { box-shadow: 0 0 0 0    rgba(220,38,38,.8); }
+    70%  { box-shadow: 0 0 0 10px rgba(220,38,38,0);  }
+    100% { box-shadow: 0 0 0 0    rgba(220,38,38,0);  }
+}
+@keyframes pulse-yellow {
+    0%   { box-shadow: 0 0 0 0   rgba(217,119,6,.8); }
+    70%  { box-shadow: 0 0 0 8px rgba(217,119,6,0);  }
+    100% { box-shadow: 0 0 0 0   rgba(217,119,6,0);  }
+}
+.marker-alert,   .wisp-triggered { animation: pulse-red    1s   infinite; }
+.marker-warning, .wisp-warning   { animation: pulse-yellow 1.5s infinite; }
+
+/*
+ ── Inline spinner ─────────────────────────────────────────────────────────────
+*/
+.spin {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid #4b6a8a; border-top-color: var(--accent);
+    border-radius: 50%; animation: rotate .7s linear infinite;
+    vertical-align: middle; margin-right: 4px;
+}
+@keyframes rotate { to { transform: rotate(360deg); } }
+
+/*
+ ── Log / JSON tab panel ──────────────────────────────────────────────────────
+*/
+.log-wrap {
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+    flex-shrink: 0;
+}
+.log-wrap .nav-tabs              { padding: 4px 14px 0; border-bottom: 1px solid #dee2e6; }
+.log-wrap .nav-tabs .nav-link    { font-size: 11px; font-weight: 600; color: #6c757d; padding: 3px 10px; border-radius: 4px 4px 0 0; }
+.log-wrap .nav-tabs .nav-link.active { color: #0d6efd; background: #fff; }
+
+.log-pane {
+    height: 25vh;
+    max-height: 25vh;
+    overflow-y: auto;
+    font-size: 11px;
+    font-family: Consolas, monospace;
+    background: #111827;
+    color: #6ee7b7;
+    padding: 7px 10px;
+    margin: 0 14px 8px;
+    border-radius: 0 4px 4px 4px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+#paneRequest  { color: #93c5fd; }
+#paneResponse { color: #fde68a; }
+</style>
+<script id="scripts" type="text/javascript" src="/scripts_5b78a9a0ebbbbb75eda23b4e12a60813ca1e257a.js"></script>
+<meta name="referrer" content="same-origin" />
+
+			<link rel="icon" sizes="16x16" type="image/png" href=/assets/favicon_16.png />
+			<link rel="icon" sizes="32x32" type="image/png" href=/assets/favicon_32.png />
+				<link rel="icon" sizes="any" type="image/svg+xml" href=/assets/favicon.svg />
+<title>CloudRF</title><meta name="application-name" content="CloudRF"><meta name="apple-mobile-web-app-title" content="CloudRF">
+<meta http-equiv="content-language" content=""><meta name="language" content="">
+<meta name="robots" content="INDEX,FOLLOW">
+<meta name="msvalidate.01" content="">
+<meta name="google-site-verification" content="">
+<meta property="fb:app_id" content="">
+<base href="/">
+</head>
+
+<body>
+
+<noscript style="color: white; text-align:center">
+	You need to enable JavaScript to run this app.
+</noscript>
+<div id="react-root">
+	<div class="page-loading" role="alert" aria-busy="true" aria-live="polite" aria-label="loading">
+		<div class="loading__animation">
+			<div class="loading__animation__bounce"></div>
+			<div class="loading__animation__bounce"></div>
+			<div class="loading__animation__bounce"></div>
+		</div>
+	</div>
+</div>
+
+<style id='css-variables'> :root {}</style>
+
+
+<!--
+ ════════════════════════════════════════════════════════════════════════════
+  HEADER
+ ════════════════════════════════════════════════════════════════════════════
+-->
+<div class="app-header">
+    <div class="header-text">
+        <h5>Radar interference demo</h5>
+        <div class="sub">Drag the ship | click the map | run the animated track</div>
+    </div>
+    <div class="header-logo">
+        <!--
+          LOGO — replace src with your logo file path or a Base64 data URI.
+          To embed as Base64 for single-file sharing: base64 -w 0 logo.png
+        -->
+        <img src="logo.png" alt="Logo" title="Powered by CloudRF"
+             onerror="this.style.display='none'">
+    </div>
+</div>
+
+<!--
+ ════════════════════════════════════════════════════════════════════════════
+  CONFIG STRIP
+ ════════════════════════════════════════════════════════════════════════════
+-->
+<div class="config-strip">
+
+    <!-- API key -->
+    <div>
+        <label>CloudRF API Key</label>
+        <div class="input-group input-group-sm mt-1">
+            <span class="input-group-text">🔑</span>
+            <input id="apiKey" type="password" class="form-control" placeholder="Enter API key" style="min-width:155px">
+            <button class="btn btn-outline-secondary" onclick="toggleKey()" title="Show/hide">👁</button>
+        </div>
+    </div>
+
+    <!-- API base URL -->
+    <div>
+        <label>API URL</label>
+        <div class="input-group input-group-sm mt-1">
+            <input id="apiUrl" type="text" class="form-control" value="https://api.cloudrf.com" style="min-width:200px">
+        </div>
+    </div>
+
+    <div class="vr mx-1"></div>
+
+    <!-- Coverage mode — DFS threshold overlay or full rainbow -->
+    <div>
+        <label class="d-block mb-1">Coverage Mode</label>
+        <div class="btn-group btn-group-sm">
+            <input type="radio" class="btn-check" name="coverageMode" id="modeDFS" value="dfs" checked>
+            <label class="btn btn-outline-success" for="modeDFS">DFS −64 dBm</label>
+            <input type="radio" class="btn-check" name="coverageMode" id="modeRainbow" value="rainbow">
+            <label class="btn btn-outline-warning" for="modeRainbow">Rainbow</label>
+        </div>
+    </div>
+
+    <div class="vr mx-1"></div>
+
+    <!-- Track animation controls -->
+    <div>
+        <label class="d-block mb-1">Animated Track</label>
+        <div class="d-flex align-items-center gap-1">
+            <select id="trackSpeed" class="form-select form-select-sm" style="width:80px"
+                    title="Dwell time at each waypoint after multilink result">
+                <option value="1000" selected>1 s</option>
+                <option value="3000" >3 s</option>
+                <option value="50000">5 s</option>
+            </select>
+            <button id="btnTrackStart" class="btn btn-sm btn-success">▶ Track</button>
+            <button id="btnTrackStop"  class="btn btn-sm btn-danger" disabled>■ Stop</button>
+        </div>
+    </div>
+
+    <!-- Action buttons pushed to right edge -->
+    <div class="ms-auto d-flex gap-2 align-items-center flex-wrap">
+        <button id="btnCoverage" class="btn btn-sm btn-primary">📊 Show Radar Coverage</button>
+        <button id="btnWisp"     class="btn btn-sm btn-outline-info">📡 Load WISP Coverage</button>
+        <button id="btnClear"    class="btn btn-sm btn-outline-secondary">🗑 Clear All</button>
+    </div>
+
+</div>
+
+<!--
+ ════════════════════════════════════════════════════════════════════════════
+  MAP
+ ════════════════════════════════════════════════════════════════════════════
+-->
+<div id="mapArea"></div>
+
+<!--
+ ════════════════════════════════════════════════════════════════════════════
+  STATUS BAR
+ ════════════════════════════════════════════════════════════════════════════
+-->
+<div class="status-bar">
+    <span id="statusText" class="status-idle">Drag the ship or click the map to position the radar. Press Show Radar Coverage to compute area.</span>
+    <span id="calcBadge" class="text-muted" style="font-size:11px;white-space:nowrap"></span>
+</div>
+
+<!--
+ ════════════════════════════════════════════════════════════════════════════
+  LOG / JSON TAB PANEL
+  Three tabs auto-populated:
+    Activity Log — timestamped messages via log()
+    Request      — last JSON body sent, written by apiPost()
+    Response     — last JSON body received, written by apiPost()
+ ════════════════════════════════════════════════════════════════════════════
+-->
+<div class="log-wrap">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabLog"      type="button">📋 Activity Log</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabRequest"  type="button">📤 Request</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabResponse" type="button">📥 Response</button>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabLog">
+            <div id="activityLog" class="log-pane"></div>
+        </div>
+        <div class="tab-pane fade" id="tabRequest">
+            <div id="paneRequest" class="log-pane">No request yet.</div>
+        </div>
+        <div class="tab-pane fade" id="tabResponse">
+            <div id="paneResponse" class="log-pane">No response yet.</div>
+        </div>
+    </div>
+</div>
+
+<!--
+ ════════════════════════════════════════════════════════════════════════════
+  SCRIPTS — load order: Leaflet → Bootstrap → app code
+ ════════════════════════════════════════════════════════════════════════════
+-->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+<script>
+'use strict';
+
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  SCENARIO DATA
+ ════════════════════════════════════════════════════════════════════════════
+*/
+
+// Three WISP FWA towers on the Taranaki coast, NZ
+const WISP_SITES = [
+    { id: 0, name: 'Site A – Inglewood',  lat: -39.126379, lon: 173.959423, alt: 22, azi: 340, rad: 30 },
+    { id: 1, name: 'Site B – Pungarehu',  lat: -39.283647, lon: 173.810227, alt: 22, azi: 310, rad: 30 },
+    { id: 2, name: 'Site C – Opunake',    lat: -39.449001, lon: 173.876152, alt: 22, azi: 255, rad: 30 },
+];
+
+
+// DFS trigger threshold: −64 dBm (ITU-R reference dipole, 0 dBi @ 8 m)
+const DFS_THRESHOLD = -64;
+
+// 9 offshore waypoints — Off Mokau → Wellington Cook Strait
+const SHIP_COURSE = [
+    { lat: -38.30, lon: 173.58, label: 'Off Mokau' },
+    { lat: -38.65, lon: 173.58, label: 'North Taranaki Bight' },
+    { lat: -39.00, lon: 173.62, label: 'Approaching New Plymouth' },
+    { lat: -39.48, lon: 173.69, label: 'Abeam New Plymouth' },
+    { lat: -39.82, lon: 173.95, label: 'South Taranaki Bight' },
+    { lat: -40.15, lon: 174.55, label: 'Abeam Whanganui' },
+    { lat: -40.52, lon: 174.80, label: 'Kapiti Coast' },
+    { lat: -40.88, lon: 174.84, label: 'Porirua' },
+    { lat: -41.28, lon: 174.80, label: 'Wellington – Cook Strait' },
+];
+
+// Ship default position (abeam Taranaki, off New Plymouth)
+let shipPos = { lat: -39.30, lon: 173.50 };
+
+// Track animation state
+let trackRunning    = false;
+let trackStep       = 0;
+let trackTimer      = null;
+let trackInfo       = null;        // { step, total, label } — shown in DFS panel
+let trackBreadcrumb = null;        // orange visited-path polyline
+let trackPath       = [];          // [[lat,lon], …]
+let trackWpMarkers  = [];          // coloured result dots per waypoint
+
+
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  MAP SETUP
+ ════════════════════════════════════════════════════════════════════════════
+*/
+
+const map = L.map('mapArea', { zoomControl: true });
+map.fitBounds([[-41.5, 172.5], [-37.5, 175.8]]);  // NZ west coast overview
+
+/*
+ ── Base tile layers ──────────────────────────────────────────────────────────
+*/
+const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+});
+
+const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © Esri — Source: Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN and the GIS User Community',
+    maxZoom: 19
+});
+
+osmLayer.addTo(map);
+
+L.control.layers(
+    { 'OSM': osmLayer, 'Satellite': satLayer },
+    {},
+    { position: 'topleft', collapsed: false }
+).addTo(map);
+
+/*
+ ── Planned course line ────────────────────────────────────────────────────────
+*/
+L.polyline(SHIP_COURSE.map(p => [p.lat, p.lon]), {
+    color: '#4b6a8a', weight: 1.5, dashArray: '8,6', opacity: 0.5
+}).addTo(map).bindTooltip('HMAS Canberra planned course – New Plymouth → Wellington');
+
+// Numbered waypoint markers
+SHIP_COURSE.forEach((wp, i) => {
+    L.marker([wp.lat, wp.lon], {
+        icon: L.divIcon({
+            className: '',
+            html: `<div style="
+                width:18px;height:18px;border-radius:50%;
+                background:#0a1628;border:1.5px solid #4b6a8a;
+                color:#8bacc8;font-size:9px;font-weight:700;
+                display:flex;align-items:center;justify-content:center;
+                opacity:.8;">${i + 1}</div>`,
+            iconAnchor: [9, 9]
+        }),
+        interactive: false
+    }).bindTooltip(`${i + 1}. ${wp.label}`).addTo(map);
+});
+
+/*
+ ── Ship marker ────────────────────────────────────────────────────────────────
+*/
+function makeShipIcon(rotating) {
+    return L.divIcon({
+        className: '',
+        html: `<div style="
+            font-size:30px;line-height:1;
+            filter:drop-shadow(0 0 5px rgba(26,140,255,.9));
+            cursor:grab;
+            ${rotating ? 'animation:rotate .7s linear infinite;' : ''}
+        ">🚢</div>`,
+        iconAnchor: [15, 15]
+    });
+}
+
+const shipMarker = L.marker([shipPos.lat, shipPos.lon], {
+    icon: makeShipIcon(false),
+    draggable: true,
+    zIndexOffset: 1000
+}).addTo(map);
+shipMarker.bindTooltip('⚓ HMAS Canberra – drag to reposition', { permanent: false });
+
+/*
+ ── WISP markers ───────────────────────────────────────────────────────────────
+*/
+const wispMarkers = {};
+
+function makeWispIcon(status) {
+    const cfg = {
+        unknown:   { bg: '#374151', border: '#6b7280', emoji: '📡', cls: '' },
+        loading:   { bg: '#1e3a5f', border: '#1a8cff', emoji: '⏳', cls: '' },
+        triggered: { bg: '#dc2626', border: '#ef4444', emoji: '🚨', cls: 'wisp-triggered' },
+        warning:   { bg: '#d97706', border: '#fbbf24', emoji: '⚠️', cls: 'wisp-warning' },
+        clear:     { bg: '#16a34a', border: '#4ade80', emoji: '✅', cls: '' },
+    }[status] || { bg: '#374151', border: '#6b7280', emoji: '📡', cls: '' };
+
+    return L.divIcon({
+        className: '',
+        html: `<div class="${cfg.cls}" style="
+            width:34px;height:34px;border-radius:50%;
+            background:${cfg.bg};border:3px solid ${cfg.border};
+            display:flex;align-items:center;justify-content:center;
+            font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.5);cursor:default;
+        ">${cfg.emoji}</div>`,
+        iconAnchor: [17, 17]
+    });
+}
+
+WISP_SITES.forEach(site => {
+    const m = L.marker([site.lat, site.lon], { icon: makeWispIcon('unknown'), zIndexOffset: 500 })
+        .bindTooltip(`📡 ${site.name}<br><small>5250 MHz · 30 mW · ${site.alt}m · Az ${site.azi}°</small>`, { direction: 'right', offset: [16, 0] })
+        .addTo(map);
+    wispMarkers[site.id] = m;
+});
+
+/*
+ ── DFS link lines (ship → each WISP) ─────────────────────────────────────────
+*/
+const linkLines = {};
+WISP_SITES.forEach(site => {
+    linkLines[site.id] = L.polyline([], { color: '#6b7280', weight: 1.5, dashArray: '5,5', opacity: 0 }).addTo(map);
+});
+
+function updateLinkLine(siteId, status, rxDbm) {
+    const line = linkLines[siteId];
+    const site = WISP_SITES.find(s => s.id === siteId);
+    if (!line || !site) return;
+
+    const color   = { triggered: '#ef4444', warning: '#fbbf24', clear: '#4ade80', loading: '#6b7280' }[status] || '#6b7280';
+    const opacity = status === 'loading' ? 0 : 0.65;
+
+    line.setLatLngs([[shipPos.lat, shipPos.lon], [site.lat, site.lon]]);
+    line.setStyle({ color, opacity, dashArray: status === 'clear' ? '6,4' : '4,3', weight: status === 'triggered' ? 2.5 : 1.5 });
+    if (rxDbm !== null) {
+        line.bindTooltip(`${site.name}<br>${rxDbm.toFixed(1)} dBm (${status.toUpperCase()})`, { sticky: true });
+    }
+}
+
+/*
+ ── Ship info badge (top-right) ────────────────────────────────────────────────
+*/
+const shipInfoCtrl = L.control({ position: 'topright' });
+shipInfoCtrl.onAdd = () => {
+    const d = L.DomUtil.create('div', 'map-badge');
+    d.id = 'shipBadge';
+    d.innerHTML = renderShipBadge();
+    return d;
+};
+shipInfoCtrl.addTo(map);
+
+function renderShipBadge(waypointLabel) {
+    // Haversine distance from ship to each WISP site
+    const dist = (site) => {
+        const R    = 6371;
+        const dLat = (site.lat - shipPos.lat) * Math.PI / 180;
+        const dLon = (site.lon - shipPos.lon) * Math.PI / 180;
+        const a    = Math.sin(dLat/2)**2 + Math.cos(shipPos.lat*Math.PI/180) * Math.cos(site.lat*Math.PI/180) * Math.sin(dLon/2)**2;
+        return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1);
+    };
+    const posLine = waypointLabel
+        ? `<span class="lbl">Position:</span> ${waypointLabel}<br>`
+        : `<span class="lbl">Lat:</span> ${shipPos.lat.toFixed(4)}°&nbsp; <span class="lbl">Lon:</span> ${shipPos.lon.toFixed(4)}°<br>`;
+    return `
+        <strong>⚓ HMAS Canberra</strong><br>
+        ${posLine}
+        <span class="lbl">Radar:</span> Sea Giraffe AMB<br>
+        <span class="lbl">5550 MHz · 25 kW · 43 m</span><br>
+        <hr style="border-color:#1e3a5f;margin:5px 0">
+        ${WISP_SITES.map(s => `<span class="lbl">${s.name.split('–')[1].trim()}:</span> ${dist(s)} km`).join('<br>')}
+    `;
+}
+
+/*
+ ── DFS status panel (bottom-left) ────────────────────────────────────────────
+*/
+const dfsCtrl = L.control({ position: 'bottomleft' });
+dfsCtrl.onAdd = () => {
+    const d = L.DomUtil.create('div', 'map-panel');
+    d.id = 'dfsPanel';
+    renderDFSPanel(null);
+    return d;
+};
+dfsCtrl.addTo(map);
+
+/**
+ * Renders the DFS status panel.
+ * @param {null|'loading'|Array} results
+ *   null     → idle state (dashes)
+ *   'loading' → spinner / calculating
+ *   Array    → [{ site, rxDbm, status }, …] — one entry per WISP site
+ */
+function renderDFSPanel(results) {
+    const panel = document.getElementById('dfsPanel');
+    if (!panel) return;
+
+    let rows = '';
+    WISP_SITES.forEach((site, i) => {
+        let dbmHtml = '—', badgeHtml = '';
+
+        if (results === null) {
+            dbmHtml   = '<span style="color:#4b6a8a">—</span>';
+            badgeHtml = `<span class="dfs-badge loading">IDLE</span>`;
+        } else if (results === 'loading') {
+            dbmHtml   = `<span class="spin"></span>`;
+            badgeHtml = `<span class="dfs-badge loading">CALC…</span>`;
+        } else {
+            const r = results[i];
+            if (r && r.rxDbm !== null) {
+                const dbm   = r.rxDbm;
+                const color = dbm >= DFS_THRESHOLD ? '#ef4444' : dbm >= DFS_THRESHOLD - 6 ? '#fbbf24' : '#4ade80';
+                dbmHtml = `<span style="color:${color}">${dbm.toFixed(1)} dBm</span>`;
+                if      (dbm >= DFS_THRESHOLD)     badgeHtml = `<span class="dfs-badge triggered">🚨 DFS!</span>`;
+                else if (dbm >= DFS_THRESHOLD - 6) badgeHtml = `<span class="dfs-badge warning">⚠ CLOSE</span>`;
+                else                               badgeHtml = `<span class="dfs-badge clear">✅ CLEAR</span>`;
+            } else {
+                dbmHtml   = '<span style="color:#ef4444">ERR</span>';
+                badgeHtml = `<span class="dfs-badge loading">—</span>`;
+            }
+        }
+
+        const shortName = site.name.replace('Site ', '');
+        rows += `
+        <div class="dfs-row">
+            <span class="dfs-site" title="${site.name}">📡 ${shortName}</span>
+            <span class="dfs-dbm">${dbmHtml}</span>
+            ${badgeHtml}
+        </div>`;
+    });
+
+    const trackLine = trackInfo
+        ? `<div style="color:#4ade80;font-size:10px;margin-top:2px">▶ STEP ${trackInfo.step}/${trackInfo.total} · ${trackInfo.label}</div>`
+        : '';
+    panel.innerHTML = `
+        <div class="dfs-title">DFS Status (radar → WISP)${trackLine}</div>
+        ${rows}
+        <div class="dfs-threshold">
+            Threshold: ${DFS_THRESHOLD} dBm · ITU-R 0 dBi ref antenna @ 8 m
+        </div>`;
+}
+
+/*
+ ── Legend (bottom-right) ──────────────────────────────────────────────────────
+*/
+const legendCtrl = L.control({ position: 'bottomright' });
+legendCtrl.onAdd = () => {
+    const d = L.DomUtil.create('div', 'legend-box');
+    d.id = 'legendBox';
+    updateLegend('dfs');
+    return d;
+};
+legendCtrl.addTo(map);
+
+/** Switches legend content between DFS threshold mode and rainbow mode. */
+function updateLegend(mode) {
+    const d = document.getElementById('legendBox');
+    if (!d) return;
+    if (mode === 'dfs') {
+        d.innerHTML = `
+            <div class="ltitle">Coverage & DFS</div>
+            <div><span class="leg-sw" style="background:#00e676"></span> Radar ≥ −64 dBm (DFS zone)</div>
+            <hr style="margin:3px 0">
+            <div><span class="leg-sw" style="background:#dc2626;border-radius:50%"></span> DFS triggered</div>
+            <div><span class="leg-sw" style="background:#d97706;border-radius:50%"></span> Close to threshold</div>
+            <div><span class="leg-sw" style="background:#16a34a;border-radius:50%"></span> WISP clear</div>
+            <hr style="margin:3px 0">
+            <div><span class="leg-sw" style="background:#3b82f6"></span> WISP FWA coverage</div>
+            <div style="font-size:10px;color:#666;margin-top:3px">Drag ship to update DFS status</div>`;
+    } else {
+        d.innerHTML = `
+            <div class="ltitle">Signal Strength</div>
+            <div><span class="leg-sw" style="background:#ff1744"></span> −60 to −70 dBm (strong)</div>
+            <div><span class="leg-sw" style="background:#ff9100"></span> −70 to −85 dBm</div>
+            <div><span class="leg-sw" style="background:#ffea00"></span> −85 to −100 dBm</div>
+            <div><span class="leg-sw" style="background:#00e676"></span> −100 to −112 dBm (weak)</div>
+            <div style="font-size:10px;color:#666;margin-top:3px">Drag ship to update DFS status</div>`;
+    }
+}
+
+
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  UTILITY FUNCTIONS
+ ════════════════════════════════════════════════════════════════════════════
+*/
+
+/** Returns the trimmed API key. */
+function getKey()  { return document.getElementById('apiKey').value.trim(); }
+
+/** Returns the trimmed API base URL with any trailing slash removed. */
+function getUrl()  { return document.getElementById('apiUrl').value.trim().replace(/\/$/, ''); }
+
+/** Returns the selected coverage mode radio value ('dfs' or 'rainbow'). */
+function getMode() { return document.querySelector('input[name="coverageMode"]:checked').value; }
+
+/**
+ * Updates the status bar text and colour.
+ * @param {string} msg
+ * @param {'idle'|'running'|'done'|'error'} state
+ */
+function setStatus(msg, state) {
+    const el = document.getElementById('statusText');
+    el.textContent = msg;
+    el.className   = 'status-' + state;
+}
+
+/**
+ * Updates the right-hand timing badge in the status bar.
+ * @param {string} txt
+ */
+function setBadge(txt) {
+    document.getElementById('calcBadge').textContent = txt;
+}
+
+/**
+ * Appends a timestamped line to the Activity Log tab.
+ * @param {string} msg
+ */
+function log(msg) {
+    const el = document.getElementById('activityLog');
+    el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+    el.scrollTop    = el.scrollHeight;
+}
+
+/** Toggles the API key field between hidden and visible. */
+function toggleKey() {
+    const f = document.getElementById('apiKey');
+    f.type  = f.type === 'password' ? 'text' : 'password';
+}
+
+
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  API HELPER — apiPost(endpoint, body)
+  Wraps every CloudRF call with key validation, request/response tab
+  population and error handling. Returns parsed JSON or null on failure.
+ ════════════════════════════════════════════════════════════════════════════
+*/
+async function apiPost(endpoint, body) {
+    const key = getKey();
+    if (!key) {
+        setStatus('Enter your CloudRF API key above.', 'error');
+        return null;
+    }
+
+    // Pretty-print the outgoing request into the Request tab before firing
+    const reqJson = JSON.stringify(body, null, 2);
+    document.getElementById('paneRequest').textContent  = `POST /${endpoint}\n\n${reqJson}`;
+    document.getElementById('paneResponse').textContent = 'Awaiting response…';
+
+    try {
+        const r  = await fetch(`${getUrl()}/${endpoint}`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'key': key },
+            body:    reqJson
+        });
+        const rj = await r.json();
+
+        // Write the full response into the Response tab
+        document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 2);
+        return rj;
+
+    } catch (e) {
+        document.getElementById('paneResponse').textContent = `Network error: ${e.message}`;
+        setStatus(`Network error: ${e.message}`, 'error');
+        log(`${endpoint}: ${e.message}`);
+        return null;
+    }
+}
+
+
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  MULTILINK — ship → all WISP sites in one API call
+  Radio 0 = HMAS Canberra radar (transmitter)
+  Radios 1-3 = WISP DFS reference antennas (receivers)
+  Response keys: "0->1", "0->2", "0->3"
+ ════════════════════════════════════════════════════════════════════════════
+*/
+let multilinkDebounce = null;
+let multilinkRunning  = false;
+
+/** Debounces multilink calls during rapid drag events (500 ms). */
+function scheduleMultilink() {
+    clearTimeout(multilinkDebounce);
+    multilinkDebounce = setTimeout(runMultilink, 500);
+}
+
+/**
+ * Fires a single /multilink call with all WISP sites as receivers.
+ * Updates the DFS panel, WISP marker icons and link lines.
+ * @returns {Array|null} results array or null on failure
+ */
+async function runMultilink() {
+    if (multilinkRunning) return;
+    if (!getKey()) { renderDFSPanel(null); return; }
+
+    multilinkRunning = true;
+    renderDFSPanel('loading');
+    WISP_SITES.forEach(s => wispMarkers[s.id].setIcon(makeWispIcon('loading')));
+
+    const body = {
+        "site": "DFS-Check",
+        "network": "MaritimeInterference",
+        "radios": [
+            // Radio 0: HMAS Canberra — Sea Giraffe AMB radar
+            {
+                "lat": shipPos.lat, "lon": shipPos.lon,
+                "alt": 43, "frq": 5550, "txw": 25000, "bwi": 100, "powerUnit": "W",
+                "antenna": { "txg": 30, "txl": 0, "ant": 1, "azi": 0, "tlt": 0, "hbw": 360, "vbw": 10, "fbr": 0, "pol": "v" }
+            },
+            // Radios 1-3: WISP DFS reference antennas (ITU-R spec: 0 dBi @ 8 m)
+            ...WISP_SITES.map(s => ({
+                "lat": s.lat, "lon": s.lon,
+                "alt": 8, "frq": 5550, "txw": 0.001, "bwi": 100,
+                "antenna": { "txg": 0, "txl": 0, "ant": 1, "azi": 0, "tlt": 0, "hbw": 360, "vbw": 360, "fbr": 0, "pol": "v" }
+            }))
+        ],
+        "model":       { "pm": 4, "pe": 3, "ked": 2, "rel": 50 },
+        "environment": { "elevation": 2, "landcover": 1, "buildings": 1, "obstacles": 0, "clt": "Temperate.clt" },
+        "output":      { "units": "m", "out": 2, "nf": -100, "res": 30 }
+    };
+
+    const t0      = Date.now();
+    const rj      = await apiPost('multilink', body);
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+    if (!rj) {
+        WISP_SITES.forEach(s => wispMarkers[s.id].setIcon(makeWispIcon('unknown')));
+        renderDFSPanel(null);
+        multilinkRunning = false;
+        return null;
+    }
+
+    log(`Multilink complete in ${elapsed}s — ship at (${shipPos.lat.toFixed(3)}, ${shipPos.lon.toFixed(3)})`);
+
+    // Parse per-site results from response values object
+    const results = WISP_SITES.map((site, i) => {
+        const rxDbm = (rj.values && rj.values[`0->${i + 1}`] !== undefined)
+            ? parseFloat(rj.values[`0->${i + 1}`]) : null;
+
+        let status = 'unknown';
+        if (rxDbm !== null) {
+            if      (rxDbm >= DFS_THRESHOLD)     status = 'triggered';
+            else if (rxDbm >= DFS_THRESHOLD - 6) status = 'warning';
+            else                                  status = 'clear';
+        }
+
+        wispMarkers[site.id].setIcon(makeWispIcon(status));
+        updateLinkLine(site.id, status, rxDbm);
+        log(`  ${site.name}: ${rxDbm !== null ? rxDbm.toFixed(1) + ' dBm' : 'N/A'} (${status})`);
+
+        return { site, rxDbm, status };
+    });
+
+    renderDFSPanel(results);
+
+    const triggered = results.filter(r => r.status === 'triggered').length;
+    const warnings  = results.filter(r => r.status === 'warning').length;
+
+    if (triggered > 0) {
+        setStatus(`${triggered} WISP site${triggered > 1 ? 's' : ''} DFS-triggered — radar signal >= ${DFS_THRESHOLD} dBm.`, 'error');
+    } else if (warnings > 0) {
+        setStatus(`${warnings} site${warnings > 1 ? 's' : ''} close to DFS threshold (within 6 dB).`, 'running');
+    } else {
+        setStatus('All WISP sites clear — ship too far or terrain-shielded at this position.', 'done');
+    }
+
+    setBadge(`Multilink in ${elapsed}s`);
+
+    // Refresh ship badge distances
+    const badge = document.getElementById('shipBadge');
+    if (badge && !trackRunning) badge.innerHTML = renderShipBadge();
+
+    multilinkRunning = false;
+    return results;
+}
+
+
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  AREA COVERAGE — slower opt-in overlays
+ ════════════════════════════════════════════════════════════════════════════
+*/
+let radarOverlay = null;
+let wispOverlays = [];
+let wispLoaded   = false;
+
+/** Requests a /area coverage PNG for the ship's current position. */
+async function showRadarCoverage() {
+    if (!getKey()) return;
+
+    const mode  = getMode();
+    const isDFS = mode === 'dfs';
+    setStatus('Requesting radar area coverage…', 'running');
+    log(`Area coverage: mode=${mode}, ship=(${shipPos.lat.toFixed(3)}, ${shipPos.lon.toFixed(3)})`);
+    document.getElementById('btnCoverage').disabled = true;
+    shipMarker.setIcon(makeShipIcon(true));
+
+    const body = {
+        "site": "HMASCanberra", "network": "MaritimeRadar",
+        "engine": 1, "coordinates": 1,
+        "transmitter": {
+            "lat": shipPos.lat, "lon": shipPos.lon,
+            "alt": 43, "frq": 5550, "txw": 25000, "bwi": 100, "powerUnit": "W"
+        },
+        "receiver":  { "lat": 0, "lon": 0, "alt": 8, "rxg": 0, "rxs": isDFS ? -64 : -112 },
+        "feeder":    { "flt": 1, "fll": 0, "fcc": 0 },
+        "antenna":   { "mode": "template", "txg": 30, "txl": 0, "ant": 1, "azi": 0, "tlt": 0, "hbw": 1, "vbw": 1, "fbr": 30, "pol": "v" },
+        "model":     { "pm": 4, "pe": 3, "ked": 2, "rel": 50 },
+        "environment": { "elevation": 2, "landcover": 1, "buildings": 1, "obstacles": 0, "clt": "Temperate.clt" },
+        "output":    { "units": "m", "col": isDFS ? "GREEN.dBm" : "RAINBOW.dBm", "out": 2, "nf": -94, "res": 60, "rad": 120 }
+    };
+
+    const t0      = Date.now();
+    const rj      = await apiPost('area', body);
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    shipMarker.setIcon(makeShipIcon(false));
+    document.getElementById('btnCoverage').disabled = false;
+
+    if (!rj || !rj.PNG_WGS84) {
+        setStatus(`Area API error: ${rj?.error || rj?.message || 'unknown'}`, 'error');
+        return;
+    }
+
+    if (radarOverlay) map.removeLayer(radarOverlay);
+    const bounds = L.latLngBounds(
+        L.latLng(rj.bounds[2], rj.bounds[3]),
+        L.latLng(rj.bounds[0], rj.bounds[1])
+    );
+    radarOverlay = L.imageOverlay(rj.PNG_WGS84, bounds, { opacity: 0.6, zIndex: 200, crossOrigin: true }).addTo(map);
+    radarOverlay.bindTooltip(`Radar coverage (${isDFS ? 'DFS −64 dBm' : 'Rainbow −112 dBm'})`);
+
+    log(`Radar coverage loaded in ${elapsed}s`);
+    setStatus(`Radar coverage shown (${isDFS ? 'DFS threshold −64 dBm' : 'Full rainbow'}). Drag ship to update DFS status.`, 'done');
+    setBadge(`Coverage in ${elapsed}s`);
+    updateLegend(mode);
+}
+
+/** Loads or toggles /area coverage overlays for all three WISP sites. */
+async function loadWISPCoverage() {
+    const btn = document.getElementById('btnWisp');
+
+    // If already loaded, toggle off
+    if (wispLoaded) {
+        wispOverlays.forEach(l => map.removeLayer(l));
+        wispOverlays = [];
+        wispLoaded   = false;
+        btn.textContent = '📡 Load WISP Coverage';
+        btn.classList.replace('btn-info', 'btn-outline-info');
+        log('WISP overlays removed.');
+        return;
+    }
+
+    if (!getKey()) return;
+    btn.disabled = true;
+    setStatus('Loading WISP FWA coverage maps…', 'running');
+
+    for (const site of WISP_SITES) {
+        log(`Loading WISP coverage: ${site.name}`);
+        const body = {
+            "site": site.name, "network": "WISP_FWA",
+            "engine": 1, "coordinates": 1,
+            "transmitter": { "lat": site.lat, "lon": site.lon, "alt": site.alt, "frq": 5250, "txw": 0.03, "bwi": 40, "powerUnit": "W" },
+            "receiver":    { "lat": 0, "lon": 0, "alt": 5, "rxg": 23, "rxs": -105 },
+            "antenna":     { "mode": "template", "txg": 17, "txl": 0, "ant": 3587, "azi": site.azi, "tlt": 1, "hbw": 60, "vbw": 6, "fbr": 25, "pol": "v" },
+            "model":       { "pm": 4, "pe": 2, "ked": 2, "rel": 50 },
+            "environment": { "elevation": 2, "landcover": 1, "buildings": 1, "obstacles": 0, "clt": "Temperate.clt" },
+            "output":      { "units": "m", "col": "LTE.dBm", "out": 2, "nf": -94, "res": 30, "rad": site.rad }
+        };
+        const rj = await apiPost('area', body);
+        if (rj && rj.PNG_WGS84) {
+            const bounds = L.latLngBounds(
+                L.latLng(rj.bounds[2], rj.bounds[3]),
+                L.latLng(rj.bounds[0], rj.bounds[1])
+            );
+            const layer = L.imageOverlay(rj.PNG_WGS84, bounds, { opacity: 0.55, zIndex: 150, crossOrigin: true }).addTo(map);
+            layer.bindTooltip(`${site.name}<br>5250 MHz · 30 mW FWA`);
+            wispOverlays.push(layer);
+            log(`${site.name} coverage loaded.`);
+        }
+    }
+
+    wispLoaded = true;
+    btn.disabled = false;
+    btn.textContent = '📡 Hide WISP Coverage';
+    btn.classList.replace('btn-outline-info', 'btn-info');
+    setStatus('WISP coverage loaded. These zones will go offline when DFS is triggered.', 'done');
+}
+
+/** Clears all overlays, track layers and resets UI to idle. */
+function clearOverlays() {
+    if (trackRunning) stopTrack();
+    clearTrackLayers();
+
+    if (radarOverlay) { map.removeLayer(radarOverlay); radarOverlay = null; }
+    wispOverlays.forEach(l => map.removeLayer(l));
+    wispOverlays = [];
+    wispLoaded   = false;
+
+    const btn = document.getElementById('btnWisp');
+    btn.textContent = '📡 Load WISP Coverage';
+    btn.classList.replace('btn-info', 'btn-outline-info');
+
+    WISP_SITES.forEach(s => {
+        wispMarkers[s.id].setIcon(makeWispIcon('unknown'));
+        updateLinkLine(s.id, 'loading', null);
+    });
+
+    renderDFSPanel(null);
+    setStatus('Cleared. Drag ship, click map, or press Track.', 'idle');
+    log('All overlays and track cleared.');
+}
+
+
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  INTERACTION — drag and map click
+ ════════════════════════════════════════════════════════════════════════════
+*/
+
+/** Moves the ship to the given position and schedules a multilink call. */
+function moveShipTo(lat, lon) {
+    shipPos = { lat, lon };
+    shipMarker.setLatLng([lat, lon]);
+    const badge = document.getElementById('shipBadge');
+    if (badge) badge.innerHTML = renderShipBadge();
+    scheduleMultilink();
+}
+
+shipMarker.on('drag', e => {
+    if (trackRunning) return;
+    const ll = e.target.getLatLng();
+    shipPos  = { lat: ll.lat, lon: ll.lng };
+    const badge = document.getElementById('shipBadge');
+    if (badge) badge.innerHTML = renderShipBadge();
+    WISP_SITES.forEach(s => updateLinkLine(s.id, 'loading', null));
+    scheduleMultilink();
+});
+
+shipMarker.on('dragend', e => {
+    if (trackRunning) return;
+    const ll = e.target.getLatLng();
+    moveShipTo(ll.lat, ll.lng);
+});
+
+// Click the map to teleport the ship (ignored during track)
+map.on('click', e => {
+    if (trackRunning) return;
+    moveShipTo(e.latlng.lat, e.latlng.lng);
+});
+
+
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  TRACK ANIMATION
+  Steps through SHIP_COURSE waypoints, running multilink at each position
+  and dropping a coloured dot showing the worst DFS status at that point.
+ ════════════════════════════════════════════════════════════════════════════
+*/
+
+/** Toggles button and dragging state for track mode. */
+function setTrackUI(running) {
+    document.getElementById('btnTrackStart').disabled = running;
+    document.getElementById('btnTrackStop').disabled  = !running;
+    document.getElementById('btnCoverage').disabled   = running;
+    shipMarker.dragging[running ? 'disable' : 'enable']();
+    shipMarker.setIcon(makeShipIcon(false));
+}
+
+/** Removes the breadcrumb polyline and all waypoint result dots. */
+function clearTrackLayers() {
+    if (trackBreadcrumb) { map.removeLayer(trackBreadcrumb); trackBreadcrumb = null; }
+    trackWpMarkers.forEach(m => map.removeLayer(m));
+    trackWpMarkers = [];
+    trackPath      = [];
+}
+
+/** Starts the animated track from waypoint 0. */
+function startTrack() {
+    if (trackRunning) return;
+    if (!getKey()) { setStatus('Enter your CloudRF API key first.', 'error'); return; }
+
+    clearTrackLayers();
+    trackRunning = true;
+    trackStep    = 0;
+    trackInfo    = null;
+    setTrackUI(true);
+
+    log(`Track started — ${SHIP_COURSE.length} waypoints, New Plymouth → Wellington`);
+    setStatus('Track mode starting…', 'running');
+    doTrackStep();
+}
+
+/** Stops the track mid-run. */
+function stopTrack() {
+    trackRunning = false;
+    clearTimeout(trackTimer);
+    trackInfo    = null;
+    setTrackUI(false);
+    renderDFSPanel(null);
+    setStatus('Track stopped. Drag ship or click map to reposition.', 'idle');
+    log('Track stopped.');
+}
+
+/** Processes a single track step: move ship, run multilink, drop result dot. */
+async function doTrackStep() {
+    if (!trackRunning) return;
+    if (trackStep >= SHIP_COURSE.length) { finishTrack(); return; }
+
+    const wp    = SHIP_COURSE[trackStep];
+    const stepN = trackStep + 1;
+    trackInfo   = { step: stepN, total: SHIP_COURSE.length, label: wp.label };
+
+    // Move ship to this waypoint
+    shipPos = { lat: wp.lat, lon: wp.lon };
+    shipMarker.setLatLng([wp.lat, wp.lon]);
+    const badge = document.getElementById('shipBadge');
+    if (badge) badge.innerHTML = renderShipBadge(wp.label);
+
+    // Extend breadcrumb trail
+    trackPath.push([wp.lat, wp.lon]);
+    if (trackBreadcrumb) map.removeLayer(trackBreadcrumb);
+    trackBreadcrumb = L.polyline(trackPath, { color: '#ff6b35', weight: 3, opacity: 0.9, zIndex: 350 }).addTo(map);
+
+    setStatus(`Step ${stepN}/${SHIP_COURSE.length} – ${wp.label} – calculating…`, 'running');
+
+    // Run multilink immediately (bypass debounce)
+    clearTimeout(multilinkDebounce);
+    multilinkRunning = false;
+    const results = await runMultilink();
+    if (!trackRunning) return;
+
+    // Drop a coloured dot at this waypoint coloured by worst DFS status
+    if (results) {
+        const rank   = { triggered: 2, warning: 1, clear: 0, unknown: -1 };
+        const worst  = results.reduce((w, r) => rank[r.status] > rank[w.status] ? r : w);
+        const dotCol = { triggered: '#ef4444', warning: '#fbbf24', clear: '#4ade80', unknown: '#6b7280' }[worst.status] || '#6b7280';
+
+        const tipLines = results.map(r => {
+            const label = r.site.name.split('–')[1]?.trim() || r.site.name;
+            const dbm   = r.rxDbm !== null ? `${r.rxDbm.toFixed(1)} dBm` : 'N/A';
+            return `${label}: ${dbm} (${r.status})`;
+        }).join('<br>');
+
+        const dot = L.circleMarker([wp.lat, wp.lon], {
+            radius: 7, fillColor: dotCol, color: '#fff', weight: 2, fillOpacity: 1, zIndex: 360
+        }).bindTooltip(`<strong>${stepN}. ${wp.label}</strong><br>${tipLines}`, { sticky: false })
+          .addTo(map);
+        trackWpMarkers.push(dot);
+    }
+
+    trackStep++;
+    if (!trackRunning) return;
+    if (trackStep >= SHIP_COURSE.length) { finishTrack(); return; }
+
+    // Dwell then advance to next waypoint
+    const dwell = parseInt(document.getElementById('trackSpeed').value);
+    setStatus(`${stepN}/${SHIP_COURSE.length} – ${wp.label} – next in ${dwell / 1000}s…`, 'running');
+    trackTimer = setTimeout(doTrackStep, dwell);
+}
+
+/** Called when all waypoints have been visited. */
+function finishTrack() {
+    trackRunning = false;
+    trackInfo    = null;
+    clearTimeout(trackTimer);
+    setTrackUI(false);
+    renderDFSPanel(null);
+    const n = trackWpMarkers.length;
+    setStatus(`Track complete — ${n} position${n !== 1 ? 's' : ''} calculated. Drag ship or press Track to replay.`, 'done');
+    log(`Track complete. ${n} waypoints visited, breadcrumb trail visible.`);
+}
+
+
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  BUTTON BINDINGS
+ ════════════════════════════════════════════════════════════════════════════
+*/
+document.getElementById('btnCoverage').addEventListener('click', showRadarCoverage);
+document.getElementById('btnWisp').addEventListener('click', loadWISPCoverage);
+document.getElementById('btnClear').addEventListener('click', clearOverlays);
+document.getElementById('btnTrackStart').addEventListener('click', startTrack);
+document.getElementById('btnTrackStop').addEventListener('click', stopTrack);
+
+// Sync legend when coverage mode radio changes
+document.querySelectorAll('input[name="coverageMode"]').forEach(r => {
+    r.addEventListener('change', () => updateLegend(getMode()));
+});
+
+
+/*
+ ════════════════════════════════════════════════════════════════════════════
+  INIT
+ ════════════════════════════════════════════════════════════════════════════
+*/
+renderDFSPanel(null);
+log('Map ready. Course: Off Mokau → Wellington (9 waypoints).');
+log('WISP sites: Waitara · Inglewood · Hawera (Taranaki coast).');
+log('Multilink: ship radar → each WISP DFS sensor, threshold −64 dBm.');
+log('Drag ship, click map, or press Track to animate the full course.');
+
+</script>
+</body>
+</html>

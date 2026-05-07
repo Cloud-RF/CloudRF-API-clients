@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CloudRF Multilink Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+
+    <style>
+        #map {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" crossorigin="" />
+</head>
+
+<body class="p-2">
+    <h1>Multilink API Demo</h1>
+
+    <div class="alert alert-danger d-none" role="alert" id="dangerAlert"></div>
+
+    <div class="input-group input-group--sm mb-3">
+        <span class="input-group-text">API Key</span>
+        <input id="apiKey" value="" type="text" class="form-control"
+            placeholder="Your API Key for service defined below.">
+    </div>
+
+    <div class="input-group inout-group-sm mb-3">
+        <span class="input-group-text">API Service Base URL</span>
+        <input id="apiServiceBaseUrl" type="text" class="form-control" value="https://api.cloudrf.com"
+            placeholder="The base URL of where your API request will be made to.">
+    </div>
+
+    <p>
+        Change the radius slider to adjust the spacing of drones. Press calculate to model the mesh.
+    </p>
+
+    <div style="display: flex;">
+        <div style="width: 50%;">
+            <label id="number-label"></label></br>
+            <input id="number-slider" type="range" min="10" max="100" value="30" step="10" style="width: 100%"></br>
+            <label id="dist-label"></label></br>
+            <input id="dist-slider" type="range" min="10" max="1000" value="500" step="10" style="width: 100%"></br>
+
+            <div style="width: 100%; display: flex;">
+                <input value="51.79407" id="lat-range" title="Latitude" placeholder="Latitude" type="number"
+                    style="width: 100%; margin: 10px 0 10px 0;" step="0.01">
+                <input value="-2.09633" id="lon-range" title="Longitude" placeholder="Longitude" type="number"
+                    style="width: 100%; margin: 10px 10px 10px 10px;" step="0.01">
+                <input value="20" id="alt-range" title="Altitude" placeholder="Altitude (m)" type="number"
+                    style="width: 100%; margin: 10px 0 10px 0px;" step="1">
+            </div>
+
+            <button style="margin: 0 0 10px 0;" onclick="calculate()">Calculate</button>
+        </div>
+
+        <div style=>
+            <label id="good-bad-ratio" style="border: 1px solid #212529; padding: .375rem .75rem; border-radius: .375rem; margin: .1875em;">Good:Bad = N/A:N/A</label></br>
+            <label id="time" style="border: 1px solid #212529; padding: .375rem .75rem; border-radius: .375rem; margin: .1875rem;">Time = N/A</label></br>
+            <label id="mean-rssi" style="border: 1px solid #212529; padding: .375rem .75rem; border-radius: .375rem; margin: .1875rem;">Mean RSSI = N/A</label></br>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="d-flex justify-content-between">
+        <div class="w-50 mx-4">
+            <h2>Request</h2>
+
+            <pre id="requestRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+        <div class="w-50 mx-4">
+            <h2>Response</h2>
+
+            <pre id="responseRawOutput" class="p-3 bg-dark text-white font-monospace overflow-x-scroll">No data to show yet...</pre>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
+            crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.6.3.min.js"
+            integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""></script>
+        <script src="CloudRF.js"></script>
+
+        <script src="multilink.js"></script>
+</body>
+
+</html>

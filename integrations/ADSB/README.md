@@ -31,8 +31,9 @@ To make the layer refresh periodically, add it as a network KML layer with a tim
 	pip3 install simplekml requests
 
 ### Operation
+You will be prompted for a callsign. Enter it when asked eg. GWFWA
 
-	python3 ADSB_demo.py [Call sign]
+	python3 ADSB_demo.py
 	
 ## References
 
