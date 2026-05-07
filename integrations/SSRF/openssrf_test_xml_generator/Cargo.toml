@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.79"
 openssrf = {path = "../openssrf"}
-rand = "0.8.5"
+rand = "0.8.6"
 rand_distr = "0.4.3"
 quick-xml = { version = "0.31.0", features = ["serde", "serialize"] }
 serde = { version = "1.0.196", features = ["derive"] }
