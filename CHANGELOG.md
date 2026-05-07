@@ -5,6 +5,7 @@
 - Improve error handling when using the auto-calibration script.
 - Fix validation error with default execution of auto-calibration script.
 - Fixed issue with `interference` Slippy Map demo hitting rate limit when working against CloudRF production API.
+- Fix streaming files that do no return a HTTP 200.
 
 ## 2025-03-10
 
