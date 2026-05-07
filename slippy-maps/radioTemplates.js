@@ -25,6 +25,7 @@ var myTemplates = [
             "tlt": 0,
             "hbw": 5,
             "vbw": 5,
+            "fbr": 25,
             "pol": "v"
         },
         "model": {
@@ -43,8 +44,6 @@ var myTemplates = [
             "units": "metric",
             "col": "RAINBOW.dBm",
             "out": 2,
-            "ber": 0,
-            "mod": 0,
             "nf": -114,
             "res": 10,
             "rad": 2
@@ -74,8 +73,6 @@ var myTemplates = [
             "ant": 39, // dipole
             "azi": 0, 
             "tlt": 0,
-            "hbw": 0,
-            "vbw": 0,
             "pol": "v"
         },
         "model": {
@@ -94,8 +91,6 @@ var myTemplates = [
             "units": "metric",
             "col": "RAINBOW.dBm",
             "out": 2,
-            "ber": 0,
-            "mod": 0,
             "nf": -114,
             "res": 10,
             "rad": 3

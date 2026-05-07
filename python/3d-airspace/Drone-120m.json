@@ -1,0 +1,50 @@
+{
+    "site": "Dodgers",
+    "network": "CUAS",
+    "engine": 1,
+    "transmitter": {
+        "lat": 34.076239,
+        "lon": -118.237627,
+        "alt": 2,
+        "frq": 2450,
+        "txw": 1,
+        "bwi": 20,
+        "powerUnit": "W"
+    },
+    "receiver": {
+        "alt": 120,
+        "rxg": 2.15,
+        "rxs": -105
+    },
+    "antenna": {
+        "mode": "template",
+        "txg": 2.15,
+        "txl": 0,
+        "ant": 1,
+        "azi": 0,
+        "tlt": 0,
+        "fbr": 2.15,
+        "pol": "v"
+    },
+    "model": {
+        "pm": 4,
+        "pe": 2,
+        "ked": 0,
+        "rel": 50
+    },
+    "environment": {
+        "elevation": 1,
+        "landcover": 0,
+        "buildings": 0,
+        "obstacles": 0,
+        "clt": "Temperate.clt"
+    },
+    "output": {
+        "units": "m",
+        "col": 9,
+        "out": 2,
+        "nf": -101,
+        "res": 4,
+        "rad": 2
+    }
+}
