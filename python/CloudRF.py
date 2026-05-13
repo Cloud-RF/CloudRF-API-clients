@@ -436,6 +436,11 @@ class CloudRF:
     def __streamUrlToFile(self, requestUrl, savePath):
         response = requests.get(requestUrl, stream = True, verify = self.__arguments.strict_ssl)
 
+        if response.status_code != 200:
+            print('An HTTP %d error occurred when trying to retrieve your file (%s) from the CloudRF API. Skipping file download. Full response is listed below.' % (response.status_code, requestUrl))
+            print(response.text)
+            return
+
         # If we are retrieving a stream
         if response.headers.get('Content-Disposition'):
             # The file extension may be different on the server side, so we should use that by default
