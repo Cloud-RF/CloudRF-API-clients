@@ -1,4 +1,4 @@
 GDAL==3.13.0
 numpy==2.4.1
 Requests==2.33.0
-urllib3==2.6.3
+urllib3==2.7.0
