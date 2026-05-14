@@ -1,9 +1,9 @@
 {
-  "version": "CloudRF-API-v3.31",
+  "version": "CloudRF-API 3.34 ",
   "reference": "https://cloudrf.com/documentation/developer/",
   "template": {
     "name": "UBNT-PBE-2AC-400",
-    "service": "https://dev.cloudrf.com",
+    "service": "https://api.cloudrf.com",
     "created_at": "2025-01-28T12:00:00+00:86",
     "owner": "",
     "bom_value": ""
