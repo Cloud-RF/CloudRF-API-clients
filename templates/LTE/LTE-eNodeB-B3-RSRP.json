@@ -1,9 +1,9 @@
 {
-  "version": "CloudRF-API-v3.31",
+  "version": "CloudRF-API 3.34 ",
   "reference": "https://cloudrf.com/documentation/developer/",
   "template": {
     "name": "LTE-eNodeB-B3-RSRP",
-    "service": "https://dev.cloudrf.com",
+    "service": "https://api.cloudrf.com",
     "created_at": "2025-01-28T12:00:00+00:86",
     "owner": "",
     "bom_value": ""
@@ -37,7 +37,7 @@
     "mode": "template",
     "txg": 2,
     "txl": 0,
-    "ant": 39,
+    "ant": 1,
     "azi": 0,
     "tlt": 0,
     "hbw": 0,
