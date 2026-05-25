@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<!--
+════════════════════════════════════════════════════════════════════════════════
+  CloudRF Direction Finding Demo — Local Edition
+  ─────────────────────────────────────────────────────────────────────────────
+  Uses the AREA API in path-loss mode. Power is applied client-side via the
+  RSSI and Tx-Power sliders. A high-confidence area of probability is green;
+  low confidence is red.
+
+  DEPENDENCIES (CDN)
+    • Leaflet 1.9.4   — interactive map
+    • Bootstrap 5.3.2 — layout & tabs
+    • jQuery 3.6.3    — DOM helpers used by the DF logic
+════════════════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Direction Finding Demo</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+<style>
+:root {
+    --navy:   #0a1628;
+    --navy2:  #112240;
+    --accent: #1a8cff;
+}
+
+html, body { height: 100%; margin: 0; padding: 0; }
+body {
+    display: flex;
+    flex-direction: column;
+    background: #eef1f5;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+}
+
+/* ── Header ── */
+.app-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    color: #fff;
+    padding: 10px 16px 8px;
+    border-bottom: 3px solid var(--accent);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.app-header .header-text h5   { margin: 0; font-weight: 700; letter-spacing: .4px; font-size: 15px; }
+.app-header .header-text .sub { font-size: 11px; color: #8bacc8; margin-top: 2px; }
+.app-header .header-logo img  {
+    height: 36px; width: auto; opacity: .9;
+    filter: drop-shadow(0 0 4px rgba(26,140,255,.4));
+}
+
+/* ── Config strip ── */
+.config-strip {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 7px 14px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.config-strip label { font-size: 11px; font-weight: 600; color: #495057; white-space: nowrap; }
+.slider-group { display: flex; align-items: center; gap: 8px; }
+.slider-group input[type=range] { width: 130px; cursor: pointer; }
+.slider-val {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    min-width: 52px; text-align: right;
+}
+
+/* ── Map ── */
+#mapArea { flex: 1; min-height: 400px; }
+
+/* ── Status bar ── */
+.status-bar {
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+    padding: 5px 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.status-bar #statusText { font-weight: 600; flex: 1; }
+.status-idle    { color: #6c757d; }
+.status-running { color: var(--accent); }
+.status-done    { color: #198754; }
+.status-error   { color: #dc3545; }
+
+/* ── Log / JSON tab panel ── */
+.log-wrap { background: #fff; border-top: 1px solid #dee2e6; flex-shrink: 0; }
+.log-wrap .nav-tabs { padding: 4px 14px 0; border-bottom: 1px solid #dee2e6; }
+.log-wrap .nav-tabs .nav-link { font-size: 11px; font-weight: 600; color: #6c757d; padding: 3px 10px; border-radius: 4px 4px 0 0; }
+.log-wrap .nav-tabs .nav-link.active { color: #0d6efd; background: #fff; }
+.log-pane {
+    height: 20vh; max-height: 20vh;
+    overflow-y: auto;
+    font-size: 11px; font-family: Consolas, monospace;
+    background: #111827; color: #6ee7b7;
+    padding: 7px 10px; margin: 0 14px 8px;
+    border-radius: 0 4px 4px 4px;
+    white-space: pre-wrap; word-break: break-all;
+}
+#paneRequest  { color: #93c5fd; }
+#paneResponse { color: #fde68a; }
+
+.spin {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid #4b6a8a; border-top-color: var(--accent);
+    border-radius: 50%; animation: rotate .7s linear infinite;
+    vertical-align: middle; margin-right: 4px;
+}
+@keyframes rotate { to { transform: rotate(360deg); } }
+
+/* ── Floating legend ── */
+.legend-box {
+    background: rgba(255,255,255,.95);
+    padding: 8px 11px; border-radius: 7px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.3);
+    font-size: 11px; line-height: 1.7;
+}
+.legend-box .ltitle { font-weight: 700; font-size: 12px; margin-bottom: 3px; }
+.leg-sw {
+    display: inline-block; width: 13px; height: 13px;
+    border-radius: 3px; border: 1px solid #aaa;
+    vertical-align: middle; margin-right: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
+<div class="app-header">
+    <div class="header-text">
+        <h5>Direction Finding Demo</h5>
+        <div class="sub">Drag the sensor to reposition | click the map to set the Line of Bearing</div>
+    </div>
+    <div class="header-logo">
+        <img src="logo.png" alt="Logo" title="Powered by CloudRF"
+             onerror="this.style.display='none'">
+    </div>
+</div>
+
+<!-- ═══ CONFIG STRIP ═════════════════════════════════════════════════════════ -->
+<div class="config-strip">
+
+    <div>
+        <label class="d-block mb-1">Received Power</label>
+        <div class="slider-group">
+            <input type="range" min="-100" max="-60" value="-90" id="slider-received-power">
+            <span class="slider-val" id="label-received-power-value">−90 dBm</span>
+        </div>
+    </div>
+
+    <div class="vr"></div>
+
+    <div>
+        <label class="d-block mb-1">Transmit Power</label>
+        <div class="slider-group">
+            <input type="range" min="1" max="5" value="4" step="1" id="slider-tx-power">
+            <span class="slider-val" id="label-tx-power-value">4 W</span>
+        </div>
+    </div>
+
+    <div class="vr"></div>
+
+    <div style="font-size:11px; color:#6c757d;">
+        450 MHz · 10 m sensor height · 10° LOB arc
+    </div>
+
+    <div class="ms-auto d-flex gap-2 align-items-center">
+        <button class="btn btn-sm btn-primary" onclick="runDfAreaCalc()">📡 Recalculate</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="clearOverlays()">🗑 Clear</button>
+        <button class="btn btn-sm btn-outline-secondary" id="btnSettings"
+                data-bs-toggle="modal" data-bs-target="#settingsModal"
+                title="API Settings"
+                style="padding:3px 7px; font-size:15px; line-height:1;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 style="vertical-align:middle; margin-top:-2px;">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33
+                         1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33
+                         l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1
+                         0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06
+                         A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51
+                         1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9
+                         a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<!-- ═══ SETTINGS MODAL ════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm" style="max-width:320px;">
+        <div class="modal-content">
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title mb-0" id="settingsModalLabel" style="font-size:13px; font-weight:700;">
+                    API Settings
+                </h6>
+                <button type="button" class="btn-close" style="width:.6rem;height:.6rem;" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-3 py-3">
+                <div class="mb-3">
+                    <label for="settingsApiUrl" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API URL</label>
+                    <input type="text" class="form-control form-control-sm" id="settingsApiUrl" placeholder="https://api.cloudrf.com">
+                </div>
+                <div class="mb-1">
+                    <label for="settingsApiKey" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API Key</label>
+                    <input type="password" class="form-control form-control-sm" id="settingsApiKey" placeholder="Your CloudRF key">
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="saveApiSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MAP ═══════════════════════════════════════════════════════════════════ -->
+<div id="mapArea"></div>
+
+<!-- ═══ STATUS BAR ═══════════════════════════════════════════════════════════ -->
+<div class="status-bar">
+    <span id="statusText" class="status-idle">Drag the DF sensor or click Recalculate, then click the map to draw a Line of Bearing.</span>
+    <span id="calcBadge" class="text-muted" style="font-size:11px; white-space:nowrap"></span>
+</div>
+
+<!-- ═══ LOG / JSON TABS ══════════════════════════════════════════════════════ -->
+<div class="log-wrap">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabLog"      type="button">📋 Activity Log</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabRequest"  type="button">📤 Request</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabResponse" type="button">📥 Response</button>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabLog">
+            <div id="activityLog" class="log-pane"></div>
+        </div>
+        <div class="tab-pane fade" id="tabRequest">
+            <div id="paneRequest" class="log-pane">No request yet.</div>
+        </div>
+        <div class="tab-pane fade" id="tabResponse">
+            <div id="paneResponse" class="log-pane">No response yet.</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ SCRIPTS ══════════════════════════════════════════════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js" crossorigin="anonymous"></script>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CREDENTIALS — defaults; editable via the ⚙ Settings button in the config strip
+   ════════════════════════════════════════════════════════════════════════════ */
+let API_KEY = localStorage.getItem('df_api_key') ?? '';
+let API_URL = localStorage.getItem('df_api_url') ?? 'https://api.cloudrf.com';
+
+function saveApiSettings() {
+    const newUrl = document.getElementById('settingsApiUrl').value.trim().replace(/\/$/, '');
+    const newKey = document.getElementById('settingsApiKey').value.trim();
+    if (newUrl) { API_URL = newUrl; localStorage.setItem('df_api_url', newUrl); }
+    if (newKey) { API_KEY = newKey; localStorage.setItem('df_api_key', newKey); }
+    bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+    log(`Settings saved — URL: ${API_URL}`);
+}
+
+document.getElementById('settingsModal').addEventListener('show.bs.modal', () => {
+    document.getElementById('settingsApiUrl').value = API_URL;
+    document.getElementById('settingsApiKey').value = API_KEY;
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════════════════════════════════════ */
+function setStatus(msg, state) {
+    const el = document.getElementById('statusText');
+    el.textContent = msg;
+    el.className   = 'status-' + state;
+}
+function setStatusHTML(html, state) {
+    const el = document.getElementById('statusText');
+    el.innerHTML = html;
+    el.className = 'status-' + state;
+}
+function setBadge(txt) { document.getElementById('calcBadge').textContent = txt; }
+function log(msg) {
+    const el = document.getElementById('activityLog');
+    el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+    el.scrollTop    = el.scrollHeight;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SCENARIO CONSTANTS
+   ════════════════════════════════════════════════════════════════════════════ */
+const EARTH_RADIUS_M = 6371000;
+
+const TEMPLATE = {
+    network:     'Direction-finding-demo',
+    site:        'DF',
+    engine:      2,
+    transmitter: { alt: 10, frq: 450, txw: 1, bwi: 0.1 },
+    receiver:    { lat: 0, lon: 0, alt: 1, rxg: 0, rxs: 200 },
+    antenna:     { txg: 2, txl: 0, ant: 1, azi: 0, tlt: 0, pol: 'v', fbr: 0 },
+    model:       { pm: 10, pe: 2, ked: 4, rel: 50 },
+    environment: { clt: 'Minimal.clt', elevation: 1, landcover: 1, buildings: 1, obstacles: 0 },
+    output:      { units: 'm', col: '9', out: 1, nf: -110, res: 20, rad: 10 }
+};
+
+const ARC_DEG          = 10;
+const ARC_LINE_LENGTH  = 1e4;
+const ARC_LINE_OPTIONS = { color: '#000', weight: 1 };
+
+const COLOR_KEY = [
+    { receivedPowerMargin: 3, red: 0,   green: 255, blue: 0 },
+    { receivedPowerMargin: 6, red: 255, green: 200, blue: 0 },
+    { receivedPowerMargin: 9, red: 255, green: 0,   blue: 0 },
+];
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MAP SETUP
+   ════════════════════════════════════════════════════════════════════════════ */
+const map = L.map('mapArea').setView([38.9274, 1.4686], 12);
+const osmLayer=L.tileLayer('https://maps.cloudrf.com/wmts/contours/mercator/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://cloudrf.com">CloudRF</a>',maxZoom:16});
+const satLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri',maxZoom:16});
+osmLayer.addTo(map);
+L.control.layers({'Contours':osmLayer,'Satellite':satLayer},{},{position:'topright',collapsed:false}).addTo(map);
+
+const directionFinder = L.marker(L.latLng(38.9274, 1.4686), {
+    title: 'DF Sensor', draggable: true,
+    icon: L.divIcon({
+        className: '',
+        html: '<div style="font-size:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));cursor:grab;">📡</div>',
+        iconAnchor: [13, 26]
+    })
+}).addTo(map);
+directionFinder.bindTooltip('DF Sensor — drag to reposition');
+
+/* ════════════════════════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════════════════════════ */
+var targetLatLng  = null;
+var areaCanvas    = document.createElement('canvas');
+var areaBounds    = null;
+var segmentCanvas = document.createElement('canvas');
+
+/* ════════════════════════════════════════════════════════════════════════════
+   GEOMETRY
+   ════════════════════════════════════════════════════════════════════════════ */
+function toRad(d) { return d * Math.PI / 180; }
+function toDeg(r) { return r * 180 / Math.PI; }
+
+function bearingBetween(a, b) {
+    const dLng = toRad(b.lng) - toRad(a.lng);
+    const y    = Math.cos(toRad(b.lat)) * Math.sin(dLng);
+    const x    = Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) -
+                 Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(dLng);
+    return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+function endpointFromPointBearingDistance(point, bearing, distance) {
+    const ad  = distance / EARTH_RADIUS_M;
+    const lat = Math.asin(
+        Math.sin(toRad(point.lat)) * Math.cos(ad) +
+        Math.cos(toRad(point.lat)) * Math.sin(ad) * Math.cos(toRad(bearing))
+    );
+    const lng = toRad(point.lng) + Math.atan2(
+        Math.sin(toRad(bearing)) * Math.sin(ad) * Math.cos(toRad(point.lat)),
+        Math.cos(ad) - Math.sin(toRad(point.lat)) * Math.sin(lat)
+    );
+    return L.latLng(toDeg(lat), toDeg(lng)).wrap();
+}
+
+function pixelLatLng(w, h, bounds, x, y) {
+    return L.latLng(
+        bounds.getNorth() + (bounds.getSouth() - bounds.getNorth()) * (y + 0.5) / h,
+        bounds.getWest()  + (bounds.getEast()  - bounds.getWest())  * (x + 0.5) / w
+    );
+}
+
+function pointInArc(origin, target, arcDeg, point) {
+    const dO  = point.distanceTo(origin);
+    const dT  = point.distanceTo(target);
+    const dOT = target.distanceTo(origin);
+    return (dO * dO + dOT * dOT - dT * dT) / (2 * dOT * dO) >= Math.cos(toRad(arcDeg / 2));
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ARC LINES
+   ════════════════════════════════════════════════════════════════════════════ */
+function drawArcLines() {
+    map.eachLayer(l => { if (l.name === 'line') map.removeLayer(l); });
+    const bearing = bearingBetween(directionFinder.getLatLng(), targetLatLng);
+    ['left', 'right'].forEach((side, i) => {
+        const b   = bearing + (i === 0 ? -1 : 1) * ARC_DEG / 2;
+        const end = endpointFromPointBearingDistance(directionFinder.getLatLng(), b, ARC_LINE_LENGTH);
+        const pl  = L.polyline([directionFinder.getLatLng(), end], ARC_LINE_OPTIONS).addTo(map);
+        pl.name   = 'line';
+    });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   API — AREA REQUEST
+   ════════════════════════════════════════════════════════════════════════════ */
+async function runDfAreaCalc() {
+    if (!API_KEY) {
+        setStatus('API key not configured — click ⚙ Settings in the toolbar to enter your CloudRF API key.', 'error');
+        return;
+    }
+    const latLng = directionFinder.getLatLng();
+    const req    = { ...TEMPLATE, transmitter: { ...TEMPLATE.transmitter, lat: latLng.lat, lon: latLng.lng } };
+    const reqJson = JSON.stringify(req, null, 4);
+
+    document.getElementById('paneRequest').textContent  = `POST /area\n\n${reqJson}`;
+    document.getElementById('paneResponse').textContent = 'Sending…';
+    setStatusHTML('<span class="spin"></span> Requesting path-loss map from CloudRF API…', 'running');
+    log(`Area request: sensor at (${latLng.lat.toFixed(4)}, ${latLng.lng.toFixed(4)})`);
+
+    const t0 = Date.now();
+    try {
+        const resp    = await fetch(`${API_URL}/area`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'key': API_KEY }, body: reqJson
+        });
+        const rj = await resp.json();
+        document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 4);
+        const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+        if (!rj.PNG_WGS84) {
+            setStatus(`API error: ${rj?.error || rj?.message || 'unknown'}`, 'error');
+            log(`Error: ${JSON.stringify(rj)}`); return;
+        }
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = rj.PNG_WGS84; });
+
+        areaCanvas.width  = img.width;
+        areaCanvas.height = img.height;
+        areaCanvas.getContext('2d').drawImage(img, 0, 0);
+        areaBounds = L.latLngBounds(
+            L.latLng(rj.bounds[2], rj.bounds[3]),
+            L.latLng(rj.bounds[0], rj.bounds[1])
+        );
+        log(`Path-loss map loaded in ${elapsed}s. Click the map to draw a LOB.`);
+        setBadge(`Area in ${elapsed}s`);
+        setStatus('Path-loss map ready. Click the map to set a Line of Bearing.', 'done');
+        await runDf();
+    } catch (e) {
+        setStatus(`Network error: ${e.message}`, 'error');
+        log(`Error: ${e.message}`);
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DF OVERLAY RENDERING
+   ════════════════════════════════════════════════════════════════════════════ */
+async function runDf() {
+    if (!areaBounds || !targetLatLng) return;
+    drawArcLines();
+
+    segmentCanvas.width  = areaCanvas.width;
+    segmentCanvas.height = areaCanvas.height;
+    const ctx  = segmentCanvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(areaCanvas, 0, 0);
+
+    const id   = ctx.getImageData(0, 0, segmentCanvas.width, segmentCanvas.height);
+    const data = id.data;
+    const txPwr = 30 + 10 * Math.log10(parseFloat($('#slider-tx-power').val()));
+    const rxPwr = parseFloat($('#slider-received-power').val());
+
+    for (let y = 0; y < segmentCanvas.height; y++) {
+        for (let x = 0; x < segmentCanvas.width; x++) {
+            const i = (y * segmentCanvas.width + x) * 4;
+            if (!pointInArc(directionFinder.getLatLng(), targetLatLng, ARC_DEG,
+                    pixelLatLng(segmentCanvas.width, segmentCanvas.height, areaBounds, x, y))) {
+                data[i + 3] = 0; continue;
+            }
+            if (data[i + 3] !== 0) {
+                const diff  = Math.abs(txPwr - data[i] - rxPwr);
+                const entry = COLOR_KEY.find(e => e.receivedPowerMargin >= diff);
+                if (entry) {
+                    data[i] = entry.red; data[i + 1] = entry.green; data[i + 2] = entry.blue;
+                } else { data[i + 3] = 0; }
+            }
+        }
+    }
+    ctx.putImageData(id, 0, 0);
+    map.eachLayer(l => { if (l.name === 'df') map.removeLayer(l); });
+    const layer = L.imageOverlay(segmentCanvas.toDataURL(), areaBounds, { opacity: 0.7 }).addTo(map);
+    layer.name  = 'df';
+    setStatus('LOB updated. Adjust sliders to change power assumptions.', 'done');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   LEGEND
+   ════════════════════════════════════════════════════════════════════════════ */
+(function buildLegend() {
+    const ctrl = L.control({ position: 'bottomright' });
+    ctrl.onAdd = function () {
+        const d = L.DomUtil.create('div', 'legend-box');
+        d.innerHTML = `<div class="ltitle">Confidence</div>` +
+            COLOR_KEY.map(e =>
+                `<div><span class="leg-sw" style="background:rgb(${e.red},${e.green},${e.blue})"></span>≤ ${e.receivedPowerMargin} dB</div>`
+            ).join('') +
+            `<div style="font-size:10px;color:#666;margin-top:3px">Green = High<br>Red = Low</div>`;
+        return d;
+    };
+    ctrl.addTo(map);
+})();
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CLEAR
+   ════════════════════════════════════════════════════════════════════════════ */
+function clearOverlays() {
+    map.eachLayer(l => {
+        if (l instanceof L.ImageOverlay || l.name === 'df' || l.name === 'line') map.removeLayer(l);
+    });
+    areaBounds = null; targetLatLng = null;
+    areaCanvas = document.createElement('canvas');
+    setStatus('Cleared. Press Recalculate or drag the sensor to start.', 'idle');
+    log('All overlays cleared.');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INTERACTIONS
+   ════════════════════════════════════════════════════════════════════════════ */
+directionFinder.on('dragend', () => {
+    log(`Sensor moved to (${directionFinder.getLatLng().lat.toFixed(4)}, ${directionFinder.getLatLng().lng.toFixed(4)})`);
+    runDfAreaCalc();
+});
+
+map.on('click', async e => {
+    targetLatLng = e.latlng;
+    log(`LOB target: (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`);
+    if (!areaBounds) {
+        // Path-loss map not loaded yet — fetch it first, then draw LOB
+        await runDfAreaCalc();
+    } else {
+        runDf();
+    }
+});
+
+$('#slider-received-power').on('input change', function () {
+    $('#label-received-power-value').text(`${$(this).val()} dBm`);
+    if (areaBounds) runDf();
+});
+$('#slider-tx-power').on('input change', function () {
+    $('#label-tx-power-value').text(`${$(this).val()} W`);
+    if (areaBounds) runDf();
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════════════════════════ */
+$('#slider-received-power').trigger('input');
+$('#slider-tx-power').trigger('input');
+log('Map ready. DF sensor at Ibiza (38.9274, 1.4686).');
+log('Press Recalculate to load the path-loss map, then click the map to draw a LOB.');
+log('Adjust sliders to change Rx/Tx power assumptions — overlay updates in real time.');
+</script>
+</body>
+</html>
