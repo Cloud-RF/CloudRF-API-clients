@@ -10,7 +10,7 @@ In order to use these examples you require an account on the CloudRF service (or
 
 Below are the list of available examples which can be used. You are encouraged to read the respective `README.md` for each which will detail additional information and usage.
 
-- The [demo gallery](gallery/) has live demos to show our API in action
+- The [demo gallery](https://cloud-rf.github.io/CloudRF-API-clients/gallery/) has live demos to show our API in action
 - The [python](python/) directory contains a parent Python 3 script which allows interaction with all of the primary CloudRF API endpoints. This script is quite comprehensive and so for usage you are recommended to consult the [README](python/README.md) for more information.
 - The [bash](bash/) directory contains some Bash scripts which make use of cURL to to CloudRF API.
 - The [slippy-maps](slippy-maps/) directory contains examples of various web map libraries which interface with the CloudRF API.
@@ -48,7 +48,7 @@ Below are a list of resources which may aid you with writing your own clients to
 
 Paste your [API key]((https://cloudrf.com/my-account)) into these demos and click away.
 
-The [demo gallery](gallery/) has a selection of advanced demos relating to spectrum management.
+The [demo gallery](https://cloud-rf.github.io/CloudRF-API-clients/gallery/) has a selection of advanced demos relating to spectrum management.
 
 [Area coverage](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-area.html)
 
