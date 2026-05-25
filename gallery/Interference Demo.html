@@ -349,7 +349,7 @@ function addSignalRadio(latitude, longitude) {
     const radio = new L.marker([latitude, longitude], {
         title:     `Signal Radio ${signal_radios.length + 1}`,
         draggable: true,
-        icon:      new LeafIcon({ iconUrl: './CloudRF Interference Leaflet Demo_files/car_blue.png' })
+        icon:      new LeafIcon({ iconUrl: './Interference Demo_files/car_blue.png' })
     });
     map.addLayer(radio);
     radio.on('dragend', function (event) {
@@ -368,7 +368,7 @@ function addNoiseRadio(latitude, longitude) {
     const radio = new L.marker([latitude, longitude], {
         title:     `Noise Radio ${noise_radios.length + 1}`,
         draggable: true,
-        icon:      new LeafIcon({ iconUrl: './CloudRF Interference Leaflet Demo_files/car_red.png' })
+        icon:      new LeafIcon({ iconUrl: './Interference Demo_files/car_red.png' })
     });
     map.addLayer(radio);
     radio.on('dragend', function (event) {
