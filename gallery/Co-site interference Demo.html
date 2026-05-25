@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<!--
+════════════════════════════════════════════════════════════════════════════════
+  CloudRF Co-site Interference Demo — Local Edition
+  ─────────────────────────────────────────────────────────────────────────────
+  Three PMR/FRS radio cars share the Eifel area (Germany).
+  Drag a car to recompute its interference against the others.
+  Click a frequency cell in the table to reassign that car to a new channel.
+
+  FREQUENCY MODES
+    462 MHz (blue) · 464 MHz (orange) · 466 MHz (green)
+
+  TABLE LEGEND
+    Cell colour  = interference %: green < 25 % · amber 25–50 % · red > 50 %
+    Bold         = best available frequency for that radio
+    Underline    = currently assigned frequency
+
+  DEPENDENCIES (CDN)
+    • Leaflet 1.9.4   — interactive map
+    • Bootstrap 5.3.2 — layout & tabs
+    • jQuery 3.6.3    — DOM helpers
+════════════════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Co-site Interference Demo</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+<style>
+:root {
+    --navy:   #0a1628;
+    --navy2:  #112240;
+    --accent: #1a8cff;
+}
+
+html, body { height: 100%; margin: 0; padding: 0; }
+body {
+    display: flex;
+    flex-direction: column;
+    background: #eef1f5;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+}
+
+/* ── Header ── */
+.app-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    color: #fff;
+    padding: 10px 16px 8px;
+    border-bottom: 3px solid var(--accent);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.app-header .header-text h5   { margin: 0; font-weight: 700; letter-spacing: .4px; font-size: 15px; }
+.app-header .header-text .sub { font-size: 11px; color: #8bacc8; margin-top: 2px; }
+.app-header .header-logo img  {
+    height: 36px; width: auto; opacity: .9;
+    filter: drop-shadow(0 0 4px rgba(26,140,255,.4));
+}
+
+/* ── Config strip ── */
+.config-strip {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 7px 14px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.config-strip label { font-size: 11px; font-weight: 600; color: #495057; white-space: nowrap; }
+
+.freq-dot {
+    display: inline-block; width: 10px; height: 10px;
+    border-radius: 50%; border: 1px solid rgba(0,0,0,.2);
+    vertical-align: middle; margin-right: 4px;
+}
+
+/* ── Map ── */
+#mapArea { flex: 1; min-height: 350px; }
+
+/* ── Spectrum table panel ── */
+.spectrum-panel {
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+    padding: 6px 14px 8px;
+    flex-shrink: 0;
+}
+.spectrum-panel .panel-title {
+    font-size: 11px; font-weight: 700; color: #495057;
+    text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 4px;
+}
+.spectrum-panel .panel-hint {
+    font-size: 10px; color: #6c757d; margin-bottom: 6px;
+}
+#spectrum-table { font-size: 12px; margin-bottom: 0; width: auto; min-width: 280px; }
+#spectrum-table th { font-size: 11px; font-weight: 700; }
+#cannot-drag-message {
+    font-size: 11px; font-weight: 600; color: #dc3545;
+}
+#status-message { font-size: 11px; color: #6c757d; font-style: italic; }
+
+/* ── Status bar ── */
+.status-bar {
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+    padding: 5px 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.status-bar #statusText { font-weight: 600; flex: 1; }
+.status-idle    { color: #6c757d; }
+.status-running { color: var(--accent); }
+.status-done    { color: #198754; }
+.status-error   { color: #dc3545; }
+
+/* ── Log / JSON tab panel ── */
+.log-wrap { background: #fff; border-top: 1px solid #dee2e6; flex-shrink: 0; }
+.log-wrap .nav-tabs { padding: 4px 14px 0; border-bottom: 1px solid #dee2e6; }
+.log-wrap .nav-tabs .nav-link { font-size: 11px; font-weight: 600; color: #6c757d; padding: 3px 10px; border-radius: 4px 4px 0 0; }
+.log-wrap .nav-tabs .nav-link.active { color: #0d6efd; background: #fff; }
+.log-pane {
+    height: 16vh; max-height: 16vh;
+    overflow-y: auto;
+    font-size: 11px; font-family: Consolas, monospace;
+    background: #111827; color: #6ee7b7;
+    padding: 7px 10px; margin: 0 14px 8px;
+    border-radius: 0 4px 4px 4px;
+    white-space: pre-wrap; word-break: break-all;
+}
+#paneRequest  { color: #93c5fd; }
+#paneResponse { color: #fde68a; }
+
+.spin {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid #4b6a8a; border-top-color: var(--accent);
+    border-radius: 50%; animation: rotate .7s linear infinite;
+    vertical-align: middle; margin-right: 4px;
+}
+@keyframes rotate { to { transform: rotate(360deg); } }
+</style>
+</head>
+
+<body>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
+<div class="app-header">
+    <div class="header-text">
+        <h5>Channel selection and Co-site Interference Demo</h5>
+        <div class="sub">Drag cars to set positions | press Calculate to model each car with each possible frequency and then test for co-site interference</div>
+    </div>
+    <div class="header-logo">
+        <img src="logo.png" alt="Logo" title="Powered by CloudRF"
+             onerror="this.style.display='none'">
+    </div>
+</div>
+
+<!-- ═══ CONFIG STRIP ═════════════════════════════════════════════════════════ -->
+<div class="config-strip">
+    <div>
+        <label class="d-block mb-1">Frequencies</label>
+        <div style="font-size:12px; line-height:1.9;">
+            <span><span class="freq-dot" style="background:rgb(31,119,180)"></span>462 MHz</span>
+            &nbsp;&nbsp;
+            <span><span class="freq-dot" style="background:rgb(255,127,14)"></span>464 MHz</span>
+            &nbsp;&nbsp;
+            <span><span class="freq-dot" style="background:rgb(44,160,44)"></span>466 MHz</span>
+        </div>
+    </div>
+    <div class="vr mx-1"></div>
+    <div style="font-size:11px; color:#6c757d; max-width:260px;">
+        PMR · 2 W · Eifel, Germany · drag cars to model real-world positions
+    </div>
+    <div class="ms-auto d-flex gap-2 align-items-center">
+        <span id="status-message" style="font-size:11px;color:#6c757d;font-style:italic;"></span>
+        <span id="cannot-drag-message" hidden style="font-size:11px;font-weight:600;color:#dc3545;">Calculation in progress — drag disabled</span>
+        <button class="btn btn-sm btn-primary" onclick="calculate()">&#128225; Calculate</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="clearAll()">&#x1F5D1; Clear</button>
+         <button class="btn btn-sm btn-outline-secondary" id="btnSettings"
+                data-bs-toggle="modal" data-bs-target="#settingsModal"
+                title="API Settings"
+                style="padding:3px 7px; font-size:15px; line-height:1;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 style="vertical-align:middle; margin-top:-2px;">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33
+                         1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33
+                         l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1
+                         0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06
+                         A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51
+                         1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9
+                         a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<!-- ═══ MAP ═══════════════════════════════════════════════════════════════════ -->
+<div id="mapArea"></div>
+
+<!-- ═══ SPECTRUM TABLE ═══════════════════════════════════════════════════════ -->
+<div class="spectrum-panel">
+    <div class="panel-title">Interference Table</div>
+    <div class="panel-hint">Values = % of coverage area with interference. Click a cell to reassign that radio's frequency. <u>Underline</u> = current · <b>Bold</b> = best available.</div>
+    <table class="table table-sm table-bordered" id="spectrum-table"></table>
+</div>
+
+<!-- ═══ STATUS BAR ═══════════════════════════════════════════════════════════ -->
+<div class="status-bar">
+    <span id="statusText" class="status-idle">Drag the cars to set positions, then press Calculate to run the interference analysis.</span>
+    <span id="calcBadge" class="text-muted" style="font-size:11px; white-space:nowrap"></span>
+</div>
+
+<!-- ═══ LOG / JSON TABS ══════════════════════════════════════════════════════ -->
+<div class="log-wrap">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabLog"      type="button">📋 Activity Log</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabRequest"  type="button">📤 Request</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabResponse" type="button">📥 Response</button>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabLog">
+            <div id="activityLog" class="log-pane"></div>
+        </div>
+        <div class="tab-pane fade" id="tabRequest">
+            <div id="paneRequest" class="log-pane">No request yet.</div>
+        </div>
+        <div class="tab-pane fade" id="tabResponse">
+            <div id="paneResponse" class="log-pane">No response yet.</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ SETTINGS MODAL ════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm" style="max-width:320px;">
+        <div class="modal-content">
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title mb-0" id="settingsModalLabel" style="font-size:13px; font-weight:700;">
+                    API Settings
+                </h6>
+                <button type="button" class="btn-close" style="width:.6rem;height:.6rem;" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-3 py-3">
+                <div class="mb-3">
+                    <label for="settingsApiUrl" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API URL</label>
+                    <input type="text" class="form-control form-control-sm" id="settingsApiUrl" placeholder="https://api.cloudrf.com">
+                </div>
+                <div class="mb-1">
+                    <label for="settingsApiKey" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API Key</label>
+                    <input type="password" class="form-control form-control-sm" id="settingsApiKey" placeholder="Your CloudRF key">
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="saveApiSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ SCRIPTS ══════════════════════════════════════════════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js" crossorigin="anonymous"></script>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CREDENTIALS — defaults; editable via the ⚙ Settings button in the config strip
+   ════════════════════════════════════════════════════════════════════════════ */
+let API_KEY = localStorage.getItem('df_api_key') ?? '';
+let API_URL = localStorage.getItem('df_api_url') ?? 'https://api.cloudrf.com';
+
+function saveApiSettings() {
+    const newUrl = document.getElementById('settingsApiUrl').value.trim().replace(/\/$/, '');
+    const newKey = document.getElementById('settingsApiKey').value.trim();
+    if (newUrl) { API_URL = newUrl; localStorage.setItem('df_api_url', newUrl); }
+    if (newKey) { API_KEY = newKey; localStorage.setItem('df_api_key', newKey); }
+    bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+    log(`Settings saved — URL: ${API_URL}`);
+}
+
+document.getElementById('settingsModal').addEventListener('show.bs.modal', () => {
+    document.getElementById('settingsApiUrl').value = API_URL;
+    document.getElementById('settingsApiKey').value = API_KEY;
+});
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════════════════════════════════════ */
+function setStatus(msg, state) {
+    const el = document.getElementById('statusText');
+    el.textContent = msg;
+    el.className   = 'status-' + state;
+}
+function setStatusHTML(html, state) {
+    const el = document.getElementById('statusText');
+    el.innerHTML = html;
+    el.className = 'status-' + state;
+}
+function setBadge(txt) { document.getElementById('calcBadge').textContent = txt; }
+function log(msg) {
+    const el = document.getElementById('activityLog');
+    el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+    el.scrollTop    = el.scrollHeight;
+}
+function setStatusMsg(msg) { document.getElementById('status-message').textContent = msg; }
+function clearStatusMsg()  { document.getElementById('status-message').textContent = ''; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MAP SETUP
+   ════════════════════════════════════════════════════════════════════════════ */
+const map = L.map('mapArea').setView([50.333, 6.941], 14);
+const osmLayer=L.tileLayer('https://maps.cloudrf.com/wmts/contours/mercator/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://cloudrf.com">CloudRF</a>',maxZoom:16});
+const satLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri',maxZoom:16});
+
+osmLayer.addTo(map);
+L.control.layers({'Contours':osmLayer,'Satellite':satLayer},{},{position:'topright',collapsed:false}).addTo(map);
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SCENARIO CONFIG
+   ════════════════════════════════════════════════════════════════════════════ */
+const table_js_threshold = 0;
+
+const modes = [
+    { freq: 462, color: [31,  119, 180] },
+    { freq: 464, color: [255, 127, 14]  },
+    { freq: 466, color: [44,  160, 44]  }
+];
+
+const radio_template = {
+    network:     'QRM-demo',
+    engine:      1,
+    transmitter: { alt: 1.5, txw: 4.0, bwi: 0.0125 },
+    receiver:    { alt: 1.5, rxg: 2, rxs: -90 },
+    antenna:     { txg: 2, txl: 0, ant: 1, azi: 0, tlt: 0, pol: 'v', fbr: 0 },
+    model:       { pm: 10, pe: 2, ked: 4, rel: 50 },
+    environment: { clt: 'Temperate.clt', elevation: 2, landcover: 1, buildings: 0, obstacles: 0 },
+    output:      { units: 'm', out: 2, nf: -100, res: 10, rad: 2 }
+};
+
+var radios = [];
+
+/* ════════════════════════════════════════════════════════════════════════════
+   LOCKING — prevent drag during calculations
+   ════════════════════════════════════════════════════════════════════════════ */
+function lockRadios() {
+    $('#cannot-drag-message').removeAttr('hidden');
+    radios.forEach(r => r.dragging.disable());
+}
+function unlockRadios() {
+    $('#cannot-drag-message').attr('hidden', true);
+    radios.forEach(r => r.dragging.enable());
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   COLOURED CAR ICON
+   ════════════════════════════════════════════════════════════════════════════ */
+async function colorImageUrl(imageUrl, color) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.src = imageUrl;
+        img.onerror = reject;
+        img.onload = function () {
+            const canvas = document.createElement('canvas');
+            canvas.width  = img.width;
+            canvas.height = img.height;
+            const ctx  = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const id   = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = id.data;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i]     = (255 - data[i])     * color[0] / 255;
+                data[i + 1] = (255 - data[i + 1]) * color[1] / 255;
+                data[i + 2] = (255 - data[i + 2]) * color[2] / 255;
+            }
+            ctx.putImageData(id, 0, 0);
+            resolve(canvas.toDataURL());
+        };
+    });
+}
+
+function makeCarIconHTML(name, color) {
+    // Emoji car coloured via CSS filter — no external image needed
+    const hue = Math.atan2(
+        Math.sqrt(3) * (color[1] - color[2]),
+        2 * color[0] - color[1] - color[2]
+    ) * 180 / Math.PI;
+    return `<div style="display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:700;">
+                <div style="font-size:20px;filter:hue-rotate(${hue}deg) saturate(3);">🚗</div>
+                <div style="background:rgba(${color[0]},${color[1]},${color[2]},.85);color:#fff;
+                            padding:1px 5px;border-radius:3px;margin-top:1px;font-size:10px;">${name}</div>
+            </div>`;
+}
+
+async function createRadioIcon(name, mode_idx) {
+    const mode = modes[mode_idx];
+    return L.divIcon({
+        className: '',
+        html: makeCarIconHTML(name, mode.color),
+        iconSize:   [40, 40],
+        iconAnchor: [20, 20]
+    });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ADD A RADIO
+   ════════════════════════════════════════════════════════════════════════════ */
+async function addRadio(latitude, longitude, name, mode_idx) {
+    const icon   = await createRadioIcon(name, mode_idx);
+    const radio  = L.marker([latitude, longitude], { title: name, draggable: true, icon });
+    radio.name      = name;
+    radio.changed   = true;
+    radio.mode_idx  = mode_idx;
+    radio.calc_name = [];
+    radio.png_url   = [];
+    radio.bounds    = [];
+    radio.percentage_above_js_threshold = [];
+    map.addLayer(radio);
+    radio.on('dragend', event => {
+        const r   = event.target;
+        const pos = r.getLatLng();
+        r.setLatLng([pos.lat, pos.lng]);
+        r.changed = true;
+        setStatusMsg('Position updated — press Calculate to rerun.');
+        setStatus('Position changed. Press Calculate to update the interference analysis.', 'idle');
+    });
+    radios.push(radio);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DELAY HELPERS
+   ════════════════════════════════════════════════════════════════════════════ */
+const areaDelay       = () => new Promise(r => setTimeout(r, 950));
+const interferDelay   = () => new Promise(r => setTimeout(r, 950));
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PARSE CALC NAME FROM RESPONSE
+   ════════════════════════════════════════════════════════════════════════════ */
+function areaResponseCalcName(radio, response) {
+    const re  = new RegExp(`([0-9]+_${radio_template.network}_${radio.name.replace(' ', '_')})\\.4326\\.png`);
+    const res = re.exec(response.PNG_WGS84);
+    if (!res) throw new Error(`Could not parse area calc name for ${radio.name}`);
+    return res[1];
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   AREA REQUEST
+   ════════════════════════════════════════════════════════════════════════════ */
+async function sendAreaRequest(radio, mode) {
+    const req = { ...radio_template };
+    req.site = radio.name;
+    req.transmitter = { ...req.transmitter, frq: mode.freq, lat: radio._latlng.lat, lon: radio._latlng.lng };
+    req.output = { ...req.output, col: 9 };
+
+    const reqJson = JSON.stringify(req, null, 4);
+    document.getElementById('paneRequest').textContent  = `POST /area  (${radio.name} @ ${mode.freq} MHz)\n\n${reqJson}`;
+    document.getElementById('paneResponse').textContent = 'Sending…';
+
+    const resp = await fetch(`${API_URL}/area`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'key': API_KEY }, body: reqJson
+    });
+    const rj = await resp.json();
+    document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 4);
+    return rj;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INTERFERENCE REQUEST
+   ════════════════════════════════════════════════════════════════════════════ */
+async function sendInterferenceRequest(signal, jammers) {
+    const req = { s_sites: [signal], j_sites: jammers, name: 'QRM-demo', colour_key: 'JS.dB' };
+    const reqJson = JSON.stringify(req, null, 4);
+    document.getElementById('paneRequest').textContent  = `POST /interference\n\n${reqJson}`;
+    document.getElementById('paneResponse').textContent = 'Sending…';
+
+    // Rate-limit on production API
+    await new Promise(r => setTimeout(r, 950));
+
+    const resp = await fetch(`${API_URL}/interference`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'key': API_KEY }, body: reqJson
+    });
+    const rj = await resp.json();
+    document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 4);
+    return rj;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   LAYER MANAGEMENT
+   ════════════════════════════════════════════════════════════════════════════ */
+function removeRadioLayer(radio) {
+    map.eachLayer(l => { if (l.radio_name === radio.name) map.removeLayer(l); });
+}
+
+async function updateRadioLayer(radio) {
+    const mode     = modes[radio.mode_idx];
+    const colorUrl = await colorImageUrl(radio.png_url[radio.mode_idx], mode.color);
+    const layer    = L.imageOverlay(colorUrl, radio.bounds[radio.mode_idx], { opacity: 0.7 }).addTo(map);
+    layer.radio_name = radio.name;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MAIN CALCULATION LOOP
+   ════════════════════════════════════════════════════════════════════════════ */
+async function runRadioModeAreaCalc(radio, mode_idx) {
+    const mode = modes[mode_idx];
+    setStatusMsg(`Area calc: ${radio.name} @ ${mode.freq} MHz…`);
+    const rj = await sendAreaRequest(radio, mode);
+    radio.calc_name[mode_idx] = areaResponseCalcName(radio, rj);
+    radio.png_url[mode_idx]   = rj.PNG_WGS84;
+    radio.bounds[mode_idx]    = [[rj.bounds[2], rj.bounds[3]], [rj.bounds[0], rj.bounds[1]]];
+    log(`Area: ${radio.name} @ ${mode.freq} MHz done.`);
+}
+
+async function runRadioModeInterferenceCalc(radio, mode_idx) {
+    const jammers = radios.filter(r => r.name !== radio.name).map(r => r.calc_name[r.mode_idx]);
+    const mode    = modes[mode_idx];
+    setStatusMsg(`Interference: ${radio.name} @ ${mode.freq} MHz…`);
+    const rj = await sendInterferenceRequest(radio.calc_name[mode_idx], jammers);
+    radio.percentage_above_js_threshold[mode_idx] =
+        rj.percentages_above_js.find(e => e.js === table_js_threshold).percentage;
+    log(`Interference: ${radio.name} @ ${mode.freq} MHz = ${radio.percentage_above_js_threshold[mode_idx].toFixed(1)}%`);
+}
+
+async function calculate() {
+    if (!API_KEY || API_KEY === 'YOUR_API_KEY_HERE') {
+        setStatus('API key not configured — edit the API_KEY constant at the top of this file.', 'error');
+        return;
+    }
+    lockRadios();
+    clearTable();
+    setStatusHTML('<span class="spin"></span> Calculating area coverage…', 'running');
+
+    try {
+        // Remove stale layers and run area calcs for changed radios
+        radios.forEach(r => { if (r.changed) removeRadioLayer(r); });
+
+        for (const radio of radios) {
+            if (radio.changed) {
+                await runRadioModeAreaCalc(radio, radio.mode_idx);
+                await updateRadioLayer(radio);
+                await areaDelay();
+                //radio.changed = false;
+            }
+        }
+
+        // Run remaining frequency options
+        for (const radio of radios) {
+            if (radio.changed) {
+                for (let mi = 0; mi < modes.length; mi++) {
+                    if (mi === radio.mode_idx) continue;
+                    await runRadioModeAreaCalc(radio, mi);
+                    await areaDelay();
+                }
+            }
+        }
+
+        radios.forEach(r => { r.changed = false; });
+
+        // Interference calculations
+        setStatusHTML('<span class="spin"></span> Running interference calculations…', 'running');
+        for (const radio of radios) {
+            for (let mi = 0; mi < modes.length; mi++) {
+                await runRadioModeInterferenceCalc(radio, mi);
+                buildTable();
+                await interferDelay();
+            }
+        }
+
+        setStatus('Calculations complete. Drag a car or click a frequency cell to explore.', 'done');
+        setBadge(`${radios.length} radios · ${modes.length} freqs`);
+        log('All calculations complete.');
+
+    } catch (e) {
+        setStatus(`Error: ${e.message}`, 'error');
+        log(`Error: ${e.message}`);
+    }
+
+    unlockRadios();
+    clearStatusMsg();
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FREQUENCY REASSIGNMENT
+   ════════════════════════════════════════════════════════════════════════════ */
+async function setRadioMode(radio, mode_idx) {
+    if (radio.mode_idx === mode_idx) return;
+    radio.mode_idx = mode_idx;
+    radio.changed = true;
+    radio.setIcon(await createRadioIcon(radio.name, mode_idx));
+    removeRadioLayer(radio);
+    setStatus('Frequency reassigned. Press Calculate to update the interference analysis.', 'idle');
+    setStatusMsg('Frequency changed — press Calculate to rerun.');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TABLE RENDERING
+   ════════════════════════════════════════════════════════════════════════════ */
+function clearTable() {
+    radios.forEach(r => { r.percentage_above_js_threshold = []; });
+    buildTable();
+}
+
+function buildTable() {
+    const $table = $('#spectrum-table');
+    $table.empty();
+
+    const $thead = $('<thead>');
+    const $hrow  = $('<tr>');
+    $hrow.append('<th>Radio</th>');
+    modes.forEach(m => {
+        $hrow.append(`<th style="text-align:right;color:rgb(${m.color.join(',')});">${m.freq} MHz</th>`);
+    });
+    $thead.append($hrow);
+    $table.append($thead);
+
+    const $tbody = $('<tbody>');
+    radios.forEach(radio => {
+        const best = Math.min(...modes.map((_, mi) => radio.percentage_above_js_threshold[mi] ?? Infinity));
+        const $row = $('<tr>');
+        $row.append(`<td style="font-weight:600;">${radio.name}</td>`);
+        modes.forEach((_, mi) => {
+            const pct = radio.percentage_above_js_threshold[mi];
+            let $cell;
+            if (pct === undefined) {
+                $cell = $('<td style="text-align:right;font-family:monospace;color:#aaa;">—</td>');
+            } else {
+                const fw      = pct.toFixed(2) === best.toFixed(2) ? 'bold' : 'normal';
+                const bgClass = pct > 50 ? 'bg-danger text-white' : pct > 25 ? 'bg-warning' : 'bg-success text-white';
+                if (radio.mode_idx === mi) {
+                    $cell = $(`<td class="${bgClass}" style="text-align:right;font-family:monospace;font-weight:${fw};text-decoration:underline;">${pct.toFixed(0)}%</td>`);
+                } else {
+                    $cell = $(`<td class="${bgClass}" style="text-align:right;font-family:monospace;font-weight:${fw};cursor:pointer;">${pct.toFixed(0)}%</td>`);
+                    $cell.on('click', () => setRadioMode(radio, mi));
+                }
+            }
+            $row.append($cell);
+        });
+        $tbody.append($row);
+    });
+    $table.append($tbody);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CLEAR ALL
+   ════════════════════════════════════════════════════════════════════════════ */
+function clearAll() {
+    map.eachLayer(l => { if (l instanceof L.ImageOverlay) map.removeLayer(l); });
+    radios.forEach(r => {
+        r.changed = true;
+        r.calc_name = [];
+        r.png_url = [];
+        r.bounds = [];
+        r.percentage_above_js_threshold = [];
+    });
+    clearTable();
+    setStatus('Cleared. Press Calculate to rerun.', 'idle');
+    clearStatusMsg();
+    log('Overlays cleared.');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INIT — add radios and kick off first calculation
+   ════════════════════════════════════════════════════════════════════════════ */
+(async () => {
+    log('Map ready. Adding 3 radio cars to Eifel, Germany…');
+    await addRadio(50.3350, 6.921,    'Car 1', 0);
+    await addRadio(50.3360, 6.9437,  'Car 2', 1);
+    await addRadio(50.3309, 6.961,    'Car 3', 2);
+    buildTable();
+    log('Cars added. Press Calculate to run the initial interference analysis.');
+    setStatus('Ready. Press Calculate to run the interference analysis.', 'idle');
+})();
+</script>
+</body>
+</html>

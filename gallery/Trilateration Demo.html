@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<!--
+════════════════════════════════════════════════════════════════════════════════
+  Trilateration Demo
+  ─────────────────────────────────────────────────────────────────────────────
+  Three tower receivers (A, B, C) trilaterate an 800 MHz signal source.
+  Step 1 — Calculate coverage uses the CloudRF /area API per tower.
+  Step 2 — Adjust the RSSI sliders (or use the demo presets) to send a
+           /trilateration request and render the probability overlay.
+
+  DEPENDENCIES (CDN)
+    • Leaflet 1.9.4   — interactive map
+    • Bootstrap 5.3.2 — layout & modal
+    • jQuery 3.6.3    — DOM helpers
+════════════════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CloudRF Trilateration Demo</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+<style>
+:root {
+    --navy:   #0a1628;
+    --navy2:  #112240;
+    --accent: #1a8cff;
+}
+
+html, body { height: 100%; margin: 0; padding: 0; }
+body {
+    display: flex;
+    flex-direction: column;
+    background: #eef1f5;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+}
+
+/* ── Header ── */
+.app-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    color: #fff;
+    padding: 10px 16px 8px;
+    border-bottom: 3px solid var(--accent);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.app-header .header-text h5   { margin: 0; font-weight: 700; letter-spacing: .4px; font-size: 15px; }
+.app-header .header-text .sub { font-size: 11px; color: #8bacc8; margin-top: 2px; }
+.app-header .header-logo img  {
+    height: 36px; width: auto; opacity: .9;
+    filter: drop-shadow(0 0 4px rgba(26,140,255,.4));
+}
+
+/* ── Config strip ── */
+.config-strip {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 7px 14px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.config-strip label { font-size: 11px; font-weight: 600; color: #495057; white-space: nowrap; }
+.slider-group { display: flex; align-items: center; gap: 8px; }
+.slider-group input[type=range] { width: 110px; cursor: pointer; }
+.slider-val {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    min-width: 52px; text-align: right;
+}
+
+/* ── Map ── */
+#mapTrilateration { flex: 1; min-height: 400px; }
+
+/* ── Status bar ── */
+.status-bar {
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+    padding: 5px 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.status-bar #statusText { font-weight: 600; flex: 1; }
+.status-idle    { color: #6c757d; }
+.status-running { color: var(--accent); }
+.status-done    { color: #198754; }
+.status-error   { color: #dc3545; }
+
+/* ── Log / JSON tab panel ── */
+.log-wrap { background: #fff; border-top: 1px solid #dee2e6; flex-shrink: 0; }
+.log-wrap .nav-tabs { padding: 4px 14px 0; border-bottom: 1px solid #dee2e6; }
+.log-wrap .nav-tabs .nav-link { font-size: 11px; font-weight: 600; color: #6c757d; padding: 3px 10px; border-radius: 4px 4px 0 0; }
+.log-wrap .nav-tabs .nav-link.active { color: #0d6efd; background: #fff; }
+.log-pane {
+    height: 18vh; max-height: 18vh;
+    overflow-y: auto;
+    font-size: 11px; font-family: Consolas, monospace;
+    background: #111827; color: #6ee7b7;
+    padding: 7px 10px; margin: 0 14px 8px;
+    border-radius: 0 4px 4px 4px;
+    white-space: pre-wrap; word-break: break-all;
+}
+#paneRequest  { color: #93c5fd; }
+#paneResponse { color: #fde68a; }
+
+.spin {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid #4b6a8a; border-top-color: var(--accent);
+    border-radius: 50%; animation: rotate .7s linear infinite;
+    vertical-align: middle; margin-right: 4px;
+}
+@keyframes rotate { to { transform: rotate(360deg); } }
+</style>
+</head>
+
+<body>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
+<div class="app-header">
+    <div class="header-text">
+        <h5>📡 Trilateration Demo</h5>
+        <div class="sub">Three towers triangulate a signal source | Adjust RSSI sliders to narrow the search area @ 800 MHz</div>
+    </div>
+    <div class="header-logo">
+        <img src="logo.png" alt="Logo" title="Powered by CloudRF"
+             onerror="this.style.display='none'">
+    </div>
+</div>
+
+<!-- ═══ CONFIG STRIP ══════════════════════════════════════════════════════════ -->
+<div class="config-strip">
+
+    <!-- Step 1 -->
+    <div>
+        <label class="d-block mb-1">Step 1</label>
+        <button class="btn btn-sm btn-primary" onclick="setupSites()">Model receiver coverage</button>
+    </div>
+
+    <div class="vr"></div>
+
+    <!-- Receiver A -->
+    <div>
+        <label class="d-block mb-1">Rx A (dBm)</label>
+        <div class="slider-group">
+            <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-A1"
+                   oninput="onSliderUpdated('A1')" onchange="sendTriReq()">
+            <span class="slider-val" id="slider-A1-value">−90 dBm</span>
+        </div>
+    </div>
+
+    <!-- Receiver B -->
+    <div>
+        <label class="d-block mb-1">Rx B (dBm)</label>
+        <div class="slider-group">
+            <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-B1"
+                   oninput="onSliderUpdated('B1')" onchange="sendTriReq()">
+            <span class="slider-val" id="slider-B1-value">−90 dBm</span>
+        </div>
+    </div>
+
+    <!-- Receiver C -->
+    <div>
+        <label class="d-block mb-1">Rx C (dBm)</label>
+        <div class="slider-group">
+            <input type="range" min="-110" max="-60" value="-90" class="slider" id="slider-C1"
+                   oninput="onSliderUpdated('C1')" onchange="sendTriReq()">
+            <span class="slider-val" id="slider-C1-value">−90 dBm</span>
+        </div>
+    </div>
+
+    <div class="vr"></div>
+
+    <!-- Demo presets -->
+    <div>
+        <label class="d-block mb-1">Demo Presets</label>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                📍 Canned demos
+            </button>
+            <ul class="dropdown-menu" style="font-size:12px; min-width:220px;">
+                <li>
+                    <a class="dropdown-item" href="#" onclick="demo(-62,-100,-100); return false;">
+                        Near Tower A <small class="text-muted ms-1">(~0.1 km²)</small>
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="demo(-74,-92,-77); return false;">
+                        Road midway <small class="text-muted ms-1">(~4.7 km²)</small>
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="demo(-102,-67,-74); return false;">
+                        Near Tower B <small class="text-muted ms-1">(~1.9 km²)</small>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="ms-auto d-flex gap-2 align-items-center">
+        <button class="btn btn-sm btn-outline-secondary" onclick="clearOverlay()">🗑 Clear</button>
+        <button class="btn btn-sm btn-outline-secondary" id="btnSettings"
+                data-bs-toggle="modal" data-bs-target="#settingsModal"
+                title="API Settings"
+                style="padding:3px 7px; font-size:15px; line-height:1;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 style="vertical-align:middle; margin-top:-2px;">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33
+                         1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33
+                         l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1
+                         0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06
+                         A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51
+                         1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9
+                         a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
+    </div>
+
+</div>
+
+<!-- ═══ SETTINGS MODAL ════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm" style="max-width:320px;">
+        <div class="modal-content">
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title mb-0" id="settingsModalLabel" style="font-size:13px; font-weight:700;">
+                    API Settings
+                </h6>
+                <button type="button" class="btn-close" style="width:.6rem;height:.6rem;" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-3 py-3">
+                <div class="mb-3">
+                    <label for="settingsApiUrl" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API URL</label>
+                    <input type="text" class="form-control form-control-sm" id="settingsApiUrl" placeholder="https://api.cloudrf.com">
+                </div>
+                <div class="mb-1">
+                    <label for="settingsApiKey" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API Key</label>
+                    <input type="password" class="form-control form-control-sm" id="settingsApiKey" placeholder="Your CloudRF key">
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="saveApiSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MAP ═══════════════════════════════════════════════════════════════════ -->
+<div id="mapTrilateration"></div>
+
+<!-- ═══ STATUS BAR ═══════════════════════════════════════════════════════════ -->
+<div class="status-bar">
+    <span id="statusText" class="status-idle">
+        Press ⚙ Settings to enter your API key, then Calculate Coverage to prepare the tower layers, then adjust the sliders.
+    </span>
+    <span id="calcBadge" class="text-muted" style="font-size:11px; white-space:nowrap;"></span>
+</div>
+
+<!-- ═══ LOG / JSON TABS ══════════════════════════════════════════════════════ -->
+<div class="log-wrap">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabLog"      type="button">📋 Activity Log</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabRequest"  type="button">📤 Request</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabResponse" type="button">📥 Response</button>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabLog">
+            <div id="activityLog" class="log-pane"></div>
+        </div>
+        <div class="tab-pane fade" id="tabRequest">
+            <div id="paneRequest" class="log-pane">No request yet.</div>
+        </div>
+        <div class="tab-pane fade" id="tabResponse">
+            <div id="paneResponse" class="log-pane">No response yet.</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ SCRIPTS ══════════════════════════════════════════════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CREDENTIALS — stored in localStorage; editable via ⚙ Settings
+   ════════════════════════════════════════════════════════════════════════════ */
+let API_KEY = localStorage.getItem('df_api_key') ?? '';
+let API_URL = localStorage.getItem('df_api_url') ?? 'https://api.cloudrf.com';
+
+function saveApiSettings() {
+    const newUrl = document.getElementById('settingsApiUrl').value.trim().replace(/\/$/, '');
+    const newKey = document.getElementById('settingsApiKey').value.trim();
+    if (newUrl) { API_URL = newUrl; localStorage.setItem('df_api_url', newUrl); }
+    if (newKey) { API_KEY = newKey; localStorage.setItem('df_api_key', newKey); }
+    bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+    log(`Settings saved — URL: ${API_URL}`);
+}
+
+document.getElementById('settingsModal').addEventListener('show.bs.modal', () => {
+    document.getElementById('settingsApiUrl').value = API_URL;
+    document.getElementById('settingsApiKey').value = API_KEY;
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════════════════════════════════════ */
+function setStatus(msg, state) {
+    const el = document.getElementById('statusText');
+    el.textContent = msg;
+    el.className   = 'status-' + state;
+}
+function setStatusHTML(html, state) {
+    const el = document.getElementById('statusText');
+    el.innerHTML = html;
+    el.className = 'status-' + state;
+}
+function setBadge(txt) { document.getElementById('calcBadge').textContent = txt; }
+function log(msg) {
+    const el = document.getElementById('activityLog');
+    el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+    el.scrollTop    = el.scrollHeight;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MAP SETUP
+   ════════════════════════════════════════════════════════════════════════════ */
+var map = L.map('mapTrilateration').setView([35.329895, -116.22496], 12);
+
+const osmLayer=L.tileLayer('https://maps.cloudrf.com/wmts/contours/mercator/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://cloudrf.com">CloudRF</a>',maxZoom:16});
+const satLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri',maxZoom:16});
+osmLayer.addTo(map);
+L.control.layers({'Contours':osmLayer,'Satellite':satLayer},{},{position:'topright',collapsed:false}).addTo(map);
+
+/* ════════════════════════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════════════════════════ */
+var site_markers = [];
+var site_names   = new Map();
+
+const area_request_delay_ms = 4000;
+const errordB = 10;
+
+/* ════════════════════════════════════════════════════════════════════════════
+   API TEMPLATE
+   ════════════════════════════════════════════════════════════════════════════ */
+const site_template = {
+    network:     'Trilateration-demo',
+    engine:      2,
+    transmitter: { alt: 15, frq: 800, txw: 0.5, bwi: 0.1 },
+    receiver:    { lat: 0, lon: 0, alt: 1, rxg: 0, rxs: -99 },
+    antenna:     { txg: 2.15, txl: 0, ant: 1, azi: 0, tlt: 0, pol: 'v', fbr: 0 },
+    model:       { pm: 1, pe: 2, ked: 1, rel: 50 },
+    environment: { clt: 'Minimal.clt', elevation: 1, landcover: 1, buildings: 0, obstacles: 0 },
+    output:      { units: 'm', col: '9', out: 2, nf: -114, res: 30, rad: 15 }
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ADD SITE MARKERS
+   ════════════════════════════════════════════════════════════════════════════ */
+function addSite(id, latitude, longitude) {
+    const icon = new L.Icon({
+        iconUrl:     './Trilateration Demo_files/tower.png',
+        iconSize:    [40, 40],
+        iconAnchor:  [20, 20],
+        popupAnchor: [20, 20]
+    });
+
+    const marker = new L.marker(new L.LatLng(latitude, longitude), { title: `Tower ${id}`, icon });
+    marker.bindTooltip(id, { permanent: true, direction: 'right', offset: L.point(10, 5) });
+    marker.id = id;
+
+    map.addLayer(marker);
+    site_markers.push(marker);
+    log(`Tower ${id} placed at (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SETUP SITES — fires /area for each tower sequentially
+   ════════════════════════════════════════════════════════════════════════════ */
+function setupSites() {
+    if (!API_KEY) {
+        setStatus('No API key — click ⚙ Settings to enter your CloudRF API key.', 'error');
+        log('Error: API key not configured.');
+        return;
+    }
+
+    site_names = new Map();
+    setStatusHTML('<span class="spin"></span> Calculating coverage for all 3 towers…', 'running');
+    log('Starting coverage calculation for towers A, B, C…');
+
+    const site_requests = site_markers.map((s, i) =>
+        new Promise(async function (resolve, reject) {
+            await new Promise(res => setTimeout(res, i * area_request_delay_ms));
+            setupSite(s, resolve, reject);
+        })
+    );
+
+    Promise.all(site_requests).then(() => {
+        log('All tower coverage layers ready. Sending initial trilateration…');
+        sendTriReq();
+    }).catch(err => {
+        setStatus(`Setup error: ${err}`, 'error');
+        log(`Error: ${err}`);
+        document.getElementById('paneResponse').textContent = `Error: ${err}`;
+    });
+}
+
+async function setupSite(site, resolve, reject) {
+    try {
+        const latitude  = site._latlng.lat;
+        const longitude = site._latlng.lng;
+
+        // Clone template and apply tower position
+        const req             = JSON.parse(JSON.stringify(site_template));
+        req.transmitter.lat   = latitude;
+        req.transmitter.lon   = longitude;
+        req.site              = site.id;
+
+        const requestJson = JSON.stringify(req, null, 4);
+        document.getElementById('paneRequest').textContent  = `POST /area (Tower ${site.id})\n\n${requestJson}`;
+        document.getElementById('paneResponse').textContent = `Sending Tower ${site.id}…`;
+
+        log(`  Tower ${site.id}: calling /area from (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+
+        const response = await fetch(`${API_URL}/area`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'key': API_KEY },
+            body:    requestJson
+        });
+
+        const rj = await response.json();
+        document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 4);
+
+        const re        = new RegExp(`([0-9]+_${site_template.network}_${site.id})\\.4326\\.png`);
+        const re_result = re.exec(rj.PNG_WGS84);
+
+        if (re_result == null) {
+            reject(`Tower ${site.id}: could not parse site name from response.`);
+            return;
+        }
+
+        site_names.set(site.id, re_result[1]);
+        log(`  Tower ${site.id}: coverage layer ready — ${re_result[1]}`);
+        setBadge(`${site_names.size}/3 towers done`);
+        resolve();
+    } catch (e) {
+        reject(`Tower ${site.id}: ${e.message}`);
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SLIDER
+   ════════════════════════════════════════════════════════════════════════════ */
+function onSliderUpdated(id) {
+    const value = document.getElementById(`slider-${id}`).value;
+    document.getElementById(`slider-${id}-value`).textContent = `${value} dBm`;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TRILATERATION REQUEST
+   ════════════════════════════════════════════════════════════════════════════ */
+function sendTriReq() {
+    if (site_names.size === 0) {
+        setStatus('No coverage layers yet — press Calculate Coverage first.', 'error');
+        log('Error: no coverage layers. Run Calculate Coverage first.');
+        return;
+    }
+    if (!API_KEY) {
+        setStatus('No API key — click ⚙ Settings to enter your CloudRF API key.', 'error');
+        return;
+    }
+
+    const connected = [];
+    site_names.forEach((name, id) => {
+        connected.push({
+            site: name,
+            rssi: document.getElementById(`slider-${id}`).value
+        });
+    });
+
+    const request = JSON.stringify({
+        connected:    connected,
+        disconnected: [],
+        colourKey:    '9',
+        errordB:      errordB
+    }, null, 4);
+
+    document.getElementById('paneRequest').textContent  = `POST /trilateration\n\n${request}`;
+    document.getElementById('paneResponse').textContent = 'Sending trilateration request…';
+
+    setStatusHTML('<span class="spin"></span> Trilaterating…', 'running');
+    log(`Trilateration request: Rx A=${document.getElementById('slider-A1').value}, B=${document.getElementById('slider-B1').value}, C=${document.getElementById('slider-C1').value} dBm`);
+
+    const t0 = Date.now();
+
+    fetch(`${API_URL}/trilateration`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'key': API_KEY },
+        body:    request
+    }).then(async function (response) {
+        const rj = await response.json();
+        document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 4);
+
+        const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+        if (!rj.pngUrl || !rj.pngBounds) {
+            setStatus(`API error: ${rj?.error || rj?.message || 'unknown'}`, 'error');
+            log(`Error: ${JSON.stringify(rj)}`);
+            return;
+        }
+
+        const bounds = [
+            [rj.pngBounds[2], rj.pngBounds[3]],
+            [rj.pngBounds[0], rj.pngBounds[1]],
+        ];
+
+        map.eachLayer(function (layer) {
+            if (layer instanceof L.ImageOverlay) map.removeLayer(layer);
+        });
+
+        L.imageOverlay(rj.pngUrl, bounds).setOpacity(0.7).addTo(map);
+
+        setBadge(`Trilaterated in ${elapsed}s`);
+        setStatus('Trilateration overlay updated. Adjust sliders to refine the search area.', 'done');
+        log(`Trilateration overlay rendered in ${elapsed}s.`);
+
+    }).catch(e => {
+        setStatus(`Network error: ${e.message}`, 'error');
+        log(`Error: ${e.message}`);
+        document.getElementById('paneResponse').textContent = `Network error: ${e.message}`;
+    });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DEMO PRESETS
+   ════════════════════════════════════════════════════════════════════════════ */
+function demo(RxA, RxB, RxC) {
+    document.getElementById('slider-A1').value = RxA;
+    document.getElementById('slider-B1').value = RxB;
+    document.getElementById('slider-C1').value = RxC;
+    onSliderUpdated('A1');
+    onSliderUpdated('B1');
+    onSliderUpdated('C1');
+    log(`Demo preset: Rx A=${RxA}, B=${RxB}, C=${RxC} dBm`);
+    sendTriReq();
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CLEAR
+   ════════════════════════════════════════════════════════════════════════════ */
+function clearOverlay() {
+    map.eachLayer(function (layer) {
+        if (layer instanceof L.ImageOverlay) map.removeLayer(layer);
+    });
+    setBadge('');
+    setStatus('Overlay cleared. Press Calculate Coverage to reload the tower layers.', 'idle');
+    log('Overlay cleared.');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INIT — place towers and initialise slider labels
+   ════════════════════════════════════════════════════════════════════════════ */
+addSite('A1', 35.286213, -116.28073);
+addSite('B1', 35.329895, -116.22496);
+addSite('C1', 35.348316, -116.25884);
+
+onSliderUpdated('A1');
+onSliderUpdated('B1');
+onSliderUpdated('C1');
+
+log('Map ready. 3 towers deployed near Barstow, California:');
+log('  📡 Tower A1: (35.2862, -116.2807)');
+log('  📡 Tower B1: (35.3299, -116.2250)');
+log('  📡 Tower C1: (35.3483, -116.2588)');
+log('Enter your API key via ⚙ Settings, then press Calculate Coverage to begin.');
+</script>
+
+</body>
+</html>

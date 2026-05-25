@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<!--
+════════════════════════════════════════════════════════════════════════════════
+  CloudRF Interference Leaflet Demo
+  ─────────────────────────────────────────────────────────────────────────────
+  Models PMR446 interference between blue (signal) and red (noise) car radios.
+  Uses the CloudRF /multisite and /interference APIs.
+
+  DEPENDENCIES (CDN)
+    • Leaflet 1.9.4   — interactive map
+    • Bootstrap 5.3.2 — layout & modal
+    • jQuery 3.6.3    — DOM helpers used by original CloudRF logic
+════════════════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CloudRF Interference Demo</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+<style>
+:root {
+    --navy:   #0a1628;
+    --navy2:  #112240;
+    --accent: #1a8cff;
+}
+
+html, body { height: 100%; margin: 0; padding: 0; }
+body {
+    display: flex;
+    flex-direction: column;
+    background: #eef1f5;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+}
+
+/* ── Header ── */
+.app-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    color: #fff;
+    padding: 10px 16px 8px;
+    border-bottom: 3px solid var(--accent);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.app-header .header-text h5   { margin: 0; font-weight: 700; letter-spacing: .4px; font-size: 15px; }
+.app-header .header-text .sub { font-size: 11px; color: #8bacc8; margin-top: 2px; }
+.app-header .header-logo img  {
+    height: 36px; width: auto; opacity: .9;
+    filter: drop-shadow(0 0 4px rgba(26,140,255,.4));
+}
+
+/* ── Config strip ── */
+.config-strip {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 7px 14px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.config-strip label { font-size: 11px; font-weight: 600; color: #495057; white-space: nowrap; }
+.radio-legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: #495057;
+}
+.radio-legend .swatch {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,.2);
+    vertical-align: middle;
+    margin-right: 3px;
+}
+
+/* ── Map ── */
+#mapInterference { flex: 1; min-height: 400px; }
+
+/* ── Status bar ── */
+.status-bar {
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+    padding: 5px 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.status-bar #statusText { font-weight: 600; flex: 1; }
+.status-idle    { color: #6c757d; }
+.status-running { color: var(--accent); }
+.status-done    { color: #198754; }
+.status-error   { color: #dc3545; }
+
+/* ── Log / JSON tab panel ── */
+.log-wrap { background: #fff; border-top: 1px solid #dee2e6; flex-shrink: 0; }
+.log-wrap .nav-tabs { padding: 4px 14px 0; border-bottom: 1px solid #dee2e6; }
+.log-wrap .nav-tabs .nav-link { font-size: 11px; font-weight: 600; color: #6c757d; padding: 3px 10px; border-radius: 4px 4px 0 0; }
+.log-wrap .nav-tabs .nav-link.active { color: #0d6efd; background: #fff; }
+.log-pane {
+    height: 18vh; max-height: 18vh;
+    overflow-y: auto;
+    font-size: 11px; font-family: Consolas, monospace;
+    background: #111827; color: #6ee7b7;
+    padding: 7px 10px; margin: 0 14px 8px;
+    border-radius: 0 4px 4px 4px;
+    white-space: pre-wrap; word-break: break-all;
+}
+#paneRequest  { color: #93c5fd; }
+#paneResponse { color: #fde68a; }
+
+.spin {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid #4b6a8a; border-top-color: var(--accent);
+    border-radius: 50%; animation: rotate .7s linear infinite;
+    vertical-align: middle; margin-right: 4px;
+}
+@keyframes rotate { to { transform: rotate(360deg); } }
+</style>
+</head>
+
+<body>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
+<div class="app-header">
+    <div class="header-text">
+        <h5>📻 Interference API Demo</h5>
+        <div class="sub">Drag the cars to reposition · Blue = signal radios · Red = noise radios · PMR446 (446 MHz)</div>
+    </div>
+    <div class="header-logo">
+        <img src="logo.png" alt="Logo" title="Powered by CloudRF"
+             onerror="this.style.display='none'">
+    </div>
+</div>
+
+<!-- ═══ CONFIG STRIP ══════════════════════════════════════════════════════════ -->
+<div class="config-strip">
+
+    <div class="radio-legend">
+        <span>
+            <span class="swatch" style="background:#3b82f6;"></span>Signal radios (blue cars)
+        </span>
+        <span>
+            <span class="swatch" style="background:#ef4444;"></span>Noise radios (red cars)
+        </span>
+    </div>
+
+    <div class="vr"></div>
+
+    <div style="font-size:11px; color:#6c757d;">
+        446 MHz · 2 W · Multisite + Interference API
+    </div>
+
+    <div class="ms-auto d-flex gap-2 align-items-center">
+        <button class="btn btn-sm btn-primary" onclick="forceCalculate()">📡 Calculate Interference</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="clearOverlay()">🗑 Clear</button>
+        <button class="btn btn-sm btn-outline-secondary" id="btnSettings"
+                data-bs-toggle="modal" data-bs-target="#settingsModal"
+                title="API Settings"
+                style="padding:3px 7px; font-size:15px; line-height:1;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 style="vertical-align:middle; margin-top:-2px;">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33
+                         1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33
+                         l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1
+                         0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06
+                         A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51
+                         1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9
+                         a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
+    </div>
+
+</div>
+
+<!-- ═══ SETTINGS MODAL ════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm" style="max-width:320px;">
+        <div class="modal-content">
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title mb-0" id="settingsModalLabel" style="font-size:13px; font-weight:700;">
+                    API Settings
+                </h6>
+                <button type="button" class="btn-close" style="width:.6rem;height:.6rem;" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-3 py-3">
+                <div class="mb-3">
+                    <label for="settingsApiUrl" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API URL</label>
+                    <input type="text" class="form-control form-control-sm" id="settingsApiUrl" placeholder="https://api.cloudrf.com">
+                </div>
+                <div class="mb-1">
+                    <label for="settingsApiKey" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API Key</label>
+                    <input type="password" class="form-control form-control-sm" id="settingsApiKey" placeholder="Your CloudRF key">
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="saveApiSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MAP ═══════════════════════════════════════════════════════════════════ -->
+<div id="mapInterference"></div>
+
+<!-- ═══ STATUS BAR ═══════════════════════════════════════════════════════════ -->
+<div class="status-bar">
+    <span id="statusText" class="status-idle">Drag the cars to reposition, then press Calculate — or drag a car to trigger an automatic recalculation.</span>
+    <span id="calcBadge" class="text-muted" style="font-size:11px; white-space:nowrap;"></span>
+</div>
+
+<!-- ═══ LOG / JSON TABS ══════════════════════════════════════════════════════ -->
+<div class="log-wrap">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabLog"      type="button">📋 Activity Log</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabRequest"  type="button">📤 Request</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabResponse" type="button">📥 Response</button>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabLog">
+            <div id="activityLog" class="log-pane"></div>
+        </div>
+        <div class="tab-pane fade" id="tabRequest">
+            <div id="paneRequest" class="log-pane">No request yet.</div>
+        </div>
+        <div class="tab-pane fade" id="tabResponse">
+            <div id="paneResponse" class="log-pane">No response yet.</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ SCRIPTS ══════════════════════════════════════════════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js" crossorigin="anonymous"></script>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CREDENTIALS — stored in localStorage; editable via ⚙ Settings
+   ════════════════════════════════════════════════════════════════════════════ */
+let API_KEY = localStorage.getItem('df_api_key') ?? '';
+let API_URL = localStorage.getItem('df_api_url') ?? 'https://api.cloudrf.com';
+
+function saveApiSettings() {
+    const newUrl = document.getElementById('settingsApiUrl').value.trim().replace(/\/$/, '');
+    const newKey = document.getElementById('settingsApiKey').value.trim();
+    if (newUrl) { API_URL = newUrl; localStorage.setItem('df_api_url', newUrl); }
+    if (newKey) { API_KEY = newKey; localStorage.setItem('df_api_key', newKey); }
+    bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+    log(`Settings saved — URL: ${API_URL}`);
+}
+
+document.getElementById('settingsModal').addEventListener('show.bs.modal', () => {
+    document.getElementById('settingsApiUrl').value = API_URL;
+    document.getElementById('settingsApiKey').value = API_KEY;
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════════════════════════════════════ */
+function setStatus(msg, state) {
+    const el = document.getElementById('statusText');
+    el.textContent = msg;
+    el.className   = 'status-' + state;
+}
+function setStatusHTML(html, state) {
+    const el = document.getElementById('statusText');
+    el.innerHTML = html;
+    el.className = 'status-' + state;
+}
+function setBadge(txt) { document.getElementById('calcBadge').textContent = txt; }
+function log(msg) {
+    const el = document.getElementById('activityLog');
+    el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+    el.scrollTop    = el.scrollHeight;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MAP SETUP
+   ════════════════════════════════════════════════════════════════════════════ */
+var map = L.map('mapInterference').setView([50.333, 6.941], 14);
+
+const osmLayer=L.tileLayer('https://maps.cloudrf.com/wmts/contours/mercator/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://cloudrf.com">CloudRF</a>',maxZoom:16});
+const satLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri',maxZoom:16});
+
+osmLayer.addTo(map);
+L.control.layers({'Contours':osmLayer,'Satellite':satLayer},{},{position:'topright',collapsed:false}).addTo(map);
+
+/* ════════════════════════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════════════════════════ */
+var signal_radios = [];
+var noise_radios  = [];
+
+var signal_radios_changed = false;
+var noise_radios_changed  = false;
+
+var signal_calc_name = null;
+var noise_calc_name  = null;
+
+const multsite_request_delay_ms = 2000;
+
+/* ════════════════════════════════════════════════════════════════════════════
+   API TEMPLATE
+   ════════════════════════════════════════════════════════════════════════════ */
+const radio_template = {
+    network: 'QRM-demo',
+    engine: 2,
+    transmitter: { alt: 1.5, frq: 446, txw: 4.0, bwi: 0.0125 },
+    receiver:    { alt: 1.5, rxg: 2, rxs: -95 },
+    antenna:     { txg: 2, txl: 0, ant: 1, azi: 0, tlt: 0, pol: 'v', fbr: 0 },
+    model:       { pm: 10, pe: 1, ked: 2, rel: 50 },
+    environment: { clt: 'Temperate.clt', elevation: 2, landcover: 1, buildings: 0, obstacles: 0 },
+    output:      { units: 'm', col: '9', out: 2, nf: -105, res: 10, rad: 2 }
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MARKER ICONS
+   ════════════════════════════════════════════════════════════════════════════ */
+var LeafIcon = L.Icon.extend({
+    options: { iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, 0] }
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ADD RADIOS
+   ════════════════════════════════════════════════════════════════════════════ */
+function addSignalRadio(latitude, longitude) {
+    const radio = new L.marker([latitude, longitude], {
+        title:     `Signal Radio ${signal_radios.length + 1}`,
+        draggable: true,
+        icon:      new LeafIcon({ iconUrl: './CloudRF Interference Leaflet Demo_files/car_blue.png' })
+    });
+    map.addLayer(radio);
+    radio.on('dragend', function (event) {
+        const pos = event.target.getLatLng();
+        event.target.setLatLng(new L.LatLng(pos.lat, pos.lng), { draggable: true });
+        log(`Signal radio moved to (${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)})`);
+        signal_radios_changed = true;
+        calculateInterference();
+    });
+    signal_radios_changed = true;
+    signal_radios.push(radio);
+    log(`Signal radio ${signal_radios.length} placed at (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+}
+
+function addNoiseRadio(latitude, longitude) {
+    const radio = new L.marker([latitude, longitude], {
+        title:     `Noise Radio ${noise_radios.length + 1}`,
+        draggable: true,
+        icon:      new LeafIcon({ iconUrl: './CloudRF Interference Leaflet Demo_files/car_red.png' })
+    });
+    map.addLayer(radio);
+    radio.on('dragend', function (event) {
+        const pos = event.target.getLatLng();
+        event.target.setLatLng(new L.LatLng(pos.lat, pos.lng), { draggable: true });
+        log(`Noise radio moved to (${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)})`);
+        noise_radios_changed = true;
+        calculateInterference();
+    });
+    noise_radios_changed = true;
+    noise_radios.push(radio);
+    log(`Noise radio ${noise_radios.length} placed at (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CALCULATE — force both groups to recalculate
+   ════════════════════════════════════════════════════════════════════════════ */
+function forceCalculate() {
+    if (!API_KEY) {
+        setStatus('No API key — click ⚙ Settings to enter your CloudRF API key.', 'error');
+        log('Error: API key not configured.');
+        return;
+    }
+    signal_radios_changed = true;
+    noise_radios_changed  = true;
+    calculateInterference();
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CLEAR
+   ════════════════════════════════════════════════════════════════════════════ */
+function clearOverlay() {
+    map.eachLayer(function (layer) {
+        if (layer instanceof L.ImageOverlay) map.removeLayer(layer);
+    });
+    signal_calc_name = null;
+    noise_calc_name  = null;
+    setBadge('');
+    setStatus('Overlay cleared. Press Calculate or drag a car to recalculate.', 'idle');
+    log('Overlay cleared.');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INTERFERENCE WORKFLOW
+   ════════════════════════════════════════════════════════════════════════════ */
+function calculateInterference() {
+    if (!API_KEY) {
+        setStatus('No API key — click ⚙ Settings to enter your CloudRF API key.', 'error');
+        log('Error: API key not configured.');
+        return;
+    }
+
+    let calcs = [];
+
+    if (signal_radios_changed) {
+        const calc_signal = new Promise(async function (resolve, reject) {
+            await new Promise(res => setTimeout(res, calcs.length * multsite_request_delay_ms));
+            sendMultisiteRequest(signal_radios, 'signal').then((calc_name) => {
+                signal_calc_name = calc_name;
+                signal_radios_changed = false;
+                resolve();
+            }).catch(reject);
+        });
+        calcs.push(calc_signal);
+    }
+
+    if (noise_radios_changed) {
+        const calc_noise = new Promise(async function (resolve, reject) {
+            await new Promise(res => setTimeout(res, calcs.length * multsite_request_delay_ms));
+            sendMultisiteRequest(noise_radios, 'noise').then((calc_name) => {
+                noise_calc_name = calc_name;
+                noise_radios_changed = false;
+                resolve();
+            }).catch(reject);
+        });
+        calcs.push(calc_noise);
+    }
+
+    if (calcs.length === 0) {
+        // Both calcs already current — just re-run interference
+        if (signal_calc_name && noise_calc_name) {
+            sendInterferenceRequest();
+        }
+        return;
+    }
+
+    setStatusHTML('<span class="spin"></span> Running multisite calculations…', 'running');
+
+    Promise.all(calcs).then(() => {
+        sendInterferenceRequest();
+    }).catch(err => {
+        setStatus(`Error: ${err}`, 'error');
+        log(`Error: ${err}`);
+    });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MULTISITE REQUEST
+   ════════════════════════════════════════════════════════════════════════════ */
+function sendMultisiteRequest(sites, label) {
+    let request = { ...radio_template };
+    delete request.transmitter;
+    delete request.antenna;
+    request.site = radio_template.network;
+    request.transmitters = [];
+
+    sites.forEach((site) => {
+        let tx = { ...radio_template.transmitter };
+        tx.lat = site._latlng.lat;
+        tx.lon = site._latlng.lng;
+        tx.antenna = radio_template.antenna;
+        request.transmitters.push(tx);
+    });
+
+    const requestJson = JSON.stringify(request, null, 4);
+    document.getElementById('paneRequest').textContent  = `POST /multisite (${label})\n\n${requestJson}`;
+    document.getElementById('paneResponse').textContent = `Sending ${label} multisite request…`;
+
+    log(`Multisite request: ${label} (${sites.length} transmitter${sites.length !== 1 ? 's' : ''})`);
+
+    const re = new RegExp(`([0-9]+_${radio_template.network}_MULTISITE)\\.4326\\.png`);
+
+    return new Promise(async function (resolve, reject) {
+        try {
+            const resp = await fetch(`${API_URL}/multisite`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'key': API_KEY },
+                body:    requestJson
+            });
+            const rj = await resp.json();
+            document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 4);
+            log(`Multisite ${label} response received.`);
+
+            const re_result = re.exec(rj.PNG_WGS84);
+            if (re_result == null) {
+                reject(`Could not find site name in ${label} multisite response.`);
+            } else {
+                resolve(re_result[1]);
+            }
+        } catch (e) {
+            document.getElementById('paneResponse').textContent = `Network error: ${e.message}`;
+            reject(e.message);
+        }
+    });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INTERFERENCE REQUEST
+   ════════════════════════════════════════════════════════════════════════════ */
+function sendInterferenceRequest() {
+    const request = {
+        s_sites:    [signal_calc_name],
+        j_sites:    [noise_calc_name],
+        name:       'QRM-demo',
+        colour_key: 'JS.dB',
+    };
+
+    const requestJson = JSON.stringify(request, null, 4);
+    document.getElementById('paneRequest').textContent  = `POST /interference\n\n${requestJson}`;
+    document.getElementById('paneResponse').textContent = 'Sending interference request…';
+
+    setStatusHTML('<span class="spin"></span> Calculating interference map…', 'running');
+    log('Interference request sent.');
+
+    const t0 = Date.now();
+
+    // Rate-limit buffer on production
+    const delay = API_URL.includes('api.cloudrf.com') ? 1050 : 0;
+
+    setTimeout(async () => {
+        try {
+            const resp = await fetch(`${API_URL}/interference`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'key': API_KEY },
+                body:    requestJson
+            });
+            const rj = await resp.json();
+            document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 4);
+
+            const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+            if (!rj.PNG_Mercator || !rj.bounds) {
+                setStatus(`API error: ${rj?.error || rj?.message || 'unknown'}`, 'error');
+                log(`Error: ${JSON.stringify(rj)}`);
+                return;
+            }
+
+            const bounds = [
+                [rj.bounds[2], rj.bounds[3]],
+                [rj.bounds[0], rj.bounds[1]],
+            ];
+
+            map.eachLayer(function (layer) {
+                if (layer instanceof L.ImageOverlay) map.removeLayer(layer);
+            });
+
+            L.imageOverlay(rj.PNG_Mercator, bounds).setOpacity(0.7).addTo(map);
+
+            setBadge(`Updated in ${elapsed}s`);
+            setStatus('Interference map updated. Drag cars to reposition and recalculate.', 'done');
+            log(`Interference overlay rendered in ${elapsed}s.`);
+
+        } catch (e) {
+            setStatus(`Network error: ${e.message}`, 'error');
+            log(`Error: ${e.message}`);
+            document.getElementById('paneResponse').textContent = `Network error: ${e.message}`;
+        }
+    }, delay);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INIT — place radios
+   ════════════════════════════════════════════════════════════════════════════ */
+addSignalRadio(50.33508780839669, 6.946938369950825);
+addSignalRadio(50.33630126946575, 6.943714563675718);
+addNoiseRadio(50.33094332349924, 6.938598138059326);
+addNoiseRadio(50.32554681914269, 6.93672434416994);
+
+log('Map ready. 2 signal (blue) and 2 noise (red) car radios placed near Monschau, Germany.');
+log('Enter your API key via ⚙ Settings, then press Calculate or drag a car to start.');
+</script>
+
+</body>
+</html>

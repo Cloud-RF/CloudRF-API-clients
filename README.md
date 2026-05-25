@@ -10,6 +10,7 @@ In order to use these examples you require an account on the CloudRF service (or
 
 Below are the list of available examples which can be used. You are encouraged to read the respective `README.md` for each which will detail additional information and usage.
 
+- The [demo gallery](gallery/) has live demos to show our API in action
 - The [python](python/) directory contains a parent Python 3 script which allows interaction with all of the primary CloudRF API endpoints. This script is quite comprehensive and so for usage you are recommended to consult the [README](python/README.md) for more information.
 - The [bash](bash/) directory contains some Bash scripts which make use of cURL to to CloudRF API.
 - The [slippy-maps](slippy-maps/) directory contains examples of various web map libraries which interface with the CloudRF API.
@@ -20,11 +21,11 @@ Below are the list of available examples which can be used. You are encouraged t
 
 ## Commercial Use
 
-You are free to use the public API in commercial apps with attribution to *CloudRF*. If you need an exemption get in touch or buy [your own server](https://cloudrf.com/soothsayer).
+You are free to use the public API in commercial apps with attribution to *CloudRF*. If you need an exemption get in touch or buy [your own server](https://cloudrf.com/soothsayer) for a white-label solution.
 
 *An example of acceptable use would be a online map with an option to add RF coverage as an extra layer.*
 
-If you are building an application or a business which is **critically dependent** upon our API, you should contact us first to let us know and establish a service level agreement. 
+If you are building an application or a business which is **critically dependent** upon our public SaaS API, you should contact us first to let us know and establish a service level agreement. 
 
 *A random example of unacceptable use would be a used car salesman with a business MBA launching a new RF planning tool, without prior communication, which just wraps our API for a markup.*
 
@@ -46,6 +47,8 @@ Below are a list of resources which may aid you with writing your own clients to
 ## Live demos
 
 Paste your [API key]((https://cloudrf.com/my-account)) into these demos and click away.
+
+The [demo gallery](gallery/) has a selection of advanced demos relating to spectrum management.
 
 [Area coverage](https://cloud-rf.github.io/CloudRF-API-clients/slippy-maps/leaflet-area.html)
 

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<!-- CloudRF Drone Detection Demo — Local Edition — uses /multilink -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drone Detection Demo</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+<style>
+:root { --navy:#0a1628; --navy2:#112240; --accent:#1a8cff; }
+html,body { height:100%; margin:0; padding:0; }
+body { display:flex; flex-direction:column; background:#eef1f5; font-family:'Segoe UI',sans-serif; font-size:14px; }
+
+.app-header { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:10px 16px 8px; border-bottom:3px solid var(--accent); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
+.app-header h5  { margin:0; font-weight:700; font-size:15px; }
+.app-header .sub { font-size:11px; color:#8bacc8; margin-top:2px; }
+.app-header img { height:36px; opacity:.9; filter:drop-shadow(0 0 4px rgba(26,140,255,.4)); }
+
+.config-strip { background:#fff; border-bottom:1px solid #dee2e6; padding:7px 14px; flex-shrink:0; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.config-strip label { font-size:11px; font-weight:600; color:#495057; white-space:nowrap; }
+.sl-row { display:flex; align-items:center; gap:8px; }
+.sl-row input[type=range] { width:120px; cursor:pointer; }
+.sl-val { font-size:12px; font-weight:700; color:var(--accent); min-width:50px; text-align:right; }
+#ahPanel { display:none; align-items:center; gap:6px; font-size:11px; }
+#ahPanel input[type=number] { width:58px; font-size:11px; }
+
+#mapArea { flex:1; min-height:360px; }
+
+/* Detection results panel */
+.results-panel { background:#fff; border-top:1px solid #dee2e6; padding:6px 14px 8px; flex-shrink:0; }
+.results-panel .rp-title { font-size:11px; font-weight:700; color:#495057; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+#detTable { font-size:12px; margin-bottom:0; width:auto; min-width:320px; }
+#detTable th { font-size:11px; font-weight:700; }
+.det-detected  { background:#198754 !important; color:#fff; }
+.det-marginal  { background:#ffc107 !important; }
+.det-none      { background:#6c757d !important; color:#fff; }
+.det-pending   { color:#aaa; font-style:italic; }
+
+.status-bar { background:#fff; border-top:1px solid #dee2e6; padding:5px 14px; font-size:12px; flex-shrink:0; display:flex; align-items:center; gap:16px; }
+#statusText { font-weight:600; flex:1; }
+.status-idle    { color:#6c757d; }
+.status-running { color:var(--accent); }
+.status-done    { color:#198754; }
+.status-error   { color:#dc3545; }
+
+.log-wrap { background:#fff; border-top:1px solid #dee2e6; flex-shrink:0; }
+.log-wrap .nav-tabs { padding:4px 14px 0; border-bottom:1px solid #dee2e6; }
+.log-wrap .nav-link { font-size:11px; font-weight:600; color:#6c757d; padding:3px 10px; border-radius:4px 4px 0 0; }
+.log-wrap .nav-link.active { color:#0d6efd; background:#fff; }
+.log-pane { height:15vh; overflow-y:auto; font-size:11px; font-family:Consolas,monospace; background:#111827; color:#6ee7b7; padding:7px 10px; margin:0 14px 8px; border-radius:0 4px 4px 4px; white-space:pre-wrap; word-break:break-all; }
+#paneRequest  { color:#93c5fd; }
+#paneResponse { color:#fde68a; }
+
+.spin { display:inline-block; width:12px; height:12px; border:2px solid #4b6a8a; border-top-color:var(--accent); border-radius:50%; animation:rot .7s linear infinite; vertical-align:middle; margin-right:4px; }
+@keyframes rot { to { transform:rotate(360deg); } }
+.rec-dot { width:9px; height:9px; background:#dc3545; border-radius:50%; display:inline-block; margin-right:4px; animation:blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+/* ── Drone quadcopter rotors ── */
+@keyframes spin-rotor { to { transform:rotate(360deg); } }
+.drone-rotor { transform-box:fill-box; transform-origin:center; animation:spin-rotor 0.25s linear infinite; }
+.drone-rotor-ccw { animation-direction:reverse; }
+.drone-paused .drone-rotor { animation-play-state:paused; }
+
+/* ── Sensor marker icons ── */
+.sensor-icon { display:flex; flex-direction:column; align-items:center; cursor:grab; }
+.sensor-label { font-size:9px; font-weight:700; color:#fff; padding:1px 5px; border-radius:3px; margin-top:-2px; white-space:nowrap; letter-spacing:.3px; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <h5>Drone Detection Demo</h5>
+    <div class="sub">Drag the drone or sensors &mdash; adjust altitude &mdash; press Calculate to run multilink detection analysis</div>
+  </div>
+  <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
+</div>
+
+<div class="config-strip">
+  <div>
+    <label class="d-block mb-1">Drone Altitude</label>
+    <div class="sl-row">
+      <input type="range" id="altSlider" min="5" max="500" value="50" step="10">
+      <span class="sl-val" id="altValue">50 m</span>
+    </div>
+  </div>
+  <div class="vr"></div>
+  <div>
+    <label class="d-block mb-1">Detection Threshold</label>
+    <div class="sl-row">
+      <input type="range" id="threshSlider" min="-100" max="-60" value="-95" step="1">
+      <span class="sl-val" id="threshValue">-95 dBm</span>
+    </div>
+  </div>
+  <div class="vr"></div>
+  <div>
+    <label class="d-block mb-1">Autopilot</label>
+    <div class="d-flex gap-1 align-items-center flex-wrap">
+      <button id="btnFE" class="btn btn-sm btn-primary" onclick="toggleFigureEight()">&#9654; Figure-Eight</button>
+      <button id="btnAH" class="btn btn-sm btn-outline-success" onclick="toggleAutoHeight()">Auto-Alt: OFF</button>
+    </div>
+  </div>
+  <div id="ahPanel">
+    <label>Min:</label><input id="ahMin" type="number" class="form-control form-control-sm" value="20" min="5" max="995">
+    <label>Max:</label><input id="ahMax" type="number" class="form-control form-control-sm" value="200" min="10" max="1000">
+    <label>Cycles/loop:</label><input id="ahFreq" type="number" class="form-control form-control-sm" value="0.5" min="0.1" max="5" step="0.1">
+  </div>
+  <div class="vr"></div>
+  <div>
+    <label class="d-block mb-1">Recording</label>
+    <div class="d-flex gap-1 align-items-center flex-wrap">
+      <button id="btnRec" class="btn btn-sm btn-outline-danger" onclick="toggleRecording()">&#9210; Record</button>
+      <button class="btn btn-sm btn-outline-secondary" onclick="exportKMZ()">&#11015; KMZ</button>
+      <span id="recBadge" style="font-size:11px;color:#6c757d;">0 snapshots</span>
+    </div>
+  </div>
+  <div class="ms-auto d-flex gap-2 align-items-center">
+    <button class="btn btn-sm btn-primary" onclick="calculate()">&#128225; Calculate</button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="clearLinks()">&#x1F5D1; Clear</button>
+    <button class="btn btn-sm btn-outline-secondary" id="btnSettings"
+                data-bs-toggle="modal" data-bs-target="#settingsModal"
+                title="API Settings"
+                style="padding:3px 7px; font-size:15px; line-height:1;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 style="vertical-align:middle; margin-top:-2px;">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33
+                         1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33
+                         l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1
+                         0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06
+                         A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51
+                         1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9
+                         a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
+  </div>
+</div>
+
+<div id="mapArea"></div>
+
+<!-- Detection results table -->
+<div class="results-panel">
+  <div class="rp-title">Multilink Detection Results</div>
+  <table class="table table-sm table-bordered" id="detTable">
+    <thead><tr><th>Sensor</th><th>Position</th><th>RSSI</th><th>Status</th></tr></thead>
+    <tbody id="detBody">
+      <tr><td colspan="4" class="det-pending text-center">Press Calculate to run multilink analysis</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="status-bar">
+  <span id="statusText" class="status-idle">Drag the drone or sensors to set positions, then press Calculate.</span>
+  <span id="calcBadge" class="text-muted" style="font-size:11px;white-space:nowrap"></span>
+</div>
+
+<div class="log-wrap">
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabLog"      type="button">&#x1F4CB; Activity Log</button></li>
+    <li class="nav-item"><button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabReq"   type="button">&#x1F4E4; Request</button></li>
+    <li class="nav-item"><button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabResp"  type="button">&#x1F4E5; Response</button></li>
+  </ul>
+  <div class="tab-content">
+    <div class="tab-pane fade show active" id="tabLog"><div id="activityLog" class="log-pane"></div></div>
+    <div class="tab-pane fade"             id="tabReq"><div id="paneRequest"  class="log-pane">No request yet.</div></div>
+    <div class="tab-pane fade"             id="tabResp"><div id="paneResponse" class="log-pane">No response yet.</div></div>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS MODAL ════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm" style="max-width:320px;">
+        <div class="modal-content">
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title mb-0" id="settingsModalLabel" style="font-size:13px; font-weight:700;">
+                    API Settings
+                </h6>
+                <button type="button" class="btn-close" style="width:.6rem;height:.6rem;" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-3 py-3">
+                <div class="mb-3">
+                    <label for="settingsApiUrl" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API URL</label>
+                    <input type="text" class="form-control form-control-sm" id="settingsApiUrl" placeholder="https://api.cloudrf.com">
+                </div>
+                <div class="mb-1">
+                    <label for="settingsApiKey" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API Key</label>
+                    <input type="password" class="form-control form-control-sm" id="settingsApiKey" placeholder="Your CloudRF key">
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="saveApiSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+'use strict';
+/* ════════════════════════════════════════════════════════════════════════════
+   CREDENTIALS — defaults; editable via the ⚙ Settings button in the config strip
+   ════════════════════════════════════════════════════════════════════════════ */
+let API_KEY = localStorage.getItem('df_api_key') ?? '';
+let API_URL = localStorage.getItem('df_api_url') ?? 'https://api.cloudrf.com';
+
+function saveApiSettings() {
+    const newUrl = document.getElementById('settingsApiUrl').value.trim().replace(/\/$/, '');
+    const newKey = document.getElementById('settingsApiKey').value.trim();
+    if (newUrl) { API_URL = newUrl; localStorage.setItem('df_api_url', newUrl); }
+    if (newKey) { API_KEY = newKey; localStorage.setItem('df_api_key', newKey); }
+    bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+    log(`Settings saved — URL: ${API_URL}`);
+}
+
+document.getElementById('settingsModal').addEventListener('show.bs.modal', () => {
+    document.getElementById('settingsApiUrl').value = API_URL;
+    document.getElementById('settingsApiKey').value = API_KEY;
+});
+
+/* ── Helpers ── */
+function setStatus(m, s)     { const e = document.getElementById('statusText'); e.textContent = m; e.className = 'status-' + s; }
+function setStatusHTML(h, s) { const e = document.getElementById('statusText'); e.innerHTML   = h; e.className = 'status-' + s; }
+function setBadge(t)         { document.getElementById('calcBadge').textContent = t; }
+function log(m)              { const e = document.getElementById('activityLog'); e.textContent += `[${new Date().toLocaleTimeString()}] ${m}\n`; e.scrollTop = e.scrollHeight; }
+
+/* ── Map ── */
+const map = L.map('mapArea').setView([51.793, -2.075], 13); // Gloveridge Hill, Gloucestershire
+const osmLayer=L.tileLayer('https://maps.cloudrf.com/wmts/contours/mercator/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://cloudrf.com">CloudRF</a>',maxZoom:16});
+const satLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri',maxZoom:16});
+osmLayer.addTo(map);
+L.control.layers({ 'Contours': osmLayer, 'Satellite': satLayer }, {}, { position: 'topright', collapsed: false }).addTo(map);
+
+/* ── Drone ── */
+const drone = { lat: 51.793, lon: -2.075, alt: 50 };
+
+const droneIcon = L.divIcon({
+  className: '',
+  html: `<div style="cursor:grab;">
+           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"
+                style="filter:drop-shadow(0 2px 5px rgba(0,0,0,.65)); overflow:visible;">
+             <line x1="20" y1="20" x2="6"  y2="6"  stroke="#222" stroke-width="2.5" stroke-linecap="round"/>
+             <line x1="20" y1="20" x2="34" y2="6"  stroke="#222" stroke-width="2.5" stroke-linecap="round"/>
+             <line x1="20" y1="20" x2="6"  y2="34" stroke="#222" stroke-width="2.5" stroke-linecap="round"/>
+             <line x1="20" y1="20" x2="34" y2="34" stroke="#222" stroke-width="2.5" stroke-linecap="round"/>
+             <circle cx="6"  cy="6"  r="2.5" fill="#444"/>
+             <circle cx="34" cy="6"  r="2.5" fill="#444"/>
+             <circle cx="6"  cy="34" r="2.5" fill="#444"/>
+             <circle cx="34" cy="34" r="2.5" fill="#444"/>
+             <ellipse class="drone-rotor"                  cx="6"  cy="6"  rx="7" ry="2" fill="rgba(20,20,20,0.42)"/>
+             <ellipse class="drone-rotor drone-rotor-ccw" cx="34" cy="6"  rx="7" ry="2" fill="rgba(20,20,20,0.42)"/>
+             <ellipse class="drone-rotor drone-rotor-ccw" cx="6"  cy="34" rx="7" ry="2" fill="rgba(20,20,20,0.42)"/>
+             <ellipse class="drone-rotor"                  cx="34" cy="34" rx="7" ry="2" fill="rgba(20,20,20,0.42)"/>
+             <circle cx="20" cy="20" r="5.5" fill="#1a1a2e" stroke="#1a8cff" stroke-width="1.5"/>
+             <circle cx="20" cy="20" r="2.5" fill="#1a8cff" opacity="0.9"/>
+           </svg>
+         </div>`,
+  iconAnchor: [20, 20]
+});
+
+const droneMarker = L.marker([drone.lat, drone.lon], { icon: droneIcon, draggable: true, zIndexOffset: 1000 }).addTo(map);
+droneMarker.bindTooltip('Drone (transmitter) — drag to reposition');
+droneMarker.on('drag',    e => { const ll = e.target.getLatLng(); drone.lat = ll.lat; drone.lon = ll.lng; });
+droneMarker.on('dragend', () => { log(`Drone moved to (${drone.lat.toFixed(4)}, ${drone.lon.toFixed(4)})`); calculate(); });
+
+/* ── Sensor stations ── */
+const sensorDefs = [
+  { lat: 51.799, lon: -2.089, name: 'Sensor A'   },
+  { lat: 51.780, lon: -2.048, name: 'Sensor B'   },
+  { lat: 51.775, lon: -2.120, name: 'Sensor C' }
+];
+
+function sensorIcon(status, name) {
+  const colours = { detected: '#198754', marginal: '#ffc107', none: '#6c757d', unknown: '#adb5bd' };
+  const col   = colours[status] || colours.unknown;
+  const label = (name || '').replace('Sensor ', '');
+  return L.divIcon({
+    className: '',
+    html: `<div class="sensor-icon">
+             <svg width="34" height="34" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg"
+                  style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.45)); display:block;">
+               <circle cx="17" cy="17" r="13.5" fill="rgba(0,0,0,0.10)"
+                       stroke="rgba(0,0,0,0.82)" stroke-width="3.5"/>
+             </svg>
+             <span class="sensor-label" style="background:${col}">${label}</span>
+           </div>`,
+    iconAnchor: [17, 17]
+  });
+}
+
+const sensorMarkers = sensorDefs.map(s => {
+  const m = L.marker([s.lat, s.lon], { icon: sensorIcon('unknown', s.name), draggable: true }).addTo(map);
+  m.bindTooltip(`${s.name} — drag to reposition`);
+  m.on('drag',    e => { const ll = e.target.getLatLng(); s.lat = ll.lat; s.lon = ll.lng; });
+  m.on('dragend', () => { log(`${s.name} moved to (${s.lat.toFixed(4)}, ${s.lon.toFixed(4)})`); setStatus(`${s.name} repositioned. Press Calculate to rerun.`, 'idle'); });
+  return m;
+});
+
+/* ── Link lines ── */
+const linkLines = sensorDefs.map(() => null);
+
+function updateLinkLine(idx, status) {
+  if (linkLines[idx]) map.removeLayer(linkLines[idx]);
+  const colours = { detected: '#198754', marginal: '#ffc107', none: '#dc3545', unknown: '#adb5bd' };
+  const s = sensorDefs[idx];
+  linkLines[idx] = L.polyline(
+    [[drone.lat, drone.lon], [s.lat, s.lon]],
+    { color: colours[status] || '#adb5bd', weight: 2, opacity: 0.85, dashArray: status === 'none' ? '5,6' : null }
+  ).addTo(map);
+}
+
+function clearLinkLines() {
+  linkLines.forEach((l, i) => { if (l) { map.removeLayer(l); linkLines[i] = null; } });
+}
+
+/* ── Detection table ── */
+function renderTable(results) {
+  const tbody = document.getElementById('detBody');
+  if (!results) {
+    tbody.innerHTML = '<tr><td colspan="4" class="det-pending text-center">Press Calculate to run multilink analysis</td></tr>';
+    return;
+  }
+  tbody.innerHTML = results.map(r => {
+    const cls  = r.status === 'detected' ? 'det-detected' : r.status === 'marginal' ? 'det-marginal' : 'det-none';
+    const pwr  = r.rxDbm !== null ? r.rxDbm.toFixed(1) + ' dBm' : 'N/A';
+    const label = r.status === 'detected' ? '&#9989; DETECTED' : r.status === 'marginal' ? '&#9888; MARGINAL' : '&#10060; NOT DETECTED';
+    return `<tr>
+      <td style="font-weight:600;">${r.name}</td>
+      <td style="font-family:monospace;font-size:11px;">${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}</td>
+      <td style="font-family:monospace;text-align:right;">${pwr}</td>
+      <td class="${cls}" style="text-align:center;">${label}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Sliders ── */
+const altSlider   = document.getElementById('altSlider');
+const altValue    = document.getElementById('altValue');
+const threshSlider = document.getElementById('threshSlider');
+const threshValue  = document.getElementById('threshValue');
+
+altSlider.addEventListener('input', () => {
+  drone.alt = parseFloat(altSlider.value);
+  altValue.textContent = `${drone.alt} m`;
+});
+
+threshSlider.addEventListener('input', () => {
+  threshValue.textContent = `${threshSlider.value} dBm`;
+});
+
+/* ── Main calculate (multilink) ── */
+let calcRunning = false;
+
+async function calculate() {
+  if (!API_KEY || API_KEY === 'YOUR_API_KEY_HERE') {
+    setStatus('API key not configured — edit the API_KEY constant at the top of this file.', 'error');
+    return;
+  }
+  if (calcRunning) return;
+  calcRunning = true;
+
+  const threshold = parseFloat(threshSlider.value);
+
+  const body = {
+    site:    'Drone',
+    network: 'DroneDetection',
+    radios: [
+      // Radio 0: drone (transmitter at altitude)
+      {
+        lat: drone.lat, lon: drone.lon, alt: drone.alt,
+        frq: 2400, txw: 0.2, bwi: 20, powerUnit: 'W',
+        antenna: { txg: 0, txl: 0, ant: 1, azi: 0, tlt: 0, hbw: 360, vbw: 90, fbr: 0, pol: 'v' }
+      },
+      // Radios 1-4: ground sensor stations
+      ...sensorDefs.map(s => ({
+        lat: s.lat, lon: s.lon, alt: 1.5,
+        frq: 2400, txw: 0.001, bwi: 20,
+        antenna: { txg: 2, txl: 0, ant: 1, azi: 0, tlt: 0, hbw: 360, vbw: 90, fbr: 0, pol: 'v' }
+      }))
+    ],
+    model:       { pm: 7, pe: 2, ked: 1, rel: 50 },
+    environment: { elevation: 2, landcover: 1, buildings: 1, obstacles: 0, clt: 'Temperate.clt' },
+    output:      { units: 'm', out: 2, nf: -120, res: 30 }
+  };
+
+  const j = JSON.stringify(body, null, 2);
+  document.getElementById('paneRequest').textContent  = `POST /multilink\n\n${j}`;
+  document.getElementById('paneResponse').textContent = 'Awaiting response...';
+  setStatusHTML('<span class="spin"></span> Running multilink detection analysis...', 'running');
+  log(`Multilink: drone at (${drone.lat.toFixed(4)}, ${drone.lon.toFixed(4)}) alt=${drone.alt}m vs ${sensorDefs.length} sensors`);
+
+  const t0 = Date.now();
+  try {
+    const r   = await fetch(`${API_URL}/multilink`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'key': API_KEY }, body: j });
+    const rj  = await r.json();
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 2);
+
+    if (!rj || rj.error || rj.message) {
+      setStatus(`API error: ${rj?.error || rj?.message || 'unknown'}`, 'error');
+      log(`Error: ${JSON.stringify(rj)}`);
+      calcRunning = false;
+      return;
+    }
+
+    // Parse per-sensor received power from rj.values["0->1"], ["0->2"] ...
+    clearLinkLines();
+    const results = sensorDefs.map((s, i) => {
+      const key   = `0->${i + 1}`;
+      const rxDbm = (rj.values && rj.values[key] !== undefined) ? parseFloat(rj.values[key]) : null;
+      let status  = 'unknown';
+      if (rxDbm !== null) {
+        if      (rxDbm >= threshold)     status = 'detected';
+        else if (rxDbm >= threshold - 6) status = 'marginal';
+        else                              status = 'none';
+      }
+      sensorMarkers[i].setIcon(sensorIcon(status, s.name));
+      updateLinkLine(i, status);
+      log(`  ${s.name}: ${rxDbm !== null ? rxDbm.toFixed(1) + ' dBm' : 'N/A'} → ${status.toUpperCase()}`);
+      return { name: s.name, lat: s.lat, lon: s.lon, rxDbm, status };
+    });
+
+    renderTable(results);
+
+    const nDet = results.filter(r => r.status === 'detected').length;
+    const nMar = results.filter(r => r.status === 'marginal').length;
+
+    if      (nDet > 0) setStatus(`${nDet} sensor${nDet > 1 ? 's' : ''} DETECTED the drone (${elapsed}s). Threshold: ${threshold} dBm.`, 'error');
+    else if (nMar > 0) setStatus(`No detection — ${nMar} sensor${nMar > 1 ? 's' : ''} marginal (within 6 dB of threshold). ${elapsed}s.`, 'running');
+    else               setStatus(`Drone undetected by all sensors at ${drone.alt}m AGL. (${elapsed}s)`, 'done');
+
+    setBadge(`Multilink ${elapsed}s @ ${drone.alt}m`);
+    log(`Multilink complete in ${elapsed}s — ${nDet} detected, ${nMar} marginal.`);
+
+    if (isRecording) saveSnapshot(results);
+
+  } catch (err) {
+    setStatus(`Network error: ${err.message}`, 'error');
+    log(`Error: ${err.message}`);
+    document.getElementById('paneResponse').textContent = `Network error: ${err.message}`;
+  } finally {
+    calcRunning = false;
+  }
+}
+
+function clearLinks() {
+  clearLinkLines();
+  sensorMarkers.forEach((m, i) => m.setIcon(sensorIcon('unknown', sensorDefs[i].name)));
+  renderTable(null);
+  setStatus('Cleared. Press Calculate to rerun.', 'idle');
+  setBadge('');
+  log('Link lines and results cleared.');
+}
+
+/* ── Figure-eight autopilot ── */
+let feActive = false, feTimer = null, feT = 0, feStep = 0, feOrigin = null;
+const FE_STEPS = 120, FE_MS = 1200, FE_SCALE = 0.012;
+
+function toggleFigureEight() { feActive ? stopFE() : startFE(); }
+
+function startFE() {
+  feActive = true; feT = 0; feStep = 0;
+  feOrigin = { lat: drone.lat, lon: drone.lon };
+  document.getElementById('btnFE').innerHTML = '&#9646; Stop';
+  document.getElementById('btnFE').className = 'btn btn-sm btn-danger';
+  droneMarker.dragging.disable();
+  setStatus('Autopilot active — figure-eight flight.', 'running');
+  log(`Figure-eight started from (${feOrigin.lat.toFixed(4)}, ${feOrigin.lon.toFixed(4)})`);
+  stepFE();
+}
+
+function stopFE() {
+  feActive = false; clearTimeout(feTimer);
+  document.getElementById('btnFE').innerHTML = '&#9654; Figure-Eight';
+  document.getElementById('btnFE').className = 'btn btn-sm btn-primary';
+  droneMarker.dragging.enable();
+  setStatus('Autopilot stopped.', 'idle');
+  log('Figure-eight stopped.');
+}
+
+async function stepFE() {
+  if (!feActive) return;
+  const t  = (feT / FE_STEPS) * 2 * Math.PI;
+  const dv = 1 + Math.sin(t) * Math.sin(t);
+  drone.lat = feOrigin.lat + FE_SCALE * Math.sin(t) * Math.cos(t) / dv;
+  drone.lon = feOrigin.lon + FE_SCALE * Math.cos(t) / dv;
+
+  if (ahEnabled) {
+    const mn = parseFloat(document.getElementById('ahMin').value)  || 20;
+    const mx = parseFloat(document.getElementById('ahMax').value)  || 200;
+    const fr = parseFloat(document.getElementById('ahFreq').value) || 0.5;
+    drone.alt = Math.round(mn + (mx - mn) * (0.5 + 0.5 * Math.sin((feStep / FE_STEPS) * 2 * Math.PI * fr)));
+    altSlider.value = drone.alt;
+    altValue.textContent = `${drone.alt} m`;
+  }
+
+  droneMarker.setLatLng([drone.lat, drone.lon]);
+  await calculate();
+  if (!feActive) return;
+  feT = (feT + 1) % FE_STEPS; feStep++;
+  feTimer = setTimeout(stepFE, FE_MS);
+}
+
+/* ── Auto-height ── */
+let ahEnabled = false;
+function toggleAutoHeight() {
+  ahEnabled = !ahEnabled;
+  const btn = document.getElementById('btnAH');
+  btn.textContent = `Auto-Alt: ${ahEnabled ? 'ON' : 'OFF'}`;
+  btn.className   = ahEnabled ? 'btn btn-sm btn-success' : 'btn btn-sm btn-outline-success';
+  document.getElementById('ahPanel').style.display = ahEnabled ? 'flex' : 'none';
+}
+
+/* ── Recording ── */
+let isRecording = false, snapshots = [];
+
+function toggleRecording() {
+  isRecording = !isRecording;
+  const btn = document.getElementById('btnRec');
+  btn.innerHTML = isRecording ? '&#9646; Stop' : '&#9210; Record';
+  btn.className = isRecording ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-outline-danger';
+  if (isRecording) { snapshots = []; updateRecBadge(); }
+  log(`Recording ${isRecording ? 'started' : 'stopped'}.`);
+}
+
+function saveSnapshot(results) {
+  snapshots.push({ lat: drone.lat, lon: drone.lon, alt: drone.alt, ts: new Date().toISOString(), results });
+  updateRecBadge();
+  log(`Snapshot ${snapshots.length} saved.`);
+}
+
+function updateRecBadge() {
+  const n = snapshots.length;
+  document.getElementById('recBadge').innerHTML = isRecording
+    ? `<span class="rec-dot"></span>${n} snapshot${n !== 1 ? 's' : ''}`
+    : `${n} snapshot${n !== 1 ? 's' : ''}`;
+}
+
+/* ── KMZ export ── */
+async function exportKMZ() {
+  if (!snapshots.length) { setStatus('No snapshots — enable recording and press Calculate first.', 'error'); return; }
+  setStatusHTML('<span class="spin"></span> Building KMZ...', 'running');
+  const zip = new JSZip();
+  const placemarks = snapshots.map((s, i) => {
+    const sensorPM = s.results.map(r =>
+      `<Placemark><name>${r.name} — ${r.status}</name><description>Rx: ${r.rxDbm !== null ? r.rxDbm.toFixed(1) + ' dBm' : 'N/A'}</description><Point><coordinates>${r.lon},${r.lat},0</coordinates></Point></Placemark>`
+    ).join('');
+    return `<Placemark><name>Drone ${i + 1} — ${s.alt}m</name><Point><coordinates>${s.lon},${s.lat},${s.alt}</coordinates></Point></Placemark>${sensorPM}`;
+  }).join('\n');
+  zip.file('doc.kml', `<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>CloudRF Drone Detection</name>${placemarks}</Document></kml>`);
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `drone_${Date.now()}.kmz`; a.click();
+  setStatus(`KMZ exported — ${snapshots.length} snapshots.`, 'done');
+  log('KMZ download triggered.');
+}
+
+/* ── Init ── */
+log('Map ready. Drone Detection Demo — CloudRF /multilink API.');
+log('Scenario: 200 mW drone at 2.4 GHz vs 4 ground sensor stations.');
+log('Drag the drone or sensors, set detection threshold, then press Calculate.');
+log('Use the figure-eight autopilot to animate continuous flight tracking.');
+</script>
+</body>
+</html>
