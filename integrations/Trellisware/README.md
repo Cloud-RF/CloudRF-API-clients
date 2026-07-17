@@ -5,6 +5,6 @@ A python script exists to integrate live coverage mapping onto TAK and other KML
 You can watch a demo of it working with the TW-750 on youtube: 
 https://www.youtube.com/watch?v=PoSxL2CsH0U
 
-If you would like a copy, please contact Marcus Urie at Trellisware.
+If you would like a copy, please contact support@trellisware.com.
 
 ![DEMO](tw-api-demo.jpg)
