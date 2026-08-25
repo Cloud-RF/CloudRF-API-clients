@@ -121,18 +121,18 @@ def create_clutter_profile(config):
     ]
 
     data = {
-        'save': CLUTTER_PROFILE,
         'values': '\n'.join(lines)
     }
 
-    apiUrl = args.base_url.rstrip('/') + '/API/clutter/index2.php'
+    apiUrl = args.base_url.rstrip('/') + f'/API/clutter-profile/{CLUTTER_PROFILE}'
 
     response = requests.post(f"{apiUrl}", data=data, headers=headers, verify=args.strict_ssl)
     response.raise_for_status()
 
+    http_status = response.status_code
     response = response.json()
 
-    if response['status'] != 200:
+    if http_status != 200:
         raise RuntimeError(response['message'])
 
 def get_nested_value(data, path):
