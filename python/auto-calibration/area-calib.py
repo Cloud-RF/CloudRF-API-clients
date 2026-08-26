@@ -97,36 +97,33 @@ def create_clutter_profile(config):
         'key': args.api_key,
     }
 
-    lines = [
-        f'99:3:{config['clutter.building.attenuation']}',
-        '1:1:0.0',
-        f'2:{config['clutter.trees.height']}:{config['clutter.trees.attenuation']}',
-        '3:1:0.0',
-        '4:1:0.0',
-        '5:1:0.0',
-        '6:3:0.0',
-        '7:1:0.0',
-        '8:1:0',
-        '9:1:0',
-        '10:0:0',
-        '11:6:0.1:Obstacle+1:#ea580c',
-        '12:8:0.2:Obstacle+2:#f43f5e',
-        '13:3:0.25:Obstacle+3:#a3e635',
-        '14:4:0.3:Obstacle+4:#67e8f9',
-        '15:5:0.4:Obstacle+5:#14b8a6',
-        '16:6:0.5:Obstacle+6:#16a34a',
-        '17:7:0.6:Obstacle+7:#a78bfa',
-        '18:8:0.7:Obstacle+8:#4338ca',
-        '19:3:0.8:Obstacle+9:#075985',
-    ]
-
     data = {
-        'values': '\n'.join(lines)
+        'building_attenuation': config['clutter.building.attenuation'],
+        'values': [
+            {'height': 1, 'attenuation': 0},
+            {'height': config['clutter.trees.height'], 'attenuation': config['clutter.trees.attenuation']},
+            {'height': 1, 'attenuation': 0},
+            {'height': 1, 'attenuation': 0},
+            {'height': 1, 'attenuation': 0},
+            {'height': 3, 'attenuation': 0},
+            {'height': 3, 'attenuation': 0},
+            {'height': 1, 'attenuation': 0},
+            {'height': 1, 'attenuation': 0},
+            {'height': 6, 'attenuation': 0.1, 'name': 'Obstacle1', 'colour': '#ea580c'},
+            {'height': 8, 'attenuation': 0.2, 'name': 'Obstacle2', 'colour': '#f43f5e'},
+            {'height': 3, 'attenuation': 0.25, 'name': 'Obstacle3', 'colour': '#a3e635'},
+            {'height': 4, 'attenuation': 0.3, 'name': 'Obstacle4', 'colour': '#67e8f9'},
+            {'height': 5, 'attenuation': 0.4, 'name': 'Obstacle5', 'colour': '#14b8a6'},
+            {'height': 6, 'attenuation': 0.5, 'name': 'Obstacle6', 'colour': '#16a34a'},
+            {'height': 7, 'attenuation': 0.6, 'name': 'Obstacle7', 'colour': '#a78bfa'},
+            {'height': 8, 'attenuation': 0.7, 'name': 'Obstacle8', 'colour': '#4338ca'},
+            {'height': 3, 'attenuation': 0.8, 'name': 'Obstacle9', 'colour': '#075985'},
+        ]
     }
 
     apiUrl = args.base_url.rstrip('/') + f'/API/clutter-profile/{CLUTTER_PROFILE}'
 
-    response = requests.post(f"{apiUrl}", data=data, headers=headers, verify=args.strict_ssl)
+    response = requests.post(f"{apiUrl}", json=data, headers=headers, verify=args.strict_ssl)
     response.raise_for_status()
 
     http_status = response.status_code
