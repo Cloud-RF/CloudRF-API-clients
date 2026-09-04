@@ -13,7 +13,7 @@ bl_info = {
     "name": "CloudRF 3D",
     "description": "Simulate RF propagation using the CloudRF 3D API",
     "author": "CloudRF.com",
-    "version": (1, 0, 1),
+    "version": (1, 1, 0),
     "blender": (3, 6, 0),
     "category": "Import-Export"
 }
@@ -73,16 +73,67 @@ templates = {
 }
 
 
-def addTransmitter(data):
-    bpy.ops.object.empty_add(location = (0, 0, 0))
-    
-    obj = bpy.context.active_object
-    obj.name = "Transmitter"
-    
-    transmitter_props = obj.transmitter_properties
-    if not transmitter_props:
-        transmitter_props = obj.transmitter_properties = bpy.props.PointerProperty(type = transmitterProperties)
+# names of the templates which were imported from JSON, as opposed to the
+# built in ones above. these are saved to disk so they survive a restart
+user_templates = set()
 
+
+def user_templates_path():
+    config = bpy.utils.user_resource("CONFIG", path = "cloudrf", create = True)
+    return os.path.join(config, "templates.json")
+
+
+# imported templates only live in memory, so restore the ones from previous
+# sessions when the plugin loads
+def load_user_templates():
+    path = user_templates_path()
+
+    try:
+        with open(path, 'r') as file:
+            saved = json.load(file)
+    except FileNotFoundError:
+        return
+    except (json.JSONDecodeError, OSError) as error:
+        print(f"CloudRF: could not read saved templates from {path}: {error}")
+        return
+
+    for name, template in saved.items():
+        templates[name] = template
+        user_templates.add(name)
+
+
+def save_user_templates():
+    path = user_templates_path()
+
+    try:
+        with open(path, 'w') as file:
+            json.dump({name: templates[name] for name in user_templates}, file, indent = 4)
+    except OSError as error:
+        print(f"CloudRF: could not save templates to {path}: {error}")
+        return False
+
+    return True
+
+
+# the transmitters among the given objects, e.g. the current selection
+def transmitter_objects(objects):
+    return [obj for obj in objects if hasattr(obj, "transmitter_properties") and "Transmitter" in obj.name]
+
+
+# an operator run from the sidebar does not redraw the other editors by itself,
+# so the properties tab would keep showing the old radio settings until it is
+# nudged. tag the changed objects and ask every editor to redraw
+def refreshUI(context, objects):
+    for obj in objects:
+        obj.update_tag()
+
+    for window in context.window_manager.windows:
+        for area in window.screen.areas:
+            area.tag_redraw()
+
+
+# copy the radio settings of a template onto an existing transmitter
+def applyTemplate(obj, data):
     obj.transmitter_properties.frq = data["frq"]
     obj.transmitter_properties.txw = data["txw"]
     obj.transmitter_properties.ant = data["antenna"]["ant"]
@@ -92,6 +143,15 @@ def addTransmitter(data):
     obj.transmitter_properties.txg = data["antenna"]["txg"]
     obj.transmitter_properties.txl = data["antenna"]["txl"]
     obj.transmitter_properties.fbr = data["antenna"]["fbr"]
+
+
+def addTransmitter(data):
+    bpy.ops.object.empty_add(location = (0, 0, 0))
+    
+    obj = bpy.context.active_object
+    obj.name = "Transmitter"
+
+    applyTemplate(obj, data)
 
     obj.empty_display_type = "IMAGE"
     obj.data = bpy.data.images.load(f"{os.path.dirname(__file__)}/CloudRF_tx.png", check_existing=True)
@@ -119,9 +179,40 @@ class addTransmitterFromTemplateOperator(bpy.types.Operator):
 
         if not template_name in templates:
             self.report({"ERROR"}, f"Could not find template with name: {template_name}")
-            return {"ERROR"}
+            return {"CANCELLED"}
 
         addTransmitter(templates[template_name])
+
+        return {"FINISHED"}
+
+
+# apply a template to transmitters which already exist in the scene
+class applyTemplateToSelectedOperator(bpy.types.Operator):
+    bl_label = "Apply To Selected"
+    bl_idname = "cloudrf.apply_template_selected"
+    bl_description = "Apply the radio settings of a template to the selected transmitters"
+
+    action: bpy.props.EnumProperty(name="cloudrf.templates", items=templates_to_enum)
+
+    def execute(self, context):
+        template_name = self.properties.action
+
+        if not template_name in templates:
+            self.report({"ERROR"}, f"Could not find template with name: {template_name}")
+            return {"CANCELLED"}
+
+        selected = transmitter_objects(context.selected_objects)
+
+        if not selected:
+            self.report({"ERROR"}, "Please select at least one transmitter to apply the template to!")
+            return {"CANCELLED"}
+
+        for obj in selected:
+            applyTemplate(obj, templates[template_name])
+
+        refreshUI(context, selected)
+
+        self.report({"INFO"}, f"Applied template {template_name} to {len(selected)} transmitter(s)")
 
         return {"FINISHED"}
 
@@ -205,6 +296,7 @@ class importOperator(bpy.types.Operator):
                 }
 
                 templates[name] = transmitter_data
+                user_templates.add(name)
 
                 # scene.props.max_reflections = data["3d"]["max_reflections"]
                 # scene.props.res = data["output"]["res"]
@@ -215,8 +307,26 @@ class importOperator(bpy.types.Operator):
         except json.JSONDecodeError:
             self.report({"ERROR"}, "Please provide a valid JSON format!")
             return {"CANCELLED"}
+        except KeyError as error:
+            self.report({"ERROR"}, f"Template has no {error} setting, is this a CloudRF template?")
+            return {"CANCELLED"}
         
-        self.report({"INFO"}, f"Successfully imported template {name}!\n{templates[name]}")
+        if not save_user_templates():
+            self.report({"WARNING"}, "Template imported but could not be saved for future sessions, see the system console")
+
+        # a template is only used by the transmitters it is applied to, so apply
+        # it to the selection rather than leaving them on their old settings
+        selected = transmitter_objects(context.selected_objects)
+
+        for obj in selected:
+            applyTemplate(obj, templates[name])
+
+        refreshUI(context, selected)
+
+        if selected:
+            self.report({"INFO"}, f"Imported template {name} and applied it to {len(selected)} selected transmitter(s)")
+        else:
+            self.report({"INFO"}, f"Successfully imported template {name}!\n{templates[name]}\nAdd a transmitter with it from Add > Transmitters, or select transmitters and use Apply To Selected")
         
         return {"FINISHED"}
     
@@ -543,6 +653,7 @@ class IOPanel(bpy.types.Panel):
         l.operator(importOperator.bl_idname)
         l.prop(scene.props, "template_name")
         l.operator(browseOperator.bl_idname)
+        l.operator_menu_enum(applyTemplateToSelectedOperator.bl_idname, "action", text = "Apply To Selected")
 
 class collectionIgnoreProperties(bpy.types.PropertyGroup):
     ignore: bpy.props.BoolProperty(
@@ -665,9 +776,6 @@ class transmitterAdds(bpy.types.Menu):
         
         layout.operator_enum(addTransmitterFromTemplateOperator.bl_idname, "action")
 
-        for template in templates:
-            pass
-
 # add the transmitter object to the add panel
 def menu_function(self, context):
     self.layout.menu(transmitterAdds.bl_idname)
@@ -675,6 +783,8 @@ def menu_function(self, context):
 # when the plugin is loaded
 # register all classes
 def register():
+    load_user_templates()
+
     bpy.utils.register_class(properties)
     bpy.utils.register_class(transmitterProperties)
     bpy.utils.register_class(collectionIgnoreProperties)
@@ -687,6 +797,7 @@ def register():
     bpy.utils.register_class(transmitterAntennaPropertiesPanel)
     
     bpy.utils.register_class(addTransmitterFromTemplateOperator)
+    bpy.utils.register_class(applyTemplateToSelectedOperator)
     
     bpy.utils.register_class(transmitterAdds)
     
@@ -717,6 +828,7 @@ def unregister():
     bpy.utils.unregister_class(transmitterAntennaPropertiesPanel)
     
     bpy.utils.unregister_class(addTransmitterFromTemplateOperator)
+    bpy.utils.unregister_class(applyTemplateToSelectedOperator)
     
     bpy.utils.unregister_class(transmitterAdds)
     
