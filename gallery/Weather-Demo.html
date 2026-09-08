@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<!--
+════════════════════════════════════════════════════════════════════════════════
+  CloudRF Live Weather API Demo
+  ─────────────────────────────────────────────────────────────────────────────
+  This demo was created to answer the "can you do weather?" question we get.
+  Rather than present a form asking users to specify the size of a raindrop, this uses a third party weather API.
+  The XWeather API describes rainfall in standard mm / hour units. These are used to determine a noise figure.
+  The "noise" for the wide area is uploaded to the /noise/create API as a single request.
+  This is then referenced later during the Area calculation by setting nf: database in the output options with SNR units.
+
+  By using a noise database, planners can simulate accurate RADAR coverage using real weather.
+
+  The demo offers two modes: One for a custom unit where an attenuation multiplier from 0.0 to 1.0 can be defined to show optimistic or conservative coverage.
+  Wavelength affects behaviour so the ITU-R P.838 standard has been implemented to apply wavelength based attenuation.
+  As wavelength decreases, the amount of attenuation increases which is why mmWave links are vulnerable to inclement weather.
+
+  Notes:
+  The RADAR coverage will show a hole in the middle as signals stronger than 45dB SNR are transparent.
+  The default config is for a 4GHz Air Surveillance RADAR detecting a 10m2 RCS (small/medium sized aircraft).
+
+
+
+  DEPENDENCIES (CDN)
+    • Leaflet 1.9.4   — interactive map
+    • Bootstrap 5.3.2 — layout & tabs
+    • jQuery 3.6.3    — DOM helpers used by the DF logic
+════════════════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live Weather API demo</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+<style>
+:root {
+    --navy:   #0a1628;
+    --navy2:  #112240;
+    --accent: #1a8cff;
+}
+
+html, body { height: 100%; margin: 0; padding: 0; }
+body {
+    display: flex;
+    flex-direction: column;
+    background: #eef1f5;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+}
+
+/* ── Header ── */
+.app-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    color: #fff;
+    padding: 10px 16px 8px;
+    border-bottom: 3px solid var(--accent);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.app-header .header-text h5   { margin: 0; font-weight: 700; letter-spacing: .4px; font-size: 15px; }
+.app-header .header-text .sub { font-size: 11px; color: #8bacc8; margin-top: 2px; }
+.app-header .header-logo img  {
+    height: 36px; width: auto; opacity: .9;
+    filter: drop-shadow(0 0 4px rgba(26,140,255,.4));
+}
+
+/* ── Config strip ── */
+.config-strip {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 7px 14px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.config-strip label { font-size: 11px; font-weight: 600; color: #495057; white-space: nowrap; }
+.slider-group { display: flex; align-items: center; gap: 8px; }
+.slider-group input[type=range] { width: 130px; cursor: pointer; }
+.slider-val {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    min-width: 52px; text-align: right;
+}
+
+/* ── Map ── */
+#mapArea { flex: 1; min-height: 400px; position: relative; }
+
+/* ── Calculate progress spinner (floats over the map) ── */
+.calc-spinner {
+    position: absolute;
+    top: 12px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,.96);
+    color: #495057;
+    font-size: 12px; font-weight: 600;
+    padding: 6px 13px;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.25);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s ease;
+}
+.calc-spinner.is-visible { opacity: 1; }
+
+/* new coverage overlay fades in over the previous one */
+.area-overlay-fade { transition: opacity .6s ease; }
+
+/* ── Status bar ── */
+.status-bar {
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+    padding: 5px 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.status-bar #statusText { font-weight: 600; flex: 1; }
+.status-idle    { color: #6c757d; }
+.status-running { color: var(--accent); }
+.status-done    { color: #198754; }
+.status-error   { color: #dc3545; }
+
+/* ── Log / JSON tab panel ── */
+.log-wrap { background: #fff; border-top: 1px solid #dee2e6; flex-shrink: 0; }
+.log-wrap .nav-tabs { padding: 4px 14px 0; border-bottom: 1px solid #dee2e6; }
+.log-wrap .nav-tabs .nav-link { font-size: 11px; font-weight: 600; color: #6c757d; padding: 3px 10px; border-radius: 4px 4px 0 0; }
+.log-wrap .nav-tabs .nav-link.active { color: #0d6efd; background: #fff; }
+.log-pane {
+    height: 20vh; max-height: 20vh;
+    overflow-y: auto;
+    font-size: 11px; font-family: Consolas, monospace;
+    background: #111827; color: #6ee7b7;
+    padding: 7px 10px; margin: 0 14px 8px;
+    border-radius: 0 4px 4px 4px;
+    white-space: pre-wrap; word-break: break-all;
+}
+#paneRequest  { color: #93c5fd; }
+#paneResponse { color: #fde68a; }
+
+.spin {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid #4b6a8a; border-top-color: var(--accent);
+    border-radius: 50%; animation: rotate .7s linear infinite;
+    vertical-align: middle; margin-right: 4px;
+}
+@keyframes rotate { to { transform: rotate(360deg); } }
+
+/* ── Floating legend ── */
+.legend-box {
+    background: rgba(255,255,255,.95);
+    padding: 8px 11px; border-radius: 7px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.3);
+    font-size: 11px; line-height: 1.7;
+}
+.legend-box .ltitle { font-weight: 700; font-size: 12px; margin-bottom: 3px; }
+.leg-sw {
+    display: inline-block; width: 13px; height: 13px;
+    border-radius: 3px; border: 1px solid #aaa;
+    vertical-align: middle; margin-right: 5px;
+}
+
+.leaflet-layer,
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out,
+.leaflet-control-attribution {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
+<div class="app-header">
+    <div class="header-text">
+        <h5>Live Weather API demo</h5>
+        <div class="sub">Click 'Calculate' to simulate coverage with a live weather picture.</div>
+    </div>
+    <div class="header-logo">
+        <img src="logo.png" alt="Logo" title="Powered by CloudRF"
+             onerror="this.style.display='none'">
+    </div>
+</div>
+
+<!-- ═══ CONFIG STRIP ═════════════════════════════════════════════════════════ -->
+<div class="config-strip">
+
+    <div>
+        <label class="d-block mb-1">Antenna Gain</label>
+        <div class="slider-group">
+            <input type="range" min="10" max="40" value="30" id="slider-gain">
+            <span class="slider-val" id="label-gain-value">30 dBi</span>
+        </div>
+    </div>
+
+    <div class="vr"></div>
+
+    <div>
+        <label class="d-block mb-1">Rainfall type</label>
+        <select name="attenuation" id="att-type-select">
+            <option value="ex" selected>Custom</option>
+            <option value="p838">ITU-R P.838-3</option>
+        </select>
+    </div>
+
+    <div id="group-freq" style="display: none;">
+        <label class="d-block mb-1">Frequency</label>
+        <div class="slider-group">
+            <input type="range" min="0" max="26" value="6" id="slider-freq">
+            <span class="slider-val" id="label-freq-value">4 GHz</span>
+        </div>
+    </div>
+
+    <div id="group-att">
+        <label class="d-block mb-1">Attenuation factor</label>
+        <div class="slider-group">
+            <input type="range" min="0" max="1" step="0.05" value="0.5" id="slider-attenuation">
+            <span class="slider-val" id="label-attenuation-value">0.50</span>
+        </div>
+    </div>
+
+    <div class="vr"></div>
+
+    <div style="display: flex; flex-direction: row; width: 80px; justify-content: space-between;">
+        <label class="d-block mb-1">Live Rain</label>
+        <input type="checkbox" checked id="checkbox-live"/>
+    </div> 
+
+
+    <div class="ms-auto d-flex gap-2 align-items-center">
+        <button class="btn btn-sm btn-primary" onclick="updateCoverage()">⟳ Refresh Rain</button>
+        <button class="btn btn-sm btn-primary" onclick="uploadAndRunAreaCalc()">📡 Calculate</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="clearOverlays()">🗑 Clear</button>
+        <button class="btn btn-sm btn-outline-secondary" id="btnSettings"
+                data-bs-toggle="modal" data-bs-target="#settingsModal"
+                title="API Settings"
+                style="padding:3px 7px; font-size:15px; line-height:1;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 style="vertical-align:middle; margin-top:-2px;">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33
+                         1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33
+                         l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1
+                         0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06
+                         A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51
+                         1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9
+                         a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<!-- ═══ SETTINGS MODAL ════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm" style="max-width:320px;">
+        <div class="modal-content">
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title mb-0" id="settingsModalLabel" style="font-size:13px; font-weight:700;">
+                    API Settings
+                </h6>
+                <button type="button" class="btn-close" style="width:.6rem;height:.6rem;" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-3 py-3">
+                <div class="mb-3">
+                    <label for="settingsApiUrl" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API URL</label>
+                    <input type="text" class="form-control form-control-sm" id="settingsApiUrl" placeholder="https://api.cloudrf.com">
+                </div>
+                <div class="mb-1">
+                    <label for="settingsApiKey" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">API Key</label>
+                    <input type="password" class="form-control form-control-sm" id="settingsApiKey" placeholder="Your CloudRF key">
+                </div>
+                <div class="mb-1">
+                    <label for="settingsXweatherApiKey" class="form-label" style="font-size:11px; font-weight:600; color:#495057;">XWeather API Key</label>
+                    <input type="password" class="form-control form-control-sm" id="settingsXweatherApiKey" placeholder="Your XWeather API key">
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="saveApiSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MAP ═══════════════════════════════════════════════════════════════════ -->
+<div id="mapArea">
+    <div id="calcSpinner" class="calc-spinner" hidden>
+        <span class="spin"></span><span>Calculating…</span>
+    </div>
+</div>
+
+<!-- ═══ STATUS BAR ═══════════════════════════════════════════════════════════ -->
+<div class="status-bar">
+    <span id="statusText" class="status-idle">Drag the transmitter and click calculate.</span>
+    <span id="calcBadge" class="text-muted" style="font-size:11px; white-space:nowrap"></span>
+</div>
+
+<!-- ═══ LOG / JSON TABS ══════════════════════════════════════════════════════ -->
+<div class="log-wrap">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabLog"      type="button">📋 Activity Log</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabRequest"  type="button">📤 Request</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tabResponse" type="button">📥 Response</button>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabLog">
+            <div id="activityLog" class="log-pane"></div>
+        </div>
+        <div class="tab-pane fade" id="tabRequest">
+            <div id="paneRequest" class="log-pane">No request yet.</div>
+        </div>
+        <div class="tab-pane fade" id="tabResponse">
+            <div id="paneResponse" class="log-pane">No response yet.</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ SCRIPTS ══════════════════════════════════════════════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js" crossorigin="anonymous"></script>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CREDENTIALS — defaults; editable via the ⚙ Settings button in the config strip
+════════════════════════════════════════════════════════════════════════════ */
+const UID = localStorage.getItem('uid') ??
+  (v => (localStorage.setItem('uid', v), v))(crypto.randomUUID());
+
+let API_KEY = localStorage.getItem('df_api_key') ?? '';
+let API_URL = localStorage.getItem('df_api_url') ?? 'https://api.cloudrf.com';
+
+let XWEATHER_API_KEY = localStorage.getItem('df_xweather_api_key') ?? '';
+
+function saveApiSettings() {
+    const newUrl = document.getElementById('settingsApiUrl').value.trim().replace(/\/$/, '');
+    const newKey = document.getElementById('settingsApiKey').value.trim();
+    const newXweatherKey = document.getElementById('settingsXweatherApiKey').value.trim();
+    if (newUrl) { API_URL = newUrl; localStorage.setItem('df_api_url', newUrl); }
+    if (newKey) { API_KEY = newKey; localStorage.setItem('df_api_key', newKey); }
+    if (newXweatherKey) { XWEATHER_API_KEY = newXweatherKey; localStorage.setItem('df_xweather_api_key', newXweatherKey); radarLayer.setUrl(`https://maps.api.xweather.com/${XWEATHER_API_KEY}/radar/{z}/{x}/{y}/current.png`); }
+    bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+    log(`Settings saved — URL: ${API_URL}`);
+}
+
+document.getElementById('settingsModal').addEventListener('show.bs.modal', () => {
+    document.getElementById('settingsApiUrl').value = API_URL;
+    document.getElementById('settingsApiKey').value = API_KEY;
+    document.getElementById('settingsXweatherApiKey').value = XWEATHER_API_KEY;
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════════════════════════════════════ */
+function setStatus(msg, state) {
+    const el = document.getElementById('statusText');
+    el.textContent = msg;
+    el.className   = 'status-' + state;
+}
+function setStatusHTML(html, state) {
+    const el = document.getElementById('statusText');
+    el.innerHTML = html;
+    el.className = 'status-' + state;
+}
+function setBadge(txt) { document.getElementById('calcBadge').textContent = txt; }
+function showCalcSpinner(show) {
+    const el = document.getElementById('calcSpinner');
+    if (show) {
+        el.hidden = false;
+        requestAnimationFrame(() => el.classList.add('is-visible'));
+    } else {
+        el.classList.remove('is-visible');
+        setTimeout(() => { el.hidden = true; }, 250);
+    }
+}
+function log(msg) {
+    const el = document.getElementById('activityLog');
+    el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+    el.scrollTop    = el.scrollHeight;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SCENARIO CONSTANTS
+   ════════════════════════════════════════════════════════════════════════════ */
+const MAP_UPDATE_MS = 300000;
+
+const NOISE_PUSH_TEMPLATE = {
+    group_name: `rain-${UID.slice(0, 8)}`,
+    frequency: 4000,
+    noise: null,
+    latitude: null,
+    longitude: null,
+}
+
+const NOISE_TEMPLATE = {
+    network:     'Live-weather-demo',
+    site:        'RADAR',
+    engine:      1,
+    transmitter: { alt: 3, frq: 4000, txw: 20, bwi: 0.5 },
+    receiver:    { lat: 0, lon: 0, alt: 120, rxg: 30, rxs: 0 },
+    antenna:     { txg: 30, txl: 0, ant: 1, azi: 0, tlt: 0, pol: 'v', fbr: 0 },
+    model:       { pm: 8, pe: 2, ked: 0, rel: 50, rcs: 10 },
+    environment: { clt: 'Minimal.clt', elevation: 2, landcover: 0, buildings: 0, obstacles: 0 },
+    output:      { units: 'm', col: 9, out: 4, nf: "database", res: 30, rad: 15 }
+};
+
+const SNR_DB_KEY = {
+  0:  [242,   7,  7],
+  3:  [242,  44,  8],
+  6: [242,  81,  8],
+  9: [243, 118,  9],
+  12: [243, 155,  9],
+  15: [243, 192, 10],
+  18: [243, 228, 11],
+  21: [222, 243, 11],
+  24: [186, 243, 12],
+  27: [150, 243, 14],
+  30: [115, 242, 15],
+  33: [115, 242, 15],
+  36: [115, 242, 15],
+  39: [115, 242, 15],
+  42: [115, 242, 15],
+  45: [115, 242, 15]
+};
+
+const P838 = {
+  1: [0.0000308, 0.8592],  1.5: [0.0000574, 0.8957],
+  2: [0.0000998, 0.9490],  2.5: [0.0001464, 1.0085],
+  3: [0.0001942, 1.0688],  3.5: [0.0002346, 1.1387],
+  4: [0.0002461, 1.2476],  4.5: [0.0002347, 1.3987],
+  5: [0.0002428, 1.5317],  5.5: [0.0003115, 1.5882],
+  6: [0.0004878, 1.5728],  7: [0.001425, 1.4745],
+  8: [0.003450, 1.3797],   9: [0.006691, 1.2895],
+  10: [0.01129, 1.2156],   11: [0.01731, 1.1617],
+  12: [0.02455, 1.1216],   13: [0.03266, 1.0901],
+  14: [0.04126, 1.0646],   15: [0.05008, 1.0440],
+  16: [0.05899, 1.0273],   17: [0.06797, 1.0137],
+  18: [0.07708, 1.0025],   19: [0.08642, 0.9930],
+  20: [0.09611, 0.9847],   25: [0.1533, 0.9491],
+  30: [0.2291, 0.9129],
+};
+
+const FREQS = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30];
+
+const MIN_DB = -50
+
+let ATT_TYPE = ""
+
+let attenuation = 0.1;
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MAP SETUP
+   ════════════════════════════════════════════════════════════════════════════ */
+const map = L.map('mapArea').setView([51.8935, -2.1645], 10);
+const osmLayer=L.tileLayer('https://maps.cloudrf.com/wmts/contours/mercator/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://cloudrf.com">CloudRF</a>',maxZoom:16});
+const satLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri',maxZoom:16});
+const radarLayer=L.tileLayer(`https://maps.api.xweather.com/${XWEATHER_API_KEY}/radar/{z}/{x}/{y}/current.png`,{crossOrigin: 'anonymous', subdomains:'1234', attribution: '&copy;Xweather',maxZoom:16,opacity:0.7});
+
+const SIM_TILES = [
+  'sim-6',
+  'sim-7',
+  'sim-8',
+  'sim-9',
+  'sim-10',
+  'sim-11',
+  'sim-12',
+  'sim-13',
+  'sim-14',
+  'sim-15',
+  'sim-16',
+  'sim-17',
+];
+
+let simCentre = null;
+
+const SimTileLayer = L.TileLayer.extend({
+    getTileUrl(c) {
+        if (!simCentre) return './tiles/blank.png';
+        const o = map.project(simCentre, c.z).divideBy(256).floor();
+        const dx = c.x - o.x, dy = c.y - o.y;
+        if (dx < -2 || dx > 1 || dy < -1 || dy > 1) return './tiles/blank.png';
+        return './tiles/' + SIM_TILES[(dy + 1) * 4 + (dx + 2)] + '.png';
+    }
+});
+
+const simLayer = new SimTileLayer('', {
+  crossOrigin: 'anonymous', minNativeZoom:10, maxNativeZoom:10, maxZoom:16, opacity: 0.4
+});
+
+
+osmLayer.addTo(map);
+radarLayer.addTo(map);
+L.control.layers(
+    { 'Contours': osmLayer, 'Satellite': satLayer},
+    {},
+    { position:'topright', collapsed:false }
+).addTo(map)
+
+let areaOverlay = null;
+
+const transmitter = L.marker(L.latLng(51.8935, -2.1645), {
+    title: 'Transmitter', draggable: true,
+    icon: L.divIcon({
+        className: '',
+        html: '<div style="font-size:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));cursor:grab;">📡</div>',
+        iconAnchor: [13, 26]
+    })
+}).addTo(map);
+transmitter.bindTooltip('Transmitter — drag to reposition');
+
+/* ════════════════════════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════════════════════════ */
+var targetLatLng  = null;
+var areaCanvas    = document.createElement('canvas');
+var areaBounds    = null;
+var segmentCanvas = document.createElement('canvas');
+let liveRain = true;
+let hideRain = false;
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CONVERSION
+   ════════════════════════════════════════════════════════════════════════════ */
+const PALETTE = [
+  { dbz: 15, rgb: [127,211, 78] }, { dbz: 20, rgb: [ 79,168, 46] },
+  { dbz: 25, rgb: [ 46,125, 30] }, { dbz: 30, rgb: [ 27, 94, 20] },
+  { dbz: 35, rgb: [142,142, 34] }, { dbz: 40, rgb: [201,176, 42] },
+  { dbz: 45, rgb: [240,200,  8] }, { dbz: 50, rgb: [240,140,  0] },
+  { dbz: 55, rgb: [224, 32, 32] }, { dbz: 60, rgb: [168, 16, 16] },
+];
+
+
+let hit = 0, miss = 0;
+const lut = new Map();
+
+function toDbz(r, g, b, a) {
+  if (r == 0 && a == 0) return null;                    // transparent = no echo
+  const k = (r << 16) | (g << 8) | b;
+  if (lut.has(k)) return lut.get(k);
+  let best = null, bd = Infinity;
+  for (const e of PALETTE) {
+    const d = (r-e.rgb[0])**2 + (g-e.rgb[1])**2 + (b-e.rgb[2])**2;
+    if (d < bd) { bd = d; best = e; }
+  }
+  const v = bd > 3600 ? null : best.dbz;      // too far = antialiased edge
+  lut.set(k, v);
+  return v;
+}
+
+function dbzTodBNoise(dbz) {
+    // attenuation (0-1) scales how much of the rain echo lifts the noise floor;
+    // 0 → uniform -115, 1 → full -115 + dbz
+    if (dbz == null) return -115;
+    return -115 + dbz * attenuation
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   API — AREA REQUEST
+   ════════════════════════════════════════════════════════════════════════════ */
+const DBZS_BY_TILE = new Map();
+
+let rainOverlay = null;
+
+function pixelLatLng(w, h, bounds, x, y) {
+    return L.latLng(
+        bounds.getNorth() + (bounds.getSouth() - bounds.getNorth()) * (y + 0.5) / h,
+        bounds.getWest()  + (bounds.getEast()  - bounds.getWest())  * (x + 0.5) / w
+    );
+}
+
+async function clearExistingNoise() {
+    if (!API_KEY) {
+        setStatus('API key not configured — click ⚙ Settings in the toolbar to enter your CloudRF API key.', 'error');
+        return;
+    }
+
+    let req = { group_name: "rain-", partial: true };
+    const reqJson = JSON.stringify(req, null, 4);
+
+    document.getElementById('paneRequest').textContent  = `POST /noise/clear\n\n${reqJson}`;
+    setStatusHTML('<span class="spin"></span> Clearing noise from CloudRF API…', 'running');
+
+    try {
+        const resp    = await fetch(`${API_URL}/noise/clear`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'key': API_KEY }, body: reqJson
+        });
+        const rj = await resp.json();
+        document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 4);
+        log("Cleared noise from database.")
+    } catch (e) {
+        setStatus(`Network error: ${e.message}`, 'error');
+        log(`Error: ${e.message}`);
+    }
+}
+
+async function uploadWeather() {
+    if (!API_KEY) {
+        setStatus('API key not configured — click ⚙ Settings in the toolbar to enter your CloudRF API key.', 'error');
+        return;
+    }
+
+    const latLng = transmitter.getLatLng();
+    const R = NOISE_TEMPLATE.output.rad * 1000;
+
+    const all = [...DBZS_BY_TILE.values()].flat()
+        .filter(d => latLng.distanceTo([d.lat, d.lon]) <= R)
+        .map(d => ({ ...NOISE_PUSH_TEMPLATE, noise: dbzTodBNoise(d.dbz), latitude: d.lat, longitude: d.lon }));
+
+    if (all.length == 0) return;
+
+    document.getElementById('paneRequest').textContent =
+        `POST /noise/create  (${all.length} entries)\n\n`
+        + JSON.stringify(all.slice(0, 5), null, 4) + '\n…';
+    setStatusHTML('<span class="spin"></span> Uploading noise to CloudRF API…', 'running');
+
+    try {
+        const resp = await fetch(`${API_URL}/noise/create`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'key': API_KEY },
+            body: JSON.stringify(all)
+        });
+        const rj = await resp.json();
+        document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 4);
+        if (!resp.ok) throw new Error(JSON.stringify(rj));
+        log(`Uploaded ${all.length} points`);
+    } catch (e) {
+        setStatus(`Network error: ${e.message}`, 'error');
+        log(`Error: ${e.message}`);
+    }
+}
+
+async function runAreaCalc() {
+    if (!API_KEY) {
+        setStatus('API key not configured — click ⚙ Settings in the toolbar to enter your CloudRF API key.', 'error');
+        return;
+    }
+
+    const latLng = transmitter.getLatLng();
+    const req    = { ...NOISE_TEMPLATE, transmitter: { ...NOISE_TEMPLATE.transmitter, lat: latLng.lat, lon: latLng.lng }, output: { ...NOISE_TEMPLATE.output } };
+    const reqJson = JSON.stringify(req, null, 4);
+
+    document.getElementById('paneRequest').textContent  = `POST /area\n\n${reqJson}`;
+    setStatusHTML('<span class="spin"></span> Requesting coverage with rain noise from CloudRF API…', 'running');
+    log(`Area request: transmitter at (${latLng.lat.toFixed(4)}, ${latLng.lng.toFixed(4)})`);
+
+    const t0 = Date.now();
+    try {
+        const resp    = await fetch(`${API_URL}/area`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'key': API_KEY }, body: reqJson
+        });
+        const rj = await resp.json();
+        document.getElementById('paneResponse').textContent = JSON.stringify(rj, null, 4);
+        const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+        if (!rj.PNG_Mercator) {
+            setStatus(`API error: ${rj?.error || rj?.message || 'unknown'}`, 'error');
+            log(`Error: ${JSON.stringify(rj)}`); return;
+        }
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = rj.PNG_WGS84; });
+
+        areaCanvas.width  = img.width;
+        areaCanvas.height = img.height;
+        areaCanvas.getContext('2d').drawImage(img, 0, 0);
+        areaBounds = L.latLngBounds(
+            L.latLng(rj.bounds[2], rj.bounds[3]),
+            L.latLng(rj.bounds[0], rj.bounds[1])
+        );
+        log(`Coverage map loaded in ${elapsed}s..`);
+        setBadge(`Area in ${elapsed}s`);
+        setStatus('Coverage map ready.', 'done');
+        return true;
+    } catch (e) {
+        setStatus(`Network error: ${e.message}`, 'error');
+        log(`Error: ${e.message}`);
+    }
+}
+
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CLEAR
+   ════════════════════════════════════════════════════════════════════════════ */
+function clearOverlays() {
+    map.eachLayer(l => {
+        if (l instanceof L.ImageOverlay || l.name === 'df' || l.name === 'line') map.removeLayer(l);
+    });
+    areaBounds = null; targetLatLng = null;
+    areaCanvas = document.createElement('canvas');
+    setStatus('Cleared. Press Recalculate or drag the sensor to start.', 'idle');
+    log('All overlays cleared.');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INTERACTIONS
+   ════════════════════════════════════════════════════════════════════════════ */
+const checkboxLive = document.getElementById("checkbox-live")
+const checkboxHide = document.getElementById("checkbox-hide")
+
+function applyRainLayers() {
+    DBZS_BY_TILE.clear();
+    
+    if (hideRain) {
+        map.removeLayer(simLayer);
+        map.removeLayer(radarLayer);
+    } else if (liveRain && !hideRain) {
+        map.removeLayer(simLayer);
+        map.addLayer(radarLayer);
+    } else {
+        map.removeLayer(radarLayer);
+        simulateWeather();
+        setStatus("Using synthetic rain data")
+    }
+}
+
+function setLiveRain(bool) {
+    liveRain = bool;
+    checkboxLive.checked = liveRain;
+    applyRainLayers();
+}
+
+function setHideRain(bool) {
+    hideRain = bool;
+    checkboxHide.checked = hideRain;
+    applyRainLayers();
+}
+
+transmitter.on('dragend', () => {
+    if (areaOverlay) map.removeLayer(areaOverlay);
+    log(`Transmitter moved to (${transmitter.getLatLng().lat.toFixed(4)}, ${transmitter.getLatLng().lng.toFixed(4)})`);
+});
+
+$('#slider-gain').on('input change', function () {
+    const val = $(this).val()
+    $('#label-gain-value').text(`${val} dBi`);
+    NOISE_TEMPLATE.receiver.rxg = val;
+    NOISE_TEMPLATE.antenna.txg = val;
+});
+$('#slider-freq').on('input change', function () {
+    const f = FREQS[Number($(this).val())];
+    $('#label-freq-value').text(`${f} GHz`);
+    NOISE_TEMPLATE.transmitter.frq = f * 1000;
+    NOISE_PUSH_TEMPLATE.frequency = f * 1000;
+});
+$('#att-type-select').on('change', function () {
+    const sel = this.value;
+    ATT_TYPE = sel;
+    $('#group-att').toggle(false);
+    $('#group-freq').toggle(false);
+    if (sel == "") {
+    } else if (sel == "ex") {
+        $('#group-att').toggle(true);
+    } else if (sel == "p838") {
+        $('#group-freq').toggle(true);
+    }
+});
+$('#slider-attenuation').on('input change', function () {
+    const val = Number($(this).val())
+    $('#label-attenuation-value').text(val.toFixed(2));
+    attenuation = val;
+});
+$('#checkbox-live').on('input change', function () {
+    setLiveRain(this.checked);
+});
+$('#checkbox-hide').on('input change', function () {
+    setHideRain(this.checked);
+});
+
+
+
+
+
+
+function getColor(db) {
+    if (db < 0) return null
+    const dbRound = Math.round(db / 3) * 3;
+    const val = SNR_DB_KEY[dbRound];
+    if (val == undefined) return null;
+    return val;
+}
+
+function applyAttenuation(spokes, colorKey) {
+    const CELL = 0.005;
+    const key = (lat, lon) => `${Math.round(lat / CELL)},${Math.round(lon / CELL)}`;
+
+    const att = new Map();
+    for (const s of spokes) {
+        const k = key(s.lat, s.lon);
+        const cur = att.get(k);
+        if (cur === undefined || s.atten > cur) att.set(k, s.atten);
+    }
+
+    const ctx = areaCanvas.getContext('2d', { willReadFrequently: true });
+    const id = ctx.getImageData(0, 0, areaCanvas.width, areaCanvas.height);
+    const d = id.data;
+
+    const W = areaCanvas.width, H = areaCanvas.height;
+    const n = areaBounds.getNorth(), s = areaBounds.getSouth();
+    const w = areaBounds.getWest(),  e = areaBounds.getEast();
+    const dLatPx = (s - n) / H, dLonPx = (e - w) / W;
+    const INV = 1 / CELL;
+
+    for (let y = 0; y < H; y++) {
+        const lat = n + dLatPx * (y + 0.5);
+        const latKey = Math.round(lat * INV);
+        for (let x = 0; x < W; x++) {
+            const i = (y * W + x) * 4;
+            if (d[i + 3] === 0) continue;
+            const lon = w + dLonPx * (x + 0.5);
+            const a = att.get(latKey + ',' + Math.round(lon * INV)) ?? 0;
+            const v = Math.min(255, d[i] - a);
+
+            // Apply color
+            const col = getColor(v, colorKey)
+            if (col == null) d[i + 3] = 0;
+            else [d[i], d[i + 1], d[i + 2]] = col;
+        }
+    }
+    ctx.putImageData(id, 0, 0);
+
+    // Cross-fade: drop the new overlay in transparent on top of the old one,
+    // fade it up, then remove the old layer once the transition has run.
+    const prev = areaOverlay;
+    const next = L.imageOverlay(areaCanvas.toDataURL(), areaBounds, {
+        opacity: 0, className: 'area-overlay-fade'
+    }).addTo(map);
+    areaOverlay = next;
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        next.setOpacity(0.8);
+        setTimeout(() => { if (prev) map.removeLayer(prev); }, 650);
+    }));
+}
+
+function generateSpokes(tx) {
+
+    setStatusHTML('<span class="spin"></span> Applying attenuation…', 'running');
+    const CELL = 0.03;                       // ~3 km grid
+    const key = (lat, lon) => `${Math.round(lat / CELL)},${Math.round(lon / CELL)}`;
+
+    const alpha = new Map();
+    for (const d of [...DBZS_BY_TILE.values()].flat()) {
+        if (d.dbz == null) continue;
+        const mmph = Math.pow((10 ** (d.dbz / 10)) / 200, 5/8);
+
+        console.log(ATT_TYPE);
+
+        if (ATT_TYPE == "p838") {
+            const [k, a] = P838[NOISE_TEMPLATE.transmitter.frq / 1000]
+            alpha.set(key(d.lat, d.lon), k * Math.pow(mmph, a))
+        } else {
+            // Custom manual knob: slider (0-10) scales specific attenuation
+            alpha.set(key(d.lat, d.lon), (mmph / 10) * attenuation);   // dB/km
+        } 
+    }
+
+    const stepKm = 0.1;
+    const rot = 720
+    const mPerLat = 111320, mPerLon = 111320 * Math.cos(tx.lat * Math.PI / 180);
+    const out = [];
+
+    for (let a = 0; a < rot; a++) {
+        const brg = a * 2 * Math.PI / rot;
+        const dLat = Math.cos(brg) / mPerLat, dLon = Math.sin(brg) / mPerLon;
+
+        let sum = 0;
+        for (let d = 0; d < NOISE_TEMPLATE.output.rad; d += stepKm) {
+            const lat = tx.lat + d * 1000 * dLat, lon = tx.lng + d * 1000 * dLon;
+            sum += (alpha.get(key(lat, lon)) ?? 0) * stepKm;
+            out.push({ lat, lon, atten: sum });
+        }
+    }
+
+    return out;
+}
+
+function simulateWeather() {
+    map.setView(map.getCenter(), 10);
+  simCentre = map.getCenter();
+
+  const z = Math.round(map.getZoom());
+  const p = map.project(map.getCenter(), z).divideBy(256).floor();
+
+  DBZS_BY_TILE.clear();
+  map.removeLayer(radarLayer);
+
+  return new Promise(resolve => {
+    simLayer.once('load', resolve);
+    simLayer.addTo(map);
+    simLayer.redraw();
+  });
+}
+
+function handleTile(data, x, y, z) {
+  const rows = [], step =100;
+  for (let py = 0; py < 256; py += step) {
+    for (let px = 0; px < 256; px += step) {
+      const i = (py * 256 + px) * 4;
+      const ll = map.unproject(L.point(x * 256 + px, y * 256 + py), z);
+      rows.push({ dbz: toDbz(data[i], data[i+1], data[i+2], data[i+3]),
+                  lat: ll.lat, lon: ll.lng });
+    }
+  }
+  DBZS_BY_TILE.set(`${z}/${x}/${y}`, rows);
+}
+
+function onTileLoad(e) {
+    let { x, y, z } = e.coords;
+
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(e.tile, 0, 0)
+    const data = ctx.getImageData(0, 0, 256, 256).data
+
+    handleTile(data, x, y, z)
+}
+
+
+// let uploadRing = null;
+
+// function drawUploadArea() {
+//   const c = transmitter.getLatLng();
+//   const R = NOISE_TEMPLATE.output.rad * 1000;
+//   if (uploadRing) map.removeLayer(uploadRing);
+//   uploadRing = L.circle(c, {
+//     radius: R, color: '#1a8cff', weight: 2, dashArray: '6 4',
+//     fill: false, interactive: false
+//   }).addTo(map);
+// }
+
+// transmitter.on('dragend', () => {
+//   drawUploadArea();
+//   log(`Transmitter moved to (…)`);
+// });
+// drawUploadArea();
+
+radarLayer.on('tileload', onTileLoad)
+radarLayer.on('tileerror', e => {
+    setStatus("Failed to fetch from XWeather. Switching to synthetic rain data. Check your API key is valid.", "error")
+    setLiveRain(false)
+});
+
+simLayer.on('tileload', onTileLoad)
+
+async function updateRadar() {
+    if (PALETTE.length == 0) await loadPalette();
+
+    setStatus("Redrawing", "running")
+    
+    DBZS_BY_TILE.clear();
+
+    radarLayer.redraw();
+}
+
+async function uploadAndRunAreaCalc() {
+    // Keep the existing coverage layer on screen; just show a spinner while we work.
+    showCalcSpinner(true);
+    try {
+        await clearExistingNoise();
+        await uploadWeather();
+        const ok = await runAreaCalc();
+        if (ok) {
+            const spokes = generateSpokes(transmitter.getLatLng());
+            applyAttenuation(spokes);   // swaps in the new layer with a cross-fade
+            setStatus("Complete", "done");
+        }
+    } finally {
+        showCalcSpinner(false);
+    }
+}
+
+function updateCoverage() {
+    if (liveRain) updateRadar();
+    else simulateWeather();
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════════════════════════ */
+// $('#slider-received-power').trigger('input');
+// $('#slider-tx-power').trigger('input');
+log('Map ready. Transmitter at Sheffield City Airport (53.394167, -1.388611).');
+async function updateLoop() {
+    await updateRadar();
+    setTimeout(() => updateLoop(), MAP_UPDATE_MS);
+}
+updateLoop();
+
+</script>
+</body>
+</html>
