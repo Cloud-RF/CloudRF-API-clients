@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ACMA Query Tool</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/kangaroo-radio.svg') }}" />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+        integrity="sha256-YU3qCpj/P06tdPBJGPax0bm6Q1wltfwjsho5TR4+TYc=" crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+        integrity="sha256-YSWCMtmNZNwqex4CEw1nQhvFub2lmU7vcCKP+XVwwXA=" crossorigin="" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <div id="app">
+    <button id="sidebarToggle" title="Toggle panel">&#9776;</button>
+    <button id="settingsBtn" title="Settings">&#9881;</button>
+
+    <aside id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <img class="brand-logo" src="{{ url_for('static', filename='img/kangaroo-radio.svg') }}"
+               alt="Cartoon kangaroo holding a radio" width="48" height="56" />
+          <h1>ACMA Query Tool</h1>
+        </div>
+        <p class="hint">Click the map to place a center point, then drag the
+          center or the small handle on the circle's edge to adjust it. Set a
+          frequency range and search ACMA licence data within the circle.</p>
+
+        <form id="shapeForm">
+          <fieldset>
+            <legend>Location</legend>
+            <label>Latitude
+              <input type="text" id="latField" readonly placeholder="click map…" />
+            </label>
+            <label>Longitude
+              <input type="text" id="lngField" readonly placeholder="click map…" />
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Radius</legend>
+            <label>Radius (km)
+              <input type="number" id="radiusNumber" min="10" max="500" step="0.1" value="50" />
+            </label>
+            <input type="range" id="radiusSlider" min="10" max="500" step="1" value="50" />
+          </fieldset>
+
+          <fieldset>
+            <legend>Frequency range <span class="required-mark">*</span></legend>
+            <label>Lower frequency
+              <div class="freq-row">
+                <input type="number" id="freqMinValue" min="0" step="any" placeholder="e.g. 88" required />
+                <select id="freqMinUnit">
+                  <option value="Hz">Hz</option>
+                  <option value="kHz">kHz</option>
+                  <option value="MHz" selected>MHz</option>
+                  <option value="GHz">GHz</option>
+                </select>
+              </div>
+            </label>
+            <label>Upper frequency
+              <div class="freq-row">
+                <input type="number" id="freqMaxValue" min="0" step="any" placeholder="e.g. 108" required />
+                <select id="freqMaxUnit">
+                  <option value="Hz">Hz</option>
+                  <option value="kHz">kHz</option>
+                  <option value="MHz" selected>MHz</option>
+                  <option value="GHz">GHz</option>
+                </select>
+              </div>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Name</legend>
+            <label>Site / search name
+              <input type="text" id="nameField" placeholder="My site" />
+            </label>
+          </fieldset>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="polygonMode" />
+            Export as polygon approximation (instead of center + radius)
+          </label>
+
+          <div class="button-row">
+            <button type="button" id="searchBtn" class="primary">Search licences</button>
+          </div>
+          <p id="searchStatus" class="search-status" hidden></p>
+
+          <div class="button-row">
+            <button type="button" id="modelBtn">Model sites</button>
+          </div>
+          <p id="modelStatus" class="search-status" hidden>
+            <span class="spinner" hidden></span>
+            <span id="modelStatusText"></span>
+          </p>
+
+          <div class="button-row">
+            <button type="button" id="clearBtn">Clear</button>
+            <button type="button" id="copyBtn">Copy GeoJSON</button>
+            <button type="button" id="downloadBtn">Download</button>
+          </div>
+          <div class="button-row">
+            <button type="button" id="saveBtn">Save shape</button>
+          </div>
+        </form>
+
+        <fieldset id="savedSection">
+          <legend>Saved shapes</legend>
+          <ul id="savedList"><li class="empty">None yet</li></ul>
+        </fieldset>
+      </div>
+    </aside>
+
+    <main id="map"></main>
+
+    <section id="rfLayersSection" class="rf-layers-panel" hidden>
+      <div class="rf-layers-header">
+        <span>RF coverage layers</span>
+        <button type="button" id="rfLayersClose" title="Hide">&times;</button>
+      </div>
+      <ul id="rfLayerList"></ul>
+    </section>
+
+    <section id="bandwidthChart" class="bandwidth-chart" hidden>
+      <div class="bandwidth-chart-header">
+        <span id="bandwidthChartTitle"></span>
+        <button type="button" id="bandwidthChartClose" title="Hide chart">&times;</button>
+      </div>
+      <div class="bandwidth-chart-axis">
+        <span id="bwAxisMin"></span>
+        <span id="bwAxisMid"></span>
+        <span id="bwAxisMax"></span>
+      </div>
+      <div id="bandwidthChartBody" class="bandwidth-chart-body"></div>
+    </section>
+
+    <div id="settingsBackdrop" class="modal-backdrop" hidden>
+      <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="modal-header">
+          <h2 id="settingsTitle">Settings</h2>
+          <button type="button" id="settingsClose" title="Close" class="modal-close">&times;</button>
+        </div>
+
+        <fieldset>
+          <legend>Base map</legend>
+          <label class="radio-row">
+            <input type="radio" name="basemap" value="osm" />
+            OpenStreetMap
+          </label>
+          <label class="radio-row">
+            <input type="radio" name="basemap" value="esriTopo" />
+            Esri World Topo
+          </label>
+          <label class="radio-row">
+            <input type="radio" name="basemap" value="esriSatellite" />
+            Esri Satellite
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>CloudRF API key</legend>
+          <label>API key
+            <div class="freq-row">
+              <input type="password" id="cloudrfKeyInput" placeholder="not set" autocomplete="off" />
+              <button type="button" id="cloudrfKeyToggle" title="Show/hide">&#128065;</button>
+            </div>
+          </label>
+          <p id="cloudrfKeyHint" class="hint" style="margin: 6px 0 0;"></p>
+          <div class="button-row" style="margin-top: 10px;">
+            <button type="button" id="cloudrfKeySave" class="primary">Save key</button>
+          </div>
+          <p id="cloudrfKeyStatus" class="search-status" hidden></p>
+        </fieldset>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+          integrity="sha256-Hk4dIpcqOSb0hZjgyvFOP+cEmDXUKKNE/tT542ZbNQg=" crossorigin=""></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
