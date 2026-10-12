@@ -1,0 +1,480 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/Cloud-RF/CloudRF-API-clients/master/templates/template.schema.json",
+  "title": "CloudRF template",
+  "description": "A CloudRF radio template as stored in this folder and exchanged with the /template endpoints of the CloudRF API. Limits and enumerations follow CloudRF API 3.36 (https://api.cloudrf.com/openapi.json).",
+  "type": "object",
+  "required": [
+    "version",
+    "reference",
+    "template",
+    "site",
+    "network",
+    "engine",
+    "coordinates",
+    "transmitter",
+    "receiver",
+    "antenna",
+    "model",
+    "environment",
+    "output"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "description": "Optional pointer to this schema for editor validation.",
+      "type": "string"
+    },
+    "version": {
+      "description": "API version the template was created with, eg. `CloudRF API 3.36`. Older exports use `CloudRF-API 3.34` or `CloudRF-API-v3.8.10`.",
+      "type": "string",
+      "pattern": "^CloudRF[ -]API[ -]v?[0-9]+(\\.[0-9]+)+ ?$",
+      "examples": ["CloudRF API 3.36"]
+    },
+    "reference": {
+      "description": "An online reference which can be used to look up what each of the values in the template mean.",
+      "type": "string",
+      "format": "uri",
+      "default": "https://cloudrf.com/documentation/developer/"
+    },
+    "template": { "$ref": "#/definitions/template" },
+    "site": {
+      "description": "Site name. For a radio template this is the OEM model name.",
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 30
+    },
+    "network": {
+      "description": "Network name/group. For a radio template this is the OEM's name.",
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 30
+    },
+    "engine": {
+      "description": "Processing engine to handle the request:\n* `1` - GPU (requires a GPU enabled server)\n* `2` - CPU\n",
+      "type": "integer",
+      "enum": [1, 2],
+      "default": 1
+    },
+    "coordinates": {
+      "description": "The coordinates system associated with the template:\n* `1` - Decimal Degrees\n* `2` - Degrees Minutes Seconds\n* `3` - MGRS / UTM\n",
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "default": 1
+    },
+    "customIcon": {
+      "description": "Optional map icon for the site as an image data URI.",
+      "type": "string",
+      "pattern": "^data:image/[a-zA-Z0-9.+-]+;base64,"
+    },
+    "transmitter": { "$ref": "#/definitions/transmitter" },
+    "receiver": { "$ref": "#/definitions/receiver" },
+    "feeder": { "$ref": "#/definitions/feeder" },
+    "antenna": { "$ref": "#/definitions/antenna" },
+    "model": { "$ref": "#/definitions/model" },
+    "environment": { "$ref": "#/definitions/environment" },
+    "output": { "$ref": "#/definitions/output" }
+  },
+  "definitions": {
+    "template": {
+      "description": "Metadata about the template which can be used to identify it and make better use of it.",
+      "type": "object",
+      "required": ["name", "service", "created_at", "owner", "bom_value"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "The name of the template.",
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 30
+        },
+        "service": {
+          "description": "Where the template was created.",
+          "type": "string",
+          "default": "https://api.cloudrf.com"
+        },
+        "created_at": {
+          "description": "ISO8601 timestamp of when the template was created.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "owner": {
+          "description": "The template creator/owner. `CloudRF` for system templates, or the numeric user ID for templates downloaded from the API.",
+          "type": ["string", "integer"]
+        },
+        "bom_value": {
+          "description": "Value of the template which can be used as part of a bill of materials. Older exports use an empty string when unset.",
+          "oneOf": [
+            { "type": "number", "minimum": 0 },
+            { "type": "string", "maxLength": 0 }
+          ],
+          "default": 1
+        }
+      }
+    },
+    "transmitter": {
+      "type": "object",
+      "required": ["lat", "lon", "alt", "frq", "txw", "bwi"],
+      "additionalProperties": false,
+      "properties": {
+        "lat": {
+          "description": "Latitude of transmitter in WGS84 decimal degrees.",
+          "type": "number",
+          "minimum": -89,
+          "maximum": 89
+        },
+        "lon": {
+          "description": "Longitude of transmitter in WGS84 decimal degrees.",
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "alt": {
+          "description": "Altitude of transmitter above ground level in `metric` or `imperial`. Distance unit set in `output` object.",
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 120000,
+          "default": 1.5
+        },
+        "frq": {
+          "description": "Center frequency in megahertz.",
+          "type": "number",
+          "minimum": 2,
+          "maximum": 100000
+        },
+        "txw": {
+          "description": "Transmitter power before the antenna, in the unit given by `powerUnit`. The limits below apply to watts.",
+          "type": "number"
+        },
+        "bwi": {
+          "description": "Bandwidth in MHz.\n* 1MHz has a noise floor of -114dBm\n* 10MHz has a noise floor of -104dBm\n* 20MHz has a noise floor of -101dBm\n",
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 200
+        },
+        "powerUnit": {
+          "description": "The RF power unit being used, either `W` or `dBm`.",
+          "type": "string",
+          "enum": ["W", "dBm"],
+          "default": "W"
+        }
+      },
+      "if": {
+        "not": {
+          "required": ["powerUnit"],
+          "properties": { "powerUnit": { "const": "dBm" } }
+        }
+      },
+      "then": {
+        "properties": {
+          "txw": { "minimum": 0.001, "maximum": 2000000 }
+        }
+      }
+    },
+    "receiver": {
+      "type": "object",
+      "required": ["lat", "lon", "alt", "rxg", "rxs"],
+      "additionalProperties": false,
+      "properties": {
+        "lat": {
+          "description": "Latitude of receiver in WGS84 decimal degrees. `0` for an area calculation.",
+          "type": "number",
+          "minimum": -89,
+          "maximum": 89,
+          "default": 0
+        },
+        "lon": {
+          "description": "Longitude of receiver in WGS84 decimal degrees. `0` for an area calculation.",
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180,
+          "default": 0
+        },
+        "alt": {
+          "description": "Altitude of receiver above ground level in `metric` or `imperial`. Distance unit set in `output` object.",
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 120000,
+          "default": 1.5
+        },
+        "rxg": {
+          "description": "Receiver antenna gain in dBi. Ignored by the RADAR propagation model (`pm` value `8`).",
+          "type": "number",
+          "minimum": -10,
+          "maximum": 60,
+          "default": 2
+        },
+        "rxs": {
+          "description": "Receiver sensitivity/threshold in measured units. Measured units set by `out` in the `output` object, eg. dBm for received power or dB for SNR.",
+          "type": "number",
+          "minimum": -140,
+          "maximum": 200
+        }
+      }
+    },
+    "feeder": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "flt": {
+          "description": "The feeder line type. Older exports store this as a numeric string.",
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "string", "pattern": "^[0-9]+$" }
+          ],
+          "default": 0
+        },
+        "fll": {
+          "description": "The feeder line length.",
+          "type": "number",
+          "minimum": 0,
+          "default": 0
+        },
+        "fcc": {
+          "description": "The feeder line number of connectors.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      }
+    },
+    "antenna": {
+      "type": "object",
+      "required": ["mode", "txg", "txl", "ant", "azi", "tlt", "pol"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "description": "The type of antenna which is being used:\n* `template` is a pre-defined pattern identified by `ant`.\n* `custom` is a custom pattern built from `hbw`, `vbw` and `fbr`.\n",
+          "type": "string",
+          "enum": ["template", "custom"],
+          "default": "custom"
+        },
+        "txg": {
+          "description": "Transmitter antenna gain in dBi. A half-wave dipole has a gain of 2.15dBi.",
+          "type": "number",
+          "minimum": -10,
+          "maximum": 60,
+          "default": 2
+        },
+        "txl": {
+          "description": "Feeder loss in dB.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 60,
+          "default": 0
+        },
+        "ant": {
+          "description": "Antenna pattern code:\n* `0` - Custom pattern (see `hbw`, `vbw`, `fbr`)\n* `1` - Vertical dipole (omni-directional)\n* Other values are the identifier of a pattern in the antenna database.\n",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "azi": {
+          "description": "Antenna azimuth in degrees North. Up to 20 azimuths can be given as a comma-separated list, eg. `0,120,240`.",
+          "oneOf": [
+            { "type": "number", "minimum": 0, "maximum": 360 },
+            { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?(,[0-9]+(\\.[0-9]+)?){0,19}$" }
+          ],
+          "default": 0
+        },
+        "tlt": {
+          "description": "Antenna tilt in degrees below the horizon (inverted) where horizon is `0`.",
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90,
+          "default": 0
+        },
+        "hbw": {
+          "description": "Custom antenna horizontal beamwidth in degrees. For use only with `ant` value of `0`.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360,
+          "default": 360
+        },
+        "vbw": {
+          "description": "Custom antenna vertical beamwidth in degrees. For use only with `ant` value of `0`.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360,
+          "default": 120
+        },
+        "fbr": {
+          "description": "Front-to-back ratio measured in dB. A highly directional antenna will have a high FBR.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 60,
+          "default": 0
+        },
+        "pol": {
+          "description": "Antenna polarization:\n* `v` - Vertical\n* `h` - Horizontal\n",
+          "type": "string",
+          "enum": ["v", "h"],
+          "default": "v"
+        }
+      },
+      "if": {
+        "properties": { "mode": { "const": "custom" } }
+      },
+      "then": {
+        "properties": { "ant": { "const": 0 } }
+      },
+      "else": {
+        "properties": { "ant": { "minimum": 1 } }
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": ["pm", "pe", "ked", "rel"],
+      "additionalProperties": false,
+      "properties": {
+        "pm": {
+          "description": "Propagation model:\n* `1` - Irregular Terrain Model (ITM) (Longley-Rice)\n* `2` - Line of Sight (LOS)\n* `3` - Okumura-Hata\n* `4` - ITU-R P.1812\n* `5` - SUI Microwave\n* `6` - COST231-Hata\n* `7` - ITU-R P.525 (Free space path loss)\n* `8` - RADAR\n* `9` - Ericsson 9999\n* `10` - General Purpose\n* `11` - Egli VHF/UHF\n* `12` - HF NVIS\n* `13` - HF Skywave\n",
+          "type": "integer",
+          "enum": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+          "default": 4
+        },
+        "pe": {
+          "description": "Propagation model subtype (environment):\n* `1` - Conservative (Urban)\n* `2` - Average (Suburban)\n* `3` - Optimistic (Rural)\n",
+          "type": "integer",
+          "enum": [1, 2, 3],
+          "default": 2
+        },
+        "ked": {
+          "description": "Knife edge diffraction for enhancing models with NLOS coverage:\n* `0` - Diffraction disabled\n* `1` - Knife-edge diffraction\n* `2` - Bullington diffraction\n* `3` - Giovanelli diffraction\n* `4` - Deygout diffraction\n* `5` - Epstein-Peterson diffraction\n",
+          "type": "integer",
+          "enum": [0, 1, 2, 3, 4, 5],
+          "default": 2
+        },
+        "rel": {
+          "description": "Model reliability (aka fade margin) represented as a percentage (%) where 50% adds 0dB loss, 99% adds 9.9dB loss.",
+          "type": "number",
+          "minimum": 50,
+          "maximum": 99,
+          "default": 80
+        },
+        "rcs": {
+          "description": "RADAR cross section in square meters. Only accepted when `pm` is `8` (RADAR).",
+          "type": "number",
+          "minimum": 0.0001,
+          "maximum": 10000
+        },
+        "month": {
+          "description": "HF Skywave only - Month of the year.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "hour": {
+          "description": "HF Skywave only - Hour of the day.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23
+        },
+        "sunspots_r12": {
+          "description": "HF Skywave only - Average international sunspot number.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "required": ["elevation", "landcover", "buildings", "obstacles", "clt"],
+      "additionalProperties": false,
+      "properties": {
+        "clt": {
+          "description": "Clutter profile name, eg. `Temperate.clt` or `Minimal.clt`.",
+          "type": "string",
+          "pattern": "\\.clt$",
+          "default": "Temperate.clt"
+        },
+        "elevation": {
+          "description": "Elevation:\n* `1` - Digital Surface Model (DSM)\n* `2` - Digital Terrain Model (DTM)\n",
+          "type": "integer",
+          "enum": [1, 2],
+          "default": 2
+        },
+        "landcover": {
+          "description": "Global 10m landcover:\n* `0` - Disabled\n* `1` - Enabled\n",
+          "type": "integer",
+          "enum": [0, 1],
+          "default": 1
+        },
+        "buildings": {
+          "description": "Global OSM buildings layer to enhance DTM:\n* `0` - Disabled\n* `1` - Enabled\n",
+          "type": "integer",
+          "enum": [0, 1],
+          "default": 1
+        },
+        "obstacles": {
+          "description": "Custom obstacles / clutter:\n* `0` - Disabled\n* `1` - Enabled\n",
+          "type": "integer",
+          "enum": [0, 1],
+          "default": 0
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["units", "col", "out", "nf", "res", "rad"],
+      "additionalProperties": false,
+      "properties": {
+        "units": {
+          "description": "Distance units applied to heights and distances:\n* `m` - Meters and kilometers above ground level\n* `m_amsl` - Meters and kilometers above mean sea level\n* `f` - Feet and miles above ground level\n* `f_amsl` - Feet and miles above mean sea level\n",
+          "type": "string",
+          "enum": ["m", "m_amsl", "f", "f_amsl"],
+          "default": "m"
+        },
+        "col": {
+          "description": "Colour schema filename, eg. `RAINBOW.dBm`, or a numerical colour schema code. The unit suffix should match the measured unit set by `out`.",
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "integer", "minimum": 1, "maximum": 17 }
+          ],
+          "default": "RAINBOW.dBm"
+        },
+        "out": {
+          "description": "Measured units:\n* `1` - Path loss (dB)\n* `2` - Received power (dBm)\n* `3` - Field strength (dBuV)\n* `4` - Signal-to-Noise Ratio (dB) - uses `nf`\n* `5` - Bit-Error-Rate (BER) - uses `ber` and `mod`\n* `6` - Reference Signal Received Power (dBm)\n* `7` - Best site analysis (%)\n* `8` - Throughput (Mbps)\n* `9` - Throughput (kbps)\n",
+          "type": "integer",
+          "enum": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+          "default": 2
+        },
+        "ber": {
+          "description": "Bit-Error-Rate, combined with `mod`:\n* `1` - 0.1 / 10e-1\n* `2` - 0.01 / 10e-2\n* `3` - 0.001 / 10e-3\n* `4` - 0.0001 / 10e-4\n* `5` - 0.00001 / 10e-5\n* `6` - 0.000001 / 10e-6\n\nLoRa Spread Factors, only valid with `mod` value `11`:\n* `7` - LoRa SF7 / 5469bps\n* `8` - LoRa SF8 / 3125bps\n* `9` - LoRa SF9 / 1758bps\n* `10` - LoRa SF10 / 977bps\n* `11` - LoRa SF11 / 537bps\n* `12` - LoRa SF12 / 293bps\n",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12
+        },
+        "mod": {
+          "description": "Modulation, combined with `ber`:\n* `1` - 4QAM\n* `2` - 16QAM\n* `3` - 64QAM\n* `4` - 256QAM\n* `5` - 1024QAM\n* `6` - BPSK\n* `7` - QPSK\n* `8` - 8PSK\n* `9` - 16PSK\n* `10` - 32PSK\n* `11` - LoRa\n",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 11
+        },
+        "nf": {
+          "description": "Noise floor in dBm, used with SNR (`out` value `4`). Either a number, or `database` to use a noise map fitted to stored noise measurements.",
+          "oneOf": [
+            { "type": "number", "minimum": -150, "maximum": -40 },
+            { "type": "string", "const": "database" }
+          ],
+          "default": -120
+        },
+        "res": {
+          "description": "Resolution in meters for produced output.",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 300,
+          "default": 10
+        },
+        "rad": {
+          "description": "Radius in kilometers for output.",
+          "type": "number",
+          "minimum": 0.03,
+          "maximum": 400,
+          "default": 5
+        }
+      }
+    }
+  }
+}
